@@ -3,7 +3,7 @@ include('../include/config.php');
 // Hardcoded session values at the start
 $_SESSION['username'] = 'adewole.o@acn.aero';
 $_SESSION['staffid'] = 'O2024011';
-$_SESSION['stnames'] = 'Adewole Olumide'; // Example staff names, adjust as needed
+$_SESSION['stnames'] = 'Adewole Olumide'; 
 $data = json_decode(file_get_contents('php://input'), true);
 #Station details
 if (isset($_POST['stationtype'])) {
