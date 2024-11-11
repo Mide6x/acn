@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculate Time</title>
+</head>
+<body>
+    <h1>Calculate Time</h1>
+    <form>
+        <label for="time">Enter time (HH:MM):</label>
+        <input type="time" id="time" name="time" value="05:35">
+        <button type="button" onclick="calculateTime()">Submit</button>
+    </form>
+    <p id="result"></p>
+
+    <script>
+        function calculateTime() {
+            const timeInput = document.getElementById('time').value;
+            const result = document.getElementById('result');
+
+            if (timeInput) {
+                // Create a Date object with today's date and the given time
+                const [hours, minutes] = timeInput.split(':');
+                const date = new Date();
+                date.setHours(hours);
+                date.setMinutes(minutes);
+                date.setSeconds(0);
+                
+                // Subtract 1 hour
+                date.setHours(date.getHours() - 1);
+                
+                // Format the new time in HH:MM format
+                const newHours = date.getHours().toString().padStart(2, '0');
+                const newMinutes = date.getMinutes().toString().padStart(2, '0');
+                const newTime = `${newHours}:${newMinutes}`;
+
+                result.textContent = `1 hour before ${timeInput} is ${newTime}`;
+            } else {
+                result.textContent = 'Please enter a time.';
+            }
+        }
+    </script>
+</body>
+</html>
