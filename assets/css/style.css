@@ -1231,3 +1231,82 @@ h6 {
   font-size: 13px;
   color: #012970;
 }
+.profile-image-container {
+  position: relative; /* Ensure the container is positioned */
+  display: inline-block; /* Ensure the container wraps around the image */
+}
+
+.camera-icon {
+  position: absolute;
+  bottom: 5px; /* Adjust as needed */
+  left: 5px; /* Adjust as needed */
+  background-color: #fff; /* Optional: Background color for better visibility */
+  padding: 5px;
+  border-radius: 50%; /* Makes the background round */
+  color: #000; /* Change icon color */
+  font-size: 16px; /* Adjust icon size */
+  cursor: pointer; /* Changes the cursor to indicate it's clickable */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-icon:hover {
+  color: #007bff; /* Change icon color on hover */
+  background-color: #e0e0e0; /* Change background color on hover */
+}
+.from-text{
+  display: block;
+  width: 100%;
+  height: calc(1.5em + .75rem + 2px);
+  padding: .375rem .75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #495057;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ced4da;
+  border-radius: .25rem;
+  transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+.form-label {
+  font-size: small;
+  font-weight: bold;
+}
+.form-control{
+  display: block;
+    width: 100%;
+    height: calc(1.5em + .75rem + 2px);
+    padding: .375rem .75rem;
+    font-size: small;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+.form-select {
+  --bs-form-select-bg-img: url(data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e);
+  display: block;
+  width: 100%;
+  padding: .375rem 2.25rem .375rem .75rem;
+  font-size: small;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--bs-body-color);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: var(--bs-body-bg);
+  background-image: var(--bs-form-select-bg-img), var(--bs-form-select-bg-icon, none);
+  background-repeat: no-repeat;
+  background-position: right .75rem center;
+  background-size: 16px 12px;
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}

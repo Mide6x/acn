@@ -15,25 +15,18 @@ include("sidebar");
               <h5 class="card-title">Aviation charge Type</h5>
 
                 <div class="row mb-3">
-                  <label for="chargetype" id="chargetype" class="col-sm-2 col-form-label">Charge Type</label>
+                  <label for="chargetype" class="col-sm-2 col-form-label">Charge Type</label>
                   <div class="col-sm-10">
-                    <select class="form-select" aria-label="Default select example">
-                      <option selected>select</option>
-                      <option value="1">NCAA</option>
-                      <option value="2"></option>
-                      <option value="3"></option>
+                    <select class="form-select" name ='chargetype' id ='chargetype' aria-label="Default select example">
                     </select>
                   </div>
                 </div>
 
                 <div class="row mb-3">
-                  <label for="body" id="body" class="col-sm-2 col-form-label">Body</label>
+                  <label for="chargebody" class="col-sm-2 col-form-label">Body</label>
                   <div class="col-sm-10">
-                    <select class="form-select" aria-label="Default select example">
-                      <option selected>select</option>
-                      <option value="1">Nacho</option>
-                      <option value="2"></option>
-                      <option value="3"></option>
+                    <select class="form-select" name ='chargebody' id ='chargebody' aria-label="Default select example">
+                     
                     </select>
                   </div>
                 </div>
@@ -41,24 +34,15 @@ include("sidebar");
                 <div class="row mb-3">
                   <label for="name" class="col-sm-2 col-form-label">Name</label>
                   <div class="col-sm-10">
-                    <input type="text" id="name" name="name"class="form-control">
+                    <input type="text" id="chargename" name="chargename"class="form-control">
                   </div>
                 </div>
 
                 <div class="row mb-3">
                   <legend class="col-form-label col-sm-2 pt-0">If applicable</legend>
                   <div class="col-sm-10">
-
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="checkseason" id="checkseason" checked>
-                      <label class="form-check-label" for="gridCheck1">
-                        Season
-                      </label>
-                    </div>
-
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="checkaircraft"id="checkaircraft" checked>
-                      <label class="form-check-label" for="gridCheck2">
+                      <input class="form-check-input" type="checkbox" name="checkaircraft" id="checkaircraft">
                        Aircraft
                       </label>
                     </div>
@@ -67,7 +51,7 @@ include("sidebar");
 
                 <div class="row mb-3">
                   <div class="col-sm-10">
-                    <button type="button" class="btn btn-primary" onclick="return createaviationtype()"
+                    <button type="button" class="btn btn-primary" onclick="return createaviachargetype()"
                     style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
                     onmouseover="this.style.backgroundColor='#000000';"
                     onmouseout="this.style.backgroundColor='#fc7f14';">ADD

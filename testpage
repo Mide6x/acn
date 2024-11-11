@@ -1,45 +1,449 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculate Time</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>Bootstrap Tabs Example</title>
+    <link href="assets/img/favicon.png" rel="icon">
+    <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.gstatic.com" rel="preconnect">
+    <link
+        href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
+        rel="stylesheet">
+
+    <!-- Vendor CSS Files -->
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+    <link href="assets/vendor/quill/quill.snow.css" rel="stylesheet">
+    <link href="assets/vendor/quill/quill.bubble.css" rel="stylesheet">
+    <link href="assets/vendor/remixicon/remixicon.css" rel="stylesheet">
+    <link href="assets/vendor/simple-datatables/style.css" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Template Main CSS File -->
+    <link href="assets/css/style.css" rel="stylesheet">
+    <script src="assets/js/ac.js"></script>
 </head>
-<body>
-    <h1>Calculate Time</h1>
-    <form>
-        <label for="time">Enter time (HH:MM):</label>
-        <input type="time" id="time" name="time" value="05:35">
-        <button type="button" onclick="calculateTime()">Submit</button>
-    </form>
-    <p id="result"></p>
 
-    <script>
-        function calculateTime() {
-            const timeInput = document.getElementById('time').value;
-            const result = document.getElementById('result');
+<body class = "toggle-sidebar">
+    <header id="header" class="header fixed-top d-flex align-items-center">
 
-            if (timeInput) {
-                // Create a Date object with today's date and the given time
-                const [hours, minutes] = timeInput.split(':');
-                const date = new Date();
-                date.setHours(hours);
-                date.setMinutes(minutes);
-                date.setSeconds(0);
-                
-                // Subtract 1 hour
-                date.setHours(date.getHours() - 1);
-                
-                // Format the new time in HH:MM format
-                const newHours = date.getHours().toString().padStart(2, '0');
-                const newMinutes = date.getMinutes().toString().padStart(2, '0');
-                const newTime = `${newHours}:${newMinutes}`;
+        <div class="d-flex align-items-center justify-content-between">
+            <a href="index.html" class="logo d-flex align-items-center">
+                <img src="https://flyaero.com/asset/img/logo.png" style="width: 150px; height: 100px;" alt="">
+                <span class="d-none d-lg-block"></span>
+            </a>
+            <!-- <i class="bi bi-list toggle-sidebar-btn"></i> -->
+        </div><!-- End Logo -->
 
-                result.textContent = `1 hour before ${timeInput} is ${newTime}`;
-            } else {
-                result.textContent = 'Please enter a time.';
-            }
-        }
-    </script>
+        <div class="search-bar">
+            <form class="search-form d-flex align-items-center" method="POST" action="#">
+                <span id="pagetitle" style="font-weight: bold; font-size: larger;"></span>
+            </form>
+        </div><!-- End Search Bar -->
+
+        <nav class="header-nav ms-auto">
+            <ul class="d-flex align-items-center">
+
+                <li class="nav-item d-block d-lg-none">
+                    <a class="nav-link nav-icon search-bar-toggle " href="#">
+                        <i class="bi bi-search"></i>
+                    </a>
+                </li><!-- End Search Icon-->
+
+                <li class="nav-item dropdown">
+
+                    <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell"></i>
+                        <span class="badge bg-primary badge-number">4</span>
+                    </a><!-- End Notification Icon -->
+
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
+                        <li class="dropdown-header">
+                            You have 4 new notifications
+                            <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li class="notification-item">
+                            <i class="bi bi-exclamation-circle text-warning"></i>
+                            <div>
+                                <h4>Lorem Ipsum</h4>
+                                <p>Quae dolorem earum veritatis oditseno</p>
+                                <p>30 min. ago</p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li class="notification-item">
+                            <i class="bi bi-x-circle text-danger"></i>
+                            <div>
+                                <h4>Atque rerum nesciunt</h4>
+                                <p>Quae dolorem earum veritatis oditseno</p>
+                                <p>1 hr. ago</p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li class="notification-item">
+                            <i class="bi bi-check-circle text-success"></i>
+                            <div>
+                                <h4>Sit rerum fuga</h4>
+                                <p>Quae dolorem earum veritatis oditseno</p>
+                                <p>2 hrs. ago</p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li class="notification-item">
+                            <i class="bi bi-info-circle text-primary"></i>
+                            <div>
+                                <h4>Dicta reprehenderit</h4>
+                                <p>Quae dolorem earum veritatis oditseno</p>
+                                <p>4 hrs. ago</p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li class="dropdown-footer">
+                            <a href="#">Show all notifications</a>
+                        </li>
+
+                    </ul><!-- End Notification Dropdown Items -->
+
+                </li><!-- End Notification Nav -->
+
+                <li class="nav-item dropdown">
+
+                    <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-chat-left-text"></i>
+                        <span class="badge bg-success badge-number">3</span>
+                    </a><!-- End Messages Icon -->
+
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow messages">
+                        <li class="dropdown-header">
+                            You have 3 new messages
+                            <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li class="message-item">
+                            <a href="#">
+                                <img src="assets/img/messages-1.jpg" alt="" class="rounded-circle">
+                                <div>
+                                    <h4>Maria Hudson</h4>
+                                    <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
+                                    <p>4 hrs. ago</p>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li class="message-item">
+                            <a href="#">
+                                <img src="assets/img/messages-2.jpg" alt="" class="rounded-circle">
+                                <div>
+                                    <h4>Anna Nelson</h4>
+                                    <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
+                                    <p>6 hrs. ago</p>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li class="message-item">
+                            <a href="#">
+                                <img src="assets/img/messages-3.jpg" alt="" class="rounded-circle">
+                                <div>
+                                    <h4>David Muldon</h4>
+                                    <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
+                                    <p>8 hrs. ago</p>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li class="dropdown-footer">
+                            <a href="#">Show all messages</a>
+                        </li>
+
+                    </ul><!-- End Messages Dropdown Items -->
+
+                </li><!-- End Messages Nav -->
+
+                <li class="nav-item dropdown pe-3">
+
+                    <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
+                        <img src="assets/img/profile-img.jpg" alt="Profile" class="rounded-circle">
+                        <span class="d-none d-md-block dropdown-toggle ps-2">K. Anderson</span>
+                    </a><!-- End Profile Iamge Icon -->
+
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+                        <li class="dropdown-header">
+                            <h6>Kevin Anderson</h6>
+                            <span>Web Designer</span>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center" href="users-profile.html">
+                                <i class="bi bi-person"></i>
+                                <span>My Profile</span>
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center" href="users-profile.html">
+                                <i class="bi bi-gear"></i>
+                                <span>Account Settings</span>
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center" href="pages-faq.html">
+                                <i class="bi bi-question-circle"></i>
+                                <span>Need Help?</span>
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center" href="#">
+                                <i class="bi bi-box-arrow-right"></i>
+                                <span>Sign Out</span>
+                            </a>
+                        </li>
+
+                    </ul><!-- End Profile Dropdown Items -->
+                </li><!-- End Profile Nav -->
+
+            </ul>
+        </nav><!-- End Icons Navigation -->
+
+    </header>
+    <main id="main" class="main">
+        <div class="row">
+            <div class=" col-xl-3">
+                <form enctype="multipart/form-data">
+                    <div class="card">
+                        <div
+                            class="card-body profile-card pt-4 d-flex flex-column align-items-center position-relative">
+                            <!-- Profile image container -->
+                            <div class="profile-image-container position-relative">
+                                <img src="assets/img/profile-img.jpg" alt="Profile" class="rounded-circle"
+                                    style="width: 150px; height: 150px; object-fit: cover;">
+                                <!-- Camera icon positioned at the bottom left -->
+                                <a href="#" class="camera-icon" title="Upload profile image">
+                                    <i class="bi bi-camera-fill"></i>
+                                </a>
+                                <input type="file" id="profileImageUpload" accept="image/*" style="display: none;">
+                                <div class="pt-2">
+                                    <a href="#" class="btn btn-primary btn-sm" title="Upload new profile image"><i
+                                            class="bi bi-upload"></i></a>
+                                    <a href="#" class="btn btn-danger btn-sm" title="Remove my profile image"><i
+                                            class="bi bi-trash"></i></a>
+                                </div>
+                            </div>
+                            <h5>Kevin Anderson</h5>
+                            <h6>Web Designer</h6>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="col-xl-9">
+                <div class="card">
+                    <div class="card-body ">
+                        <div class="container mt-4">
+                            <!-- Tabs Header -->
+                            <ul class="nav nav-tabs" id="myTab" role="tablist"
+                                style="border-top: none; border-left: none; border-right: none; border-bottom: 1px solid #000;">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="tab1" data-toggle="tab" href="#content1" role="tab"
+                                        style="color:#000; border: none; border-bottom: 1px solid #000;">BioData</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="tab2" data-toggle="tab" href="#content2" role="tab"
+                                        style="color:#000; border: none; border-bottom: 1px solid #000;">Next of Kin</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="tab3" data-toggle="tab" href="#content3" role="tab"
+                                        style="color:#000; border: none; border-bottom: 1px solid #000;">Employment</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="tab4" data-toggle="tab" href="#content4" role="tab"
+                                        style="color:#000; border: none; border-bottom: 1px solid #000;">Professional
+                                        Information</a>
+                                </li>
+                            </ul>
+                            <!-- Tabs Content -->
+                            <div class="tab-content mt-3" id="myTabContent">
+                                <div class="tab-pane fade show active" id="content1" role="tabpanel"
+                                    aria-labelledby="tab1">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="staffid" class="form-label">Staff Id</label>
+                                            <input type="text" class="form-control" id="staffid" name="staffid">
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="tittle" class="form-label">Title</label>
+                                            <select class="form-select" aria-label="Default select example" id="tittle"
+                                                name="tittle">
+                                                <option></option>
+                                                <option>Capt.</option>
+                                                <option>Mr</option>
+                                                <option>Mrs</option>
+                                                <option>Miss</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="sname" class="form-label">Surname</label>
+                                            <input type="text" class="form-control" id="sname" name="sname">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="fname" class="form-label">First Name</label>
+                                            <input type="text" class="form-control" id="fname" name="fname">
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="mname" class="form-label">Middle Name</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="mname" name="mname">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="gender" class="form-label">Gender</label>
+                                            <select class="form-select" aria-label="Default select example" id="gender"
+                                                name="gender">
+                                                <option value="Select">Select</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="dob" class="form-label">D.O.B</label>
+                                            <input type="date" class="form-control" id="dob" name="dob">
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="marital" class="form-label">Marital Status</label>
+                                            <select class="form-select" aria-label="Default select example" id="marital"
+                                                name="marital">
+                                                <option value="Select">Select</option>
+                                                <option value="Single">Single</option>
+                                                <option value="Married">Married</option>
+                                                <option value="Divorced">Divorced</option>
+                                                <option value="Widow">Widow</option>
+                                                <option value="Widower">Widower</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="phone" class="form-label">Phone Number</label>
+                                            <input type="tel" class="form-control" id="phone" name="phone">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="email" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="email" name="email">
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="language" class="form-label">Language(s) Spoken</label>
+                                            <input type="text" class="form-control" id="language" name="language">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="nationality" class="form-label">Nationality</label>
+                                            <input type="text" class="form-control" id="nationality" name="nationality">
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="state" class="form-label">State</label>
+                                            <input type="text" class="form-control" id="state" name="state">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="nationality" class="form-label">Nationality</label>
+                                            <input type="text" class="form-control" id="nationality" name="nationality">
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <label for="addr" class="col-sm-2 col-form-label">Address</label>
+                                        <div class="col-sm-12">
+                                          <textarea class="form-control" style="height: 100px" id="addr" name="addr"></textarea>
+                                        </div>
+                                      </div>
+                                </div>
+                                <div class="tab-pane fade" id="content2" role="tabpanel" aria-labelledby="tab2">
+                                    <h5>Next of Kin</h5>
+                                    <p>Content for the Next of Kin section goes here.</p>
+                                </div>
+                                <div class="tab-pane fade" id="content3" role="tabpanel" aria-labelledby="tab3">
+                                    <h5>Employment</h5>
+                                    <p>Content for the Employment section goes here.</p>
+                                </div>
+                                <div class="tab-pane fade" id="content4" role="tabpanel" aria-labelledby="tab4">
+                                    <h5>Professional Information</h5>
+                                    <p>Content for the Professional Information section goes here.</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
+
 </html>
