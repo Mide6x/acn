@@ -550,156 +550,61 @@ if (isset($_POST['staffid'])) {
 #End of professional details
 
 #End Profiling 
+
+
 #HR Settings
 #Staff Request Self Service
-#Get Staff Request Information
+#Unified Staff Request Submission
+
+#Check if the main staff request submission is being made
 if (isset($_POST['jdrequestid'])) {
+    #Retrieve common staff request information
     $jdrequestid = $_POST['jdrequestid'];
-    $staffInfo = $revenue->loadStaffRequestInformation($jdrequestid);
-    echo $staffInfo;
-}
+    $jdtitle = $_POST['jdtitle'] ?? null;
+    $reason = $_POST['reason'] ?? null;
+    $createdby = $_POST['createdby'] ?? null;
 
-#Post New Staff Request Information
-if (isset($_POST['jdtitle'])) {
-    $jdtitle = $_POST['jdtitle'];
-    $reason = $_POST['reason'];
-    $eduqualification = $_POST['eduqualification'];
-    $proqualification = $_POST['proqualification'];
-    $createdby = $_POST['createdby'];
+    #Save or update the main staff request
+    if ($jdtitle && $reason && $createdby) {
+        $staffrequestInfo = $revenue->createOrUpdateStaffRequest($jdrequestid, $jdtitle, $reason, $createdby);
+        echo $staffrequestInfo;
+    }
 
-    $staffrequestInfo = $revenue->createStaffRequest($jdtitle, $reason, $eduqualification, $proqualification, $createdby);
-    echo $staffrequestInfo;
-}
+    #Handle Educational and Professional Qualification
+    $eduqualification = $_POST['eduqualification'] ?? null;
+    $proqualification = $_POST['proqualification'] ?? null;
+    if ($eduqualification || $proqualification) {
+        $educationInfo = $revenue->createOrUpdateStaffEducation($jdrequestid, $eduqualification, $proqualification);
+        echo $educationInfo;
+    }
 
-#Update Staff Request Information
-if (isset($_POST['jdrequestid']) && isset($_POST['jdtitle'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $jdtitle = $_POST['jdtitle'];
-    $reason = $_POST['reason'];
-    $eduqualification = $_POST['eduqualification'];
-    $proqualification = $_POST['proqualification'];
-    $createdby = $_POST['createdby'];
+    #Handle Competencies (Functional, Technical, Managerial, Behavioral)
+    $fuctiontech = $_POST['fuctiontech'] ?? null;
+    $managerial = $_POST['managerial'] ?? null;
+    $behavioural = $_POST['behavioural'] ?? null;
+    if ($fuctiontech || $managerial || $behavioural) {
+        $competenciesInfo = $revenue->createOrUpdateStaffCompetencies($jdrequestid, $fuctiontech, $managerial, $behavioural, $createdby);
+        echo $competenciesInfo;
+    }
 
-    $updatedInfo = $revenue->updateStaffRequest($jdrequestid, $jdtitle, $reason, $eduqualification, $proqualification, $createdby);
-    echo $updatedInfo;
-}
+    #Handle Request Per Station Information
+    $novacpost = $_POST['novacpost'] ?? null;
+    $station = $_POST['station'] ?? null;
+    $employmenttype = $_POST['employmenttype'] ?? null;
+    $staffperstation = $_POST['staffperstation'] ?? null;
+    if ($novacpost && $station && $employmenttype && $staffperstation) {
+        $stationInfo = $revenue->createOrUpdateStaffRequestPerStation($jdrequestid, $novacpost, $station, $employmenttype, $staffperstation);
+        echo $stationInfo;
+    }
 
-#Get Staff Education Information
-if (isset($_POST['jdrequestid'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $educationInfo = $revenue->loadStaffEducation($jdrequestid);
-    echo $educationInfo;
-}
-
-#Post New Staff Education Information
-if (isset($_POST['jdrequestid']) && isset($_POST['eduqualification'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $eduqualification = $_POST['eduqualification'];
-    $proqualification = $_POST['proqualification'];
-
-    $educationInfo = $revenue->createStaffEducation($jdrequestid, $eduqualification, $proqualification);
-    echo $educationInfo;
-}
-
-#Update Staff Education Information
-if (isset($_POST['jdrequestid']) && isset($_POST['eduqualification'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $eduqualification = $_POST['eduqualification'];
-    $proqualification = $_POST['proqualification'];
-
-    $educationInfo = $revenue->updateStaffEducation($jdrequestid, $eduqualification, $proqualification);
-    echo $educationInfo;
-}
-
-#Get Staff Competencies Information
-if (isset($_POST['jdrequestid'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $competenciesInfo = $revenue->loadStaffCompetencies($jdrequestid);
-    echo $competenciesInfo;
-}
-
-#Post New Staff Competencies Information
-if (isset($_POST['jdrequestid']) && isset($_POST['fuctiontech'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $fuctiontech = $_POST['fuctiontech'];
-    $managerial = $_POST['managerial'];
-    $behavioural = $_POST['behavioural'];
-    $createdby = $_POST['createdby'];
-
-    $competenciesInfo = $revenue->createStaffCompetencies($jdrequestid, $fuctiontech, $managerial, $behavioural, $createdby);
-    echo $competenciesInfo;
-}
-
-#Update Staff Competencies Information
-if (isset($_POST['jdrequestid']) && isset($_POST['fuctiontech'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $fuctiontech = $_POST['fuctiontech'];
-    $managerial = $_POST['managerial'];
-    $behavioural = $_POST['behavioural'];
-    $createdby = $_POST['createdby'];
-
-    $competenciesInfo = $revenue->updateStaffCompetencies($jdrequestid, $fuctiontech, $managerial, $behavioural, $createdby);
-    echo $competenciesInfo;
-}
-
-#Get Staff Request Per Station Information
-if (isset($_POST['jdrequestid'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $stationInfo = $revenue->loadStaffRequestPerStation($jdrequestid);
-    echo $stationInfo;
-}
-
-#Post New Staff Request Per Station Information
-if (isset($_POST['jdrequestid']) && isset($_POST['novacpost'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $novacpost = $_POST['novacpost'];
-    $station = $_POST['station'];
-    $employmenttype = $_POST['employmenttype'];
-    $staffperstation = $_POST['staffperstation'];
-
-    $stationInfo = $revenue->createStaffRequestPerStation($jdrequestid, $novacpost, $station, $employmenttype, $staffperstation);
-    echo $stationInfo;
-}
-
-#Update Staff Request Per Station Information
-if (isset($_POST['jdrequestid']) && isset($_POST['novacpost'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $novacpost = $_POST['novacpost'];
-    $station = $_POST['station'];
-    $employmenttype = $_POST['employmenttype'];
-    $staffperstation = $_POST['staffperstation'];
-
-    $stationInfo = $revenue->updateStaffRequestPerStation($jdrequestid, $novacpost, $station, $employmenttype, $staffperstation);
-    echo $stationInfo;
-}
-
-#Get Staff Success Factor Information
-if (isset($_POST['jdrequestid'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $successFactorInfo = $revenue->loadStaffSuccessFactor($jdrequestid);
-    echo $successFactorInfo;
-}
-
-#Post New Staff Success Factor Information
-if (isset($_POST['jdrequestid']) && isset($_POST['keyresult'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $keyresult = $_POST['keyresult'];
-    $empdeliveries = $_POST['empdeliveries'];
-    $keysuccess = $_POST['keysuccess'];
-
-    $successFactorInfo = $revenue->createStaffSuccessFactor($jdrequestid, $keyresult, $empdeliveries, $keysuccess);
-    echo $successFactorInfo;
-}
-
-#Update Staff Success Factor Information
-if (isset($_POST['jdrequestid']) && isset($_POST['keyresult'])) {
-    $jdrequestid = $_POST['jdrequestid'];
-    $keyresult = $_POST['keyresult'];
-    $empdeliveries = $_POST['empdeliveries'];
-    $keysuccess = $_POST['keysuccess'];
-
-    $successFactorInfo = $revenue->updateStaffSuccessFactor($jdrequestid, $keyresult, $empdeliveries, $keysuccess);
-    echo $successFactorInfo;
+    #Handle Success Factor Information
+    $keyresult = $_POST['keyresult'] ?? null;
+    $empdeliveries = $_POST['empdeliveries'] ?? null;
+    $keysuccess = $_POST['keysuccess'] ?? null;
+    if ($keyresult || $empdeliveries || $keysuccess) {
+        $successFactorInfo = $revenue->createOrUpdateStaffSuccessFactor($jdrequestid, $keyresult, $empdeliveries, $keysuccess);
+        echo $successFactorInfo;
+    }
 }
 
 #End HR Settingd
