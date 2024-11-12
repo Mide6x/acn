@@ -1579,6 +1579,59 @@ class revenue
         return $count;
     }
 
+    //Job Titles
+    //Insert a new job title into the jobtitletbl table
+    public function createJobTitle($jdtitle, $jddepartmentunit, $jdstatus)
+    {
+        $dandt = $this->africaDate();
+        $createdby = $_SESSION['staffid'];
+        $sql = "INSERT INTO jobtitletbl (jdtitle, jddepartmentunit, jdstatus, createdby, dandt) 
+            VALUES (:jdtitle, :jddepartmentunit, :jdstatus, :createdby, :dandt)";
+
+
+        $stmt = $this->db->prepare($sql);
+        // Bind parameters to prevent SQL injection
+        $stmt->bindParam(':jdtitle', $jdtitle);
+        $stmt->bindParam(':jddepartmentunit', $jddepartmentunit);
+        $stmt->bindParam(':jdstatus', $jdstatus);
+        $stmt->bindParam(':createdby', $createdby);
+        $stmt->bindParam(':dandt', $dandt);
+        $stmt->execute();
+    }
+
+    //Update an existing job title in the jobtitletbl table
+    public function updateJobTitle($id, $updatedjdtitle, $jddepartmentunit, $jdstatus)
+    {
+        // Prepare the SQL query to update the job title
+        $sql = "UPDATE jobtitletbl
+            SET jdtitle = :updatedjdtitle, jddepartmentunit = :jddepartmentunit, jdstatus = :jdstatus
+            WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+
+        $stmt->bindParam(':updatedjdtitle', $updatedjdtitle);
+        $stmt->bindParam(':jddepartmentunit', $jddepartmentunit);
+        $stmt->bindParam(':jdstatus', $jdstatus);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+    }
+
+    // Fetch job titles from the jobtitletbl table
+    public function getJobTitles()
+    {
+        $jobTitleOptions = "";
+        $sql = "SELECT id, jdtitle FROM jobtitletbl WHERE jdstatus = 'Active'";
+        $stmt = $this->db->prepare($sql);
+
+        $stmt->execute();
+        while ($rows = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $jobTitleOptions .= '<option value="' . $rows['id'] . '">' . htmlspecialchars($rows['jdtitle']) . '</option>';
+        }
+
+        return $jobTitleOptions;
+    }
+
+
+
     //STAFF REQUEST MODULE
     //create a new staff request
     public function createOrUpdateStaffRequest($jdrequestid, $jdtitle, $novacpost, $reason, $eduqualification, $proqualification, $fuctiontech, $managerial, $behavioural, $keyresult, $empdeliveries, $keysuccess)
@@ -1610,6 +1663,7 @@ class revenue
 
         return $stmt->rowCount();
     }
+
 
     //Handle staff request per station information
     public function createOrUpdateStaffRequestPerStation($jdrequestid, $station, $employmenttype, $staffperstation)

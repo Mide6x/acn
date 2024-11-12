@@ -553,6 +553,39 @@ if (isset($_POST['staffid'])) {
 
 
 #HR Settings
+#Job titles setup
+# Get Job Titles from the jobtitletbl table
+if (isset($_POST['jdrequestid'])) {
+    $jdrequestid = $_POST['jdrequestid'];
+    $jobTitles = $revenue->getJobTitles();
+    echo json_encode($jobTitles);
+}
+
+# Create new Job Title Information
+if (isset($_POST['newjdtitle'])) {
+    $newjdtitle = $_POST['newjdtitle'];
+    $jddepartmentunit = $_POST['jddepartmentunit'];
+    $jdstatus = $_POST['jdstatus'];
+
+    # Add new job title to the jobtitletbl table
+    $revenue->createJobTitle($newjdtitle, $jddepartmentunit, $jdstatus);
+    echo json_encode(['status' => 'success', 'message' => 'Job title added successfully.']);
+}
+
+# Update Job Title Information
+if (isset($_POST['updatejdtitle'])) {
+    $jdtitleid = $_POST['jdtitleid'];
+    $updatedjdtitle = $_POST['updatedjdtitle'];
+    $jddepartmentunit = $_POST['jddepartmentunit'];
+    $jdstatus = $_POST['jdstatus'];
+
+    # Update the job title in the database
+    $revenue->updateJobTitle($jdtitleid, $updatedjdtitle, $jddepartmentunit, $jdstatus);
+    echo json_encode(['status' => 'success', 'message' => 'Job title updated successfully.']);
+}
+#End of Job title setup
+
+
 #Staff Request Self Service
 #Unified Staff Request Submission
 #Check if the main staff request submission is being made
