@@ -1578,104 +1578,75 @@ class revenue
         $count = $stmt->rowCount();
         return $count;
     }
-    //Create a new staff request
-    public function createstaffrequest($jdtitle, $reason)
+
+    //STAFF REQUEST MODULE
+    //create a new staff request
+    public function createOrUpdateStaffRequest($jdrequestid, $jdtitle, $novacpost, $reason, $eduqualification, $proqualification, $fuctiontech, $managerial, $behavioural, $keyresult, $empdeliveries, $keysuccess)
     {
         $dandt = $this->africaDate();
         $createdby = $_SESSION['username'];
-        $sql = "INSERT INTO staffrequest (jdtitle, reason, createdby, dandt)
-            VALUES ('$jdtitle', '$reason', '$createdby', '$dandt')";
+
+        // Check if the request already exists
+        $sql = "SELECT * FROM staffrequest WHERE jdrequestid = '$jdrequestid'";
         $stmt = $this->db->query($sql);
-        $count = $stmt->rowCount();
-        return $count;
+        $existingRequest = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingRequest) {
+            // Update existing request
+            $sql = "UPDATE staffrequest 
+                    SET jdtitle = '$jdtitle', reason = '$reason', eduqualification = '$eduqualification', proqualification = '$proqualification', 
+                        fuctiontech = '$fuctiontech', managerial = '$managerial', behavioural = '$behavioural', keyresult = '$keyresult', 
+                        empdeliveries = '$empdeliveries', keysuccess = '$keysuccess', novacpost = '$novacpost'
+                    WHERE jdrequestid = '$jdrequestid'";
+            $stmt = $this->db->query($sql);
+        } else {
+            // Insert new staff request
+            $sql = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, reason, eduqualification, proqualification, fuctiontech, 
+                                             managerial, behavioural, keyresult, empdeliveries, keysuccess, createdby, dandt) 
+                    VALUES ('$jdrequestid', '$jdtitle', '$novacpost', '$reason', '$eduqualification', '$proqualification', '$fuctiontech', 
+                            '$managerial', '$behavioural', '$keyresult', '$empdeliveries', '$keysuccess', '$createdby', '$dandt')";
+            $stmt = $this->db->query($sql);
+        }
+
+        return $stmt->rowCount();
     }
 
-    public function getstaffrequest($jdrequestid)
+    //Handle staff request per station information
+    public function createOrUpdateStaffRequestPerStation($jdrequestid, $station, $employmenttype, $staffperstation)
+    {
+        //Check if the entry for the given station already exists
+        $sql = "SELECT * FROM staffrequestperstation WHERE jdrequestid = '$jdrequestid' AND station = '$station'";
+        $stmt = $this->db->query($sql);
+        $existingStation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingStation) {
+            $sql = "UPDATE staffrequestperstation 
+                    SET employmenttype = '$employmenttype', staffperstation = '$staffperstation' 
+                    WHERE jdrequestid = '$jdrequestid' AND station = '$station'";
+            $stmt = $this->db->query($sql);
+        } else {
+            $sql = "INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation) 
+                    VALUES ('$jdrequestid', '$station', '$employmenttype', '$staffperstation')";
+            $stmt = $this->db->query($sql);
+        }
+
+        return $stmt->rowCount();
+    }
+
+    //Get staff request details by jdrequestid
+    public function getStaffRequest($jdrequestid)
     {
         $sql = "SELECT * FROM staffrequest WHERE jdrequestid = '$jdrequestid'";
         $stmt = $this->db->query($sql);
-        $staffRequest = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $staffRequest;
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function createstaffeducation($jdrequestid, $eduqualification, $proqualification)
-    {
-        $sql = "INSERT INTO staffeducation (jdrequestid, eduqualification, proqualification)
-            VALUES ('$jdrequestid', '$eduqualification', '$proqualification')";
-        $stmt = $this->db->query($sql);
-        $count = $stmt->rowCount();
-        return $count;
-    }
-
-    public function getstaffeducation($jdrequestid)
-    {
-        $sql = "SELECT * FROM staffeducation WHERE jdrequestid = '$jdrequestid'";
-        $stmt = $this->db->query($sql);
-        $educationDetails = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return $educationDetails;
-    }
-    public function createstaffcompetencies($jdrequestid, $fuctiontech, $managerial, $behavioural)
-    {
-        $createdby = $_SESSION['username'];
-        $dandt = $this->africaDate();
-        $sql = "INSERT INTO staffcompetencies (jdrequestid, fuctiontech, managerial, behavioural, createdby, dandt)
-            VALUES ('$jdrequestid', '$fuctiontech', '$managerial', '$behavioural', '$createdby', '$dandt')";
-        $stmt = $this->db->query($sql);
-        $count = $stmt->rowCount();
-        return $count;
-    }
-    public function getstaffcompetencies($jdrequestid)
-    {
-        $sql = "SELECT * FROM staffcompetencies WHERE jdrequestid = '$jdrequestid'";
-        $stmt = $this->db->query($sql);
-        $competencyDetails = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return $competencyDetails;
-    }
-    public function createstaffrequestperstation($jdrequestid, $novacpost, $station, $employmenttype, $staffperstation)
-    {
-        $sql = "INSERT INTO staffrequestperstation (jdrequestid, novacpost, station, employmenttype, staffperstation)
-            VALUES ('$jdrequestid', '$novacpost', '$station', '$employmenttype', '$staffperstation')";
-        $stmt = $this->db->query($sql);
-        $count = $stmt->rowCount();
-        return $count;
-    }
-    public function getstaffrequestperstation($jdrequestid)
+    //Get staff request per station details by jdrequestid
+    public function getStaffRequestPerStation($jdrequestid)
     {
         $sql = "SELECT * FROM staffrequestperstation WHERE jdrequestid = '$jdrequestid'";
         $stmt = $this->db->query($sql);
-        $stationDetails = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return $stationDetails;
-    }
-    public function createstaffsuccessfact($jdrequestid, $keyresult, $empdeliveries, $keysuccess)
-    {
-        $sql = "INSERT INTO staffsuccessfact (jdrequestid, keyresult, empdeliveries, keysuccess)
-            VALUES ('$jdrequestid', '$keyresult', '$empdeliveries', '$keysuccess')";
-        $stmt = $this->db->query($sql);
-        $count = $stmt->rowCount();
-        return $count;
-    }
-    public function getstaffsuccessfact($jdrequestid)
-    {
-        $sql = "SELECT * FROM staffsuccessfact WHERE jdrequestid = '$jdrequestid'";
-        $stmt = $this->db->query($sql);
-        $successFactDetails = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return $successFactDetails;
-    }
-    public function updatestaffrequest($jdrequestid, $jdtitle, $reason)
-    {
-        $sql = "UPDATE staffrequest
-            SET jdtitle = '$jdtitle', reason = '$reason'
-            WHERE jdrequestid = '$jdrequestid'";
-        $stmt = $this->db->query($sql);
-        $count = $stmt->rowCount();
-        return $count;
-    }
-    public function deletestaffrequest($jdrequestid)
-    {
-        $sql = "DELETE FROM staffrequest WHERE jdrequestid = '$jdrequestid'";
-        $stmt = $this->db->query($sql);
-        $count = $stmt->rowCount();
-        return $count;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     #End HR Module
