@@ -3,7 +3,7 @@ include('../include/config.php');
 // Hardcoded session values at the start
 $_SESSION['username'] = 'adewole.o@acn.aero';
 $_SESSION['staffid'] = 'O2024011';
-$_SESSION['stnames'] = 'Adewole Olumide'; 
+$_SESSION['stnames'] = 'Adewole Olumide';
 $data = json_decode(file_get_contents('php://input'), true);
 #Station details
 if (isset($_POST['stationtype'])) {
@@ -555,55 +555,52 @@ if (isset($_POST['staffid'])) {
 #HR Settings
 #Staff Request Self Service
 #Unified Staff Request Submission
-
 #Check if the main staff request submission is being made
 if (isset($_POST['jdrequestid'])) {
-    #Retrieve common staff request information
+    #Retrieve main staff request information
     $jdrequestid = $_POST['jdrequestid'];
     $jdtitle = $_POST['jdtitle'] ?? null;
+    $novacpost = $_POST['novacpost'] ?? null;
     $reason = $_POST['reason'] ?? null;
-    $createdby = $_POST['createdby'] ?? null;
-
-    #Save or update the main staff request
-    if ($jdtitle && $reason && $createdby) {
-        $staffrequestInfo = $revenue->createOrUpdateStaffRequest($jdrequestid, $jdtitle, $reason, $createdby);
-        echo $staffrequestInfo;
-    }
-
-    #Handle Educational and Professional Qualification
     $eduqualification = $_POST['eduqualification'] ?? null;
     $proqualification = $_POST['proqualification'] ?? null;
-    if ($eduqualification || $proqualification) {
-        $educationInfo = $revenue->createOrUpdateStaffEducation($jdrequestid, $eduqualification, $proqualification);
-        echo $educationInfo;
-    }
-
-    #Handle Competencies (Functional, Technical, Managerial, Behavioral)
     $fuctiontech = $_POST['fuctiontech'] ?? null;
     $managerial = $_POST['managerial'] ?? null;
     $behavioural = $_POST['behavioural'] ?? null;
-    if ($fuctiontech || $managerial || $behavioural) {
-        $competenciesInfo = $revenue->createOrUpdateStaffCompetencies($jdrequestid, $fuctiontech, $managerial, $behavioural, $createdby);
-        echo $competenciesInfo;
-    }
-
-    #Handle Request Per Station Information
-    $novacpost = $_POST['novacpost'] ?? null;
-    $station = $_POST['station'] ?? null;
-    $employmenttype = $_POST['employmenttype'] ?? null;
-    $staffperstation = $_POST['staffperstation'] ?? null;
-    if ($novacpost && $station && $employmenttype && $staffperstation) {
-        $stationInfo = $revenue->createOrUpdateStaffRequestPerStation($jdrequestid, $novacpost, $station, $employmenttype, $staffperstation);
-        echo $stationInfo;
-    }
-
-    #Handle Success Factor Information
     $keyresult = $_POST['keyresult'] ?? null;
     $empdeliveries = $_POST['empdeliveries'] ?? null;
     $keysuccess = $_POST['keysuccess'] ?? null;
-    if ($keyresult || $empdeliveries || $keysuccess) {
-        $successFactorInfo = $revenue->createOrUpdateStaffSuccessFactor($jdrequestid, $keyresult, $empdeliveries, $keysuccess);
-        echo $successFactorInfo;
+
+    #Save or update the main staff request
+    $staffrequestInfo = $revenue->createOrUpdateStaffRequest(
+        $jdrequestid,
+        $jdtitle,
+        $novacpost,
+        $reason,
+        $eduqualification,
+        $proqualification,
+        $fuctiontech,
+        $managerial,
+        $behavioural,
+        $keyresult,
+        $empdeliveries,
+        $keysuccess
+    );
+    echo $staffrequestInfo;
+
+    #Handle Request Per Station Information
+    $station = $_POST['station'] ?? null;
+    $employmenttype = $_POST['employmenttype'] ?? null;
+    $staffperstation = $_POST['staffperstation'] ?? null;
+
+    if ($station && $employmenttype && $staffperstation) {
+        $stationInfo = $revenue->createOrUpdateStaffRequestPerStation(
+            $jdrequestid,
+            $station,
+            $employmenttype,
+            $staffperstation
+        );
+        echo $stationInfo;
     }
 }
 
