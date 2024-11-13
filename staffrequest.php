@@ -88,6 +88,11 @@
 
 <body>
     <?php
+    $_SESSION['username'] = 'adewole.o@acn.aero';
+    $_SESSION['staffid'] = 'O2024011';
+    $_SESSION['stnames'] = 'Adewole Olumide';
+    $_SESSION['deptunitcode'] = 'ICT';
+
     include_once("include/config.php");
 
     if (!isset($revenue)) {
@@ -97,20 +102,20 @@
     // Check if $revenue was successfully created
     if (!$revenue) {
         echo "Revenue object not found.";
-        exit; // Stop further execution if $revenue is not set
+        exit;
     }
 
-    // Fetch job titles, stations, and staff types after confirming $revenue is initialized
-    $jobtitletbl = $revenue->getjobtitletbl();
+    $jobtitletbl = $revenue->getJobTitles();
     $stations = $revenue->getStations();
     $stafftype = $revenue->getStaffType();
-    ?>
 
+    $randomRequestID = str_pad(rand(100000, 999999), 6, "0", STR_PAD_LEFT);
+    ?>
     <main id="main" class="main">
         <section class="section">
             <form id="staffRequestForm" method="POST" action="parameter/parameter.php">
-                <!-- Staff Request Self Service -->
                 <h2>Staff Request Self Service</h2>
+                <p>RequestID: 2024<?= $randomRequestID ?></p>
 
                 <!-- Job Title -->
                 <label for="jdtitle">Job Title:</label>
@@ -125,50 +130,7 @@
                 <label for="novacpost">No. of Vacant Posts:</label>
                 <input type="number" id="novacpost" name="novacpost" required><br>
 
-                <!-- Reason (If same position) -->
-                <label for="reason">Reason (If same position):</label>
-                <textarea id="reason" name="reason" required></textarea><br>
-
-                <h3>Job Specification</h3>
-
-                <!-- Educational Qualification -->
-                <label for="eduqualification">Educational Qualification:</label>
-                <input type="text" id="eduqualification" name="eduqualification" required><br>
-
-                <!-- Professional Qualification -->
-                <label for="proqualification">Professional Qualification:</label>
-                <input type="text" id="proqualification" name="proqualification" required><br>
-
-                <h3>KEY COMPETENCIES REQUIREMENTS</h3>
-
-                <!-- Functional/Technical Skills -->
-                <label for="fuctiontech">Functional/Technical Skills:</label>
-                <textarea id="fuctiontech" name="fuctiontech" required></textarea><br>
-
-                <!-- Managerial Skills -->
-                <label for="managerial">Managerial Skills:</label>
-                <textarea id="managerial" name="managerial" required></textarea><br>
-
-                <!-- Behavioral Skills -->
-                <label for="behavioural">Behavioral Skills:</label>
-                <textarea id="behavioural" name="behavioural" required></textarea><br>
-
-                <h3>Key Success Factor</h3>
-
-                <!-- Key Result Area for Unit/Departments -->
-                <label for="keyresult">Key Result Area for Unit/Departments:</label>
-                <input type="text" id="keyresult" name="keyresult" required><br>
-
-                <!-- Employee Deliverables -->
-                <label for="empdeliveries">Employee Deliverables:</label>
-                <input type="text" id="empdeliveries" name="empdeliveries" required><br>
-
-                <!-- Key Success Factor -->
-                <label for="keysuccess">Key Success Factor:</label>
-                <input type="text" id="keysuccess" name="keysuccess" required><br>
-
-                <!-- Staff Request Per Station -->
-                <h2>Staff Request Per Station</h2>
+                <h3>Staff Request Per Station</h3>
 
                 <!-- Station -->
                 <label for="station">Station:</label>
@@ -192,21 +154,42 @@
                 <label for="staffperstation">Staff per Station:</label>
                 <input type="number" id="staffperstation" name="staffperstation" required><br>
 
-                <!-- Hidden Request ID -->
-                <input type="hidden" name="jdrequestid" value="<?= uniqid('jdreq_') ?>">
+                <!-- Hidden Request ID and User ID -->
+                <input type="hidden" name="jdrequestid" value="<?= $randomRequestID ?>">
+                <input type="hidden" name="createdby" value="12345"> <!-- Hardcoded User ID -->
 
-                <!-- Submit Button -->
-                <input type="submit" value="Submit">
+                <div class="button-container">
+                    <input type="submit" name="submit_request" value="Submit">
+                    <button type="button" class="small-button" onclick="saveAsDraft()">Add</button>
+                </div>
             </form>
-
-            <!-- Link to Job title Creation Page -->
-            <div class="button-container">
-                <a href="jobtitle.php">
-                    <button class="small-button">Create Job Title</button>
-                </a>
-            </div>
         </section>
     </main>
+
+    <script>
+        // Save form as Draft by submitting with draft status
+        function saveAsDraft() {
+            // Append a hidden field to indicate draft status
+            var form = document.getElementById('staffRequestForm');
+            var draftField = document.createElement('input');
+            draftField.type = 'hidden';
+            draftField.name = 'status';
+            draftField.value = 'draft';
+            form.appendChild(draftField);
+
+            form.submit();
+        }
+
+        // Optionally, you can have logic for "Submit" to add 'pending' status too
+        document.querySelector('input[name="submit_request"]').addEventListener('click', function() {
+            var form = document.getElementById('staffRequestForm');
+            var statusField = document.createElement('input');
+            statusField.type = 'hidden';
+            statusField.name = 'status';
+            statusField.value = 'pending';
+            form.appendChild(statusField);
+        });
+    </script>
 
 </body>
 

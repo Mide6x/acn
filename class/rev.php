@@ -18,102 +18,61 @@ class Revenue
         return date('Y-m-d H:i:s');
     }
 
-    // Insert or update a staff request in the staffrequest table
-    public function createOrUpdateStaffRequest($jdrequestid, $jdtitle, $novacpost, $reason, $eduqualification, $proqualification, $fuctiontech, $managerial, $behavioural, $keyresult, $empdeliveries, $keysuccess)
+    public function createOrUpdateStaffRequest($jdrequestid, $jdtitle, $novacpost, $status, $createdby)
     {
-        $sql = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, reason, eduqualification, proqualification, fuctiontech, managerial, behavioural, keyresult, empdeliveries, keysuccess, createdby, dandt)
-                VALUES (:jdrequestid, :jdtitle, :novacpost, :reason, :eduqualification, :proqualification, :fuctiontech, :managerial, :behavioural, :keyresult, :empdeliveries, :keysuccess, :createdby, NOW())
-                ON DUPLICATE KEY UPDATE 
-                jdtitle = :jdtitle, novacpost = :novacpost, reason = :reason, eduqualification = :eduqualification, 
-                proqualification = :proqualification, fuctiontech = :fuctiontech, managerial = :managerial, 
-                behavioural = :behavioural, keyresult = :keyresult, empdeliveries = :empdeliveries, 
-                keysuccess = :keysuccess, createdby = :createdby";
+        $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, status, createdby)
+              VALUES (?, ?, ?, ?, ?)
+              ON DUPLICATE KEY UPDATE jdtitle = ?, novacpost = ?, status = ?, createdby = ?";
+        $stmt = $this->db->prepare($query);
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':jdrequestid', $jdrequestid);
-        $stmt->bindParam(':jdtitle', $jdtitle);
-        $stmt->bindParam(':novacpost', $novacpost);
-        $stmt->bindParam(':reason', $reason);
-        $stmt->bindParam(':eduqualification', $eduqualification);
-        $stmt->bindParam(':proqualification', $proqualification);
-        $stmt->bindParam(':fuctiontech', $fuctiontech);
-        $stmt->bindParam(':managerial', $managerial);
-        $stmt->bindParam(':behavioural', $behavioural);
-        $stmt->bindParam(':keyresult', $keyresult);
-        $stmt->bindParam(':empdeliveries', $empdeliveries);
-        $stmt->bindParam(':keysuccess', $keysuccess);
-        $stmt->bindParam(':createdby', $_SESSION['username']);
+        // Correcting bindValue method
+        $stmt->bindValue(1, $jdrequestid, PDO::PARAM_INT);
+        $stmt->bindValue(2, $jdtitle, PDO::PARAM_STR);
+        $stmt->bindValue(3, $novacpost, PDO::PARAM_INT);
+        $stmt->bindValue(4, $status, PDO::PARAM_STR);
+        $stmt->bindValue(5, $createdby, PDO::PARAM_INT);
+        $stmt->bindValue(6, $jdtitle, PDO::PARAM_STR);
+        $stmt->bindValue(7, $novacpost, PDO::PARAM_INT);
+        $stmt->bindValue(8, $status, PDO::PARAM_STR);
+        $stmt->bindValue(9, $createdby, PDO::PARAM_INT);
 
-        return $stmt->execute();
-    }
-
-    // Insert or update staff request per station in the staffrequestperstation table
-    public function createOrUpdateStaffRequestPerStation($jdrequestid, $station, $employmenttype, $staffperstation)
-    {
-        $sql = "INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation)
-                VALUES (:jdrequestid, :station, :employmenttype, :staffperstation)
-                ON DUPLICATE KEY UPDATE 
-                station = :station, employmenttype = :employmenttype, staffperstation = :staffperstation";
-
-        $stmt = $this->db->prepare($sql);
-
-        // Bind the parameters to the placeholders in the SQL query
-        $stmt->bindParam(':jdrequestid', $jdrequestid);
-        $stmt->bindParam(':station', $station);
-        $stmt->bindParam(':employmenttype', $employmenttype);
-        $stmt->bindParam(':staffperstation', $staffperstation);
-
-        // Execute the statement
-        return $stmt->execute();
-    }
-
-    // Handle staff request submission and echo results directly
-    public function handleStaffRequestSubmission()
-    {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $jdrequestid = htmlspecialchars($_POST['jdrequestid'] ?? '');
-            $jdtitle = htmlspecialchars($_POST['jdtitle'] ?? '');
-            $novacpost = htmlspecialchars($_POST['novacpost'] ?? '');
-            $reason = htmlspecialchars($_POST['reason'] ?? '');
-            $eduqualification = htmlspecialchars($_POST['eduqualification'] ?? '');
-            $proqualification = htmlspecialchars($_POST['proqualification'] ?? '');
-            $function = htmlspecialchars($_POST['fuctiontech'] ?? '');
-            $techmanagerial = htmlspecialchars($_POST['managerial'] ?? '');
-            $behavioural = htmlspecialchars($_POST['behavioural'] ?? '');
-            $keyresult = htmlspecialchars($_POST['keyresult'] ?? '');
-            $empdeliveries = htmlspecialchars($_POST['empdeliveries'] ?? '');
-            $keysuccess = htmlspecialchars($_POST['keysuccess'] ?? '');
-            $station = htmlspecialchars($_POST['station'] ?? '');
-            $employmenttype = htmlspecialchars($_POST['employmenttype'] ?? '');
-            $staffperstation = htmlspecialchars($_POST['staffperstation'] ?? '');
-
-            // Check if required fields are filled
-            if (empty($jdrequestid) || empty($jdtitle) || empty($novacpost)) {
-                echo 'Missing data for JD request ID or title';
-                return false;
-            }
-
-            if ($this->createOrUpdateStaffRequest($jdrequestid, $jdtitle, $novacpost, $reason, $eduqualification, $proqualification, $function, $techmanagerial, $behavioural, $keyresult, $empdeliveries, $keysuccess)) {
-                echo 'Staff request submitted successfully!';
-            } else {
-                echo 'Failed to submit staff request.';
-                return false;
-            }
-
-            if ($this->createOrUpdateStaffRequestPerStation($jdrequestid, $station, $employmenttype, $staffperstation)) {
-                echo 'Station-specific information saved.';
-            } else {
-                echo 'Failed to save station-specific information.';
-                return false;
-            }
-
-            $_SESSION['form_submitted'] = true;
-            header("Location: " . $_SERVER['REQUEST_URI']);
-            exit;
+        if ($stmt->execute()) {
+            return $stmt->rowCount(); // Use rowCount() instead of insert_id for updates
         }
-
         return false;
     }
+
+    public function createOrUpdateStaffRequestPerStation($jdrequestid, $station, $employmenttype, $staffperstation, $status, $reason, $createdby)
+    {
+        $query = "INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation, status, reason, createdby)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
+              ON DUPLICATE KEY UPDATE station = ?, employmenttype = ?, staffperstation = ?, status = ?, reason = ?, createdby = ?";
+        $stmt = $this->db->prepare($query);
+
+        // Correcting bindValue method
+        $stmt->bindValue(1, $jdrequestid, PDO::PARAM_INT);
+        $stmt->bindValue(2, $station, PDO::PARAM_STR);
+        $stmt->bindValue(3, $employmenttype, PDO::PARAM_STR);
+        $stmt->bindValue(4, $staffperstation, PDO::PARAM_INT);
+        $stmt->bindValue(5, $status, PDO::PARAM_STR);
+        $stmt->bindValue(6, $reason, PDO::PARAM_STR);
+        $stmt->bindValue(7, $createdby, PDO::PARAM_INT);
+        $stmt->bindValue(8, $station, PDO::PARAM_STR);
+        $stmt->bindValue(9, $employmenttype, PDO::PARAM_STR);
+        $stmt->bindValue(10, $staffperstation, PDO::PARAM_INT);
+        $stmt->bindValue(11, $status, PDO::PARAM_STR);
+        $stmt->bindValue(12, $reason, PDO::PARAM_STR);
+        $stmt->bindValue(13, $createdby, PDO::PARAM_INT);
+
+        if ($stmt->execute()) {
+            return $stmt->rowCount(); // Use rowCount() instead of insert_id for updates
+        }
+        return false;
+    }
+
+
+
+
     // Create a new job title
     public function createJobTitle($newjdtitle, $jddepartmentunit, $jdstatus)
     {
@@ -138,7 +97,7 @@ class Revenue
     }
 
     // Get job titles
-    public function getjobtitletbl()
+    public function getJobTitles()
     {
         $sql = "SELECT * FROM jobtitletbl";
         $stmt = $this->db->prepare($sql);
@@ -163,6 +122,7 @@ class Revenue
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Get stations
     public function getStations()
     {
         $stmt = $this->db->prepare("SELECT id, stationname, stationcode FROM stationtbl");
@@ -170,16 +130,11 @@ class Revenue
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Get staff types
     public function getStaffType()
     {
         $stmt = $this->db->prepare("SELECT id, stafftype FROM stafftype");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-}
-
-// Ensure the submission is handled correctly
-$revenue = new Revenue($con);
-if ($revenue->handleStaffRequestSubmission()) {
-    echo "Staff request submitted successfully!";
 }
