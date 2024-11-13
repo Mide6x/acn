@@ -1,4 +1,5 @@
 <?php
+session_start();
 ini_set('max_execution_time', '0');
 
 class Revenue
@@ -47,45 +48,26 @@ class Revenue
     }
 
     // Insert or update staff request per station in the staffrequestperstation table
-    public function createOrUpdateStaffRequestPerStation($jdrequestid, $stationid, $employmenttypeid, $staffperstation)
+    public function createOrUpdateStaffRequestPerStation($jdrequestid, $station, $employmenttype, $staffperstation)
     {
-        $sql = "INSERT INTO staffrequestperstation (jdrequestid, stationid, employmenttypeid, staffperstation)
-                VALUES (:jdrequestid, :stationid, :employmenttypeid, :staffperstation)
+        $sql = "INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation)
+                VALUES (:jdrequestid, :station, :employmenttype, :staffperstation)
                 ON DUPLICATE KEY UPDATE 
-                stationid = :stationid, employmenttypeid = :employmenttypeid, staffperstation = :staffperstation";
+                station = :station, employmenttype = :employmenttype, staffperstation = :staffperstation";
 
         $stmt = $this->db->prepare($sql);
+
+        // Bind the parameters to the placeholders in the SQL query
         $stmt->bindParam(':jdrequestid', $jdrequestid);
-        $stmt->bindParam(':stationid', $stationid);
-        $stmt->bindParam(':employmenttypeid', $employmenttypeid);
+        $stmt->bindParam(':station', $station);
+        $stmt->bindParam(':employmenttype', $employmenttype);
         $stmt->bindParam(':staffperstation', $staffperstation);
 
+        // Execute the statement
         return $stmt->execute();
     }
 
-    // Fetch job titles
-    public function getjobtitletbl()
-    {
-        $sql = "SELECT * FROM jobtitletbl";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function getStations()
-    {
-        $stmt = $this->db->prepare("SELECT id, stationname, stationcode FROM stationtbl");
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function getStaffType()
-    {
-        $stmt = $this->db->prepare("SELECT id, stafftype FROM stafftype");
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
+    // Handle staff request submission and echo results directly
     public function handleStaffRequestSubmission()
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -105,22 +87,33 @@ class Revenue
             $employmenttype = htmlspecialchars($_POST['employmenttype'] ?? '');
             $staffperstation = htmlspecialchars($_POST['staffperstation'] ?? '');
 
-
+            // Check if required fields are filled
             if (empty($jdrequestid) || empty($jdtitle) || empty($novacpost)) {
-                error_log('Missing data for JD request ID or title');
+                echo 'Missing data for JD request ID or title';
                 return false;
             }
 
-            $this->createOrUpdateStaffRequest($jdrequestid, $jdtitle, $novacpost, $reason, $eduqualification, $proqualification, $function, $techmanagerial, $behavioural, $keyresult, $empdeliveries, $keysuccess);
+            if ($this->createOrUpdateStaffRequest($jdrequestid, $jdtitle, $novacpost, $reason, $eduqualification, $proqualification, $function, $techmanagerial, $behavioural, $keyresult, $empdeliveries, $keysuccess)) {
+                echo 'Staff request submitted successfully!';
+            } else {
+                echo 'Failed to submit staff request.';
+                return false;
+            }
 
-            $this->createOrUpdateStaffRequestPerStation($jdrequestid, $station, $employmenttype, $staffperstation);
+            if ($this->createOrUpdateStaffRequestPerStation($jdrequestid, $station, $employmenttype, $staffperstation)) {
+                echo 'Station-specific information saved.';
+            } else {
+                echo 'Failed to save station-specific information.';
+                return false;
+            }
 
-            return true;
+            $_SESSION['form_submitted'] = true;
+            header("Location: " . $_SERVER['REQUEST_URI']);
+            exit;
         }
+
         return false;
     }
-
-
     // Create a new job title
     public function createJobTitle($newjdtitle, $jddepartmentunit, $jdstatus)
     {
@@ -142,6 +135,46 @@ class Revenue
         $stmt->bindParam(':department_unit', $jddepartmentunit);
         $stmt->bindParam(':status', $jdstatus);
         return $stmt->execute();
+    }
+
+    // Get job titles
+    public function getjobtitletbl()
+    {
+        $sql = "SELECT * FROM jobtitletbl";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Get department units
+    public function getDepartmentUnit()
+    {
+        $stmt = $this->db->prepare("SELECT id, deptunitname, deptunitcode FROM departmentunit WHERE status = 'Active'");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Get positions by department
+    public function getPositionsByDepartment($deptunitcode)
+    {
+        $stmt = $this->db->prepare("SELECT id, poname FROM position WHERE deptunitcode = :deptunitcode AND postatus = 'Active'");
+        $stmt->bindParam(':deptunitcode', $deptunitcode);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getStations()
+    {
+        $stmt = $this->db->prepare("SELECT id, stationname, stationcode FROM stationtbl");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getStaffType()
+    {
+        $stmt = $this->db->prepare("SELECT id, stafftype FROM stafftype");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 

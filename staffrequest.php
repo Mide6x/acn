@@ -65,6 +65,24 @@
             background-color: #fff;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+
+        .button-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .small-button {
+            background-color: #1E90FF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .small-button:hover {
+            background-color: #4682B4;
+        }
     </style>
 </head>
 
@@ -99,7 +117,7 @@
                 <select id="jdtitle" name="jdtitle" required>
                     <option value="">Select Job Title</option>
                     <?php foreach ($jobtitletbl as $title): ?>
-                        <option value="<?= htmlspecialchars($title['id']) ?>"><?= htmlspecialchars($title['jdtitle']) ?></option>
+                        <option value="<?= htmlspecialchars($title['jdtitle']) ?>"><?= htmlspecialchars($title['jdtitle']) ?></option>
                     <?php endforeach; ?>
                 </select><br>
 
@@ -157,7 +175,7 @@
                 <select id="station" name="station" required>
                     <option value="">Select Station</option>
                     <?php foreach ($stations as $station): ?>
-                        <option value="<?= htmlspecialchars($station['id']) ?>"><?= htmlspecialchars($station['stationname']) ?></option>
+                        <option value="<?= htmlspecialchars($station['stationcode']) ?>"><?= htmlspecialchars($station['stationname']) ?></option>
                     <?php endforeach; ?>
                 </select><br>
 
@@ -166,7 +184,7 @@
                 <select id="employmenttype" name="employmenttype" required>
                     <option value="">Select Employment Type</option>
                     <?php foreach ($stafftype as $type): ?>
-                        <option value="<?= htmlspecialchars($type['id']) ?>"><?= htmlspecialchars($type['stafftype']) ?></option>
+                        <option value="<?= htmlspecialchars($type['stafftype']) ?>"><?= htmlspecialchars($type['stafftype']) ?></option>
                     <?php endforeach; ?>
                 </select><br>
 
@@ -180,6 +198,13 @@
                 <!-- Submit Button -->
                 <input type="submit" value="Submit">
             </form>
+
+            <!-- Link to Job title Creation Page -->
+            <div class="button-container">
+                <a href="jobtitle.php">
+                    <button class="small-button">Create Job Title</button>
+                </a>
+            </div>
         </section>
     </main>
 
