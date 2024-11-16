@@ -221,8 +221,9 @@ document.addEventListener('DOMContentLoaded', loadStaffRequests);
 
 function loadStaffRequests() {
     const tableBody = document.getElementById('staffRequestTableBody');
+    const deptunitcode = document.getElementById('availablevacant').textContent.split(':')[0].trim().split(' ').pop();
     
-    fetch('parameter/parameter.php?action=get_requests')
+    fetch(`parameter/parameter.php?action=get_requests&deptunitcode=${deptunitcode}`)
         .then(response => response.json())
         .then(data => {
             if (data.requests && data.requests.length > 0) {
@@ -230,12 +231,20 @@ function loadStaffRequests() {
                     <tr>
                         <td>${request.jdrequestid}</td>
                         <td>${request.jdtitle}</td>
-                        <td>${request.total_staff} (${request.station_count} stations)</td>
+                        <td>${request.novacpost} (${request.station_count} stations)</td>
                         <td>${request.status}</td>
                         <td>
-                            <button onclick="toggleStationDetails('${request.jdrequestid}')" class="btn btn-sm btn-info">
-                                View Stations
-                            </button>
+                            ${request.status === 'draft' ? 
+                                `<button onclick="editRequest('${request.jdrequestid}')" class="btn btn-sm btn-warning">
+                                    Edit
+                                </button>
+                                <button onclick="submitRequest('${request.jdrequestid}')" class="btn btn-sm btn-primary">
+                                    Submit
+                                </button>
+                                <button onclick="toggleStationDetails('${request.jdrequestid}')" class="btn btn-sm btn-info">
+                                    View Stations
+                                </button>`
+                            : ''}
                         </td>
                     </tr>
                     <tr id="stations-${request.jdrequestid}" style="display: none;">
@@ -266,10 +275,31 @@ function loadStaffRequests() {
             } else {
                 tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No requests found</td></tr>';
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Error loading requests</td></tr>';
+        });
+}
+
+function editRequest(jdrequestid) {
+    fetch(`parameter/parameter.php?action=get_request_details&jdrequestid=${jdrequestid}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.request) {
+                // Populate form with existing data
+                document.getElementById('jdrequestid').textContent = `Request ID: ${data.request.jdrequestid}`;
+                document.getElementById('jdtitle').value = data.request.jdtitle;
+                document.getElementById('totalStaff').value = data.request.novacpost;
+                
+                // Load station requests into global array
+                stationRequests = data.request.stations.map(station => ({
+                    station: station.station,
+                    employmenttype: station.employmenttype,
+                    staffperstation: parseInt(station.staffperstation)
+                }));
+                
+                updateStationRequestsTable();
+                
+                // Scroll to form
+                document.getElementById('staffRequestForm').scrollIntoView();
+            }
         });
 }
 

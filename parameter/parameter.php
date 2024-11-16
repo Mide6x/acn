@@ -68,6 +68,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $requests = $revenue->getRequestsByDepartment($deptunitcode);
                 echo json_encode(['requests' => $requests]);
                 break;
+
+            case 'get_request_details':
+                $request = $revenue->getRequestDetails($_GET['jdrequestid']);
+                echo json_encode(['request' => $request]);
+                break;
         }
     } catch (Exception $e) {
         http_response_code(400);

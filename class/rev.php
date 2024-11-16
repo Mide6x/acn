@@ -314,10 +314,25 @@ class Revenue
     // Get main request details
     public function getRequestDetails($jdrequestid)
     {
-        $query = "SELECT * FROM staffrequest WHERE jdrequestid = ?";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$jdrequestid]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        try {
+            // Get main request details
+            $mainQuery = "SELECT * FROM staffrequest WHERE jdrequestid = ?";
+            $mainStmt = $this->db->prepare($mainQuery);
+            $mainStmt->execute([$jdrequestid]);
+            $request = $mainStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($request) {
+                // Get station requests
+                $stationQuery = "SELECT * FROM staffrequestperstation WHERE jdrequestid = ?";
+                $stationStmt = $this->db->prepare($stationQuery);
+                $stationStmt->execute([$jdrequestid]);
+                $request['stations'] = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            return $request;
+        } catch (Exception $e) {
+            throw new Exception("Error getting request details: " . $e->getMessage());
+        }
     }
 
     // Get all station requests for a request ID
