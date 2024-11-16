@@ -42,28 +42,6 @@ function addStation() {
     });
 }
 
-function submitRequest() {
-    const jdrequestid = document.getElementById('jdrequestid').value;
-    
-    fetch('parameter/parameter.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            action: 'submit_request',
-            jdrequestid: jdrequestid
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Request submitted successfully');
-            window.location.reload();
-        }
-    });
-}
-
 let stationRequests = []; // Store all station requests
 
 function addStationRequest() {
@@ -363,3 +341,30 @@ function submitstaffrequest() {
 
     return false;
 }
+
+function submitRequest(jdrequestid) {
+    if (confirm('Are you sure you want to submit this request? Once submitted, it cannot be edited.')) {
+        const formData = new FormData();
+        formData.append('action', 'submit_request');
+        formData.append('jdrequestid', jdrequestid);
+
+        fetch('parameter/parameter.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Request submitted successfully');
+                loadStaffRequests();
+            } else {
+                alert('Error submitting request: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error submitting request: ' + error.message);
+        });
+    }
+}
+

@@ -32,8 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             case 'submit_request':
-                $result = $revenue->submitRequest($_POST['jdrequestid']);
-                echo json_encode(['success' => $result]);
+                try {
+                    $result = $revenue->submitRequest($_POST['jdrequestid']);
+                    echo json_encode(['success' => $result]);
+                } catch (Exception $e) {
+                    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                }
                 break;
 
             case 'hr_action':
