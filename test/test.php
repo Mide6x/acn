@@ -1,6 +1,6 @@
 <?php
 require_once('../include/config.php');
-require_once('../class/Revenue.php');
+require_once('../class/rev.php');
 
 function runTest($name, $callback)
 {
@@ -23,6 +23,27 @@ $revenue = new Revenue($con);
 $deptunitcode = 'ICT';
 $createdby = 'adewole.o@acn.aero';
 
+// First, ensure we have valid reference data
+runTest("Setup Reference Data", function () use ($con) {
+    // Insert department if not exists
+    $stmt = $con->prepare("INSERT IGNORE INTO departmentunit (deptunitcode, deptunitname) VALUES (?, ?)");
+    $stmt->execute(['ICT', 'Information Technology']);
+
+    // Insert job title if not exists
+    $stmt = $con->prepare("INSERT IGNORE INTO jobtitletbl (jdtitle, jddescription) VALUES (?, ?)");
+    $stmt->execute(['Senior Developer', 'Senior Software Developer Position']);
+
+    // Insert station if not exists
+    $stmt = $con->prepare("INSERT IGNORE INTO stationtbl (stationcode, stationname) VALUES (?, ?)");
+    $stmt->execute(['LOS', 'Lagos']);
+
+    // Insert staff type if not exists
+    $stmt = $con->prepare("INSERT IGNORE INTO stafftype (stafftype, stprefix) VALUES (?, ?)");
+    $stmt->execute(['Permanent', 'PER']);
+
+    return true;
+});
+
 // Test available positions
 runTest("Get Available Positions", function () use ($revenue, $deptunitcode) {
     $positions = $revenue->getAvailablePositions($deptunitcode);
@@ -30,11 +51,11 @@ runTest("Get Available Positions", function () use ($revenue, $deptunitcode) {
 });
 
 // Test staff request creation
-$requestId = uniqid('REQ');
+$requestId = 'REQ' . date('Ymd') . sprintf('%03d', rand(1, 999));
 runTest("Create Staff Request", function () use ($revenue, $requestId, $deptunitcode, $createdby) {
-    return $revenue->createOrUpdateStaffRequest(
+    return $revenue->createStaffRequest(
         $requestId,
-        'Senior Developer',
+        'Senior Developer', // This must match a jdtitle in jobtitletbl
         2,
         $deptunitcode,
         'draft',
@@ -44,10 +65,10 @@ runTest("Create Staff Request", function () use ($revenue, $requestId, $deptunit
 
 // Test station request creation
 runTest("Create Station Request", function () use ($revenue, $requestId, $createdby) {
-    return $revenue->createOrUpdateStaffRequestPerStation(
+    return $revenue->createStaffRequestPerStation(
         $requestId,
-        'LOS',
-        'Permanent',
+        'LOS',          // This must match a stationcode in stationtbl
+        'Permanent',    // This must match a stafftype in stafftype table
         1,
         'draft',
         $createdby

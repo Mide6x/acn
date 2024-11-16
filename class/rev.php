@@ -8,24 +8,170 @@ class Revenue
         $this->db = $con;
     }
 
-    // Generate unique request ID
+    // Generate unique request ID with format REQ + YEAR + 4-digit sequence
     public function generateRequestId()
     {
         $year = date('Y');
+        $query = "SELECT MAX(SUBSTRING(jdrequestid, 8)) as max_seq 
+                 FROM staffrequest 
+                 WHERE jdrequestid LIKE 'REQ{$year}%'";
 
-        do {
-            // Generate a random 4-digit number
-            $randomNumber = str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
-            $requestId = "REQ" . $year . $randomNumber;
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            // Check if this ID already exists
-            $query = "SELECT COUNT(*) as count FROM staffrequest WHERE jdrequestid = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$requestId]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        } while ($result['count'] > 0); // Keep generating until we find an unused ID
+        $sequence = $result['max_seq'] ? intval($result['max_seq']) + 1 : 1;
+        return sprintf("REQ%d%04d", $year, $sequence);
+    }
 
-        return $requestId;
+    // Save draft request
+    public function saveDraftRequest($jdrequestid, $jdtitle, $novacpost, $deptunitcode, $createdby)
+    {
+        try {
+            // Validate available positions
+            $availablePositions = $this->getAvailablePositions($deptunitcode);
+            if ($novacpost > $availablePositions) {
+                throw new Exception("Requested positions exceed available positions");
+            }
+
+            $sql = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby)
+                    VALUES (:jdrequestid, :jdtitle, :novacpost, :deptunitcode, 'draft', :createdby)
+                    ON DUPLICATE KEY UPDATE
+                    jdtitle = :jdtitle,
+                    novacpost = :novacpost";
+
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([
+                ':jdrequestid' => $jdrequestid,
+                ':jdtitle' => $jdtitle,
+                ':novacpost' => $novacpost,
+                ':deptunitcode' => $deptunitcode,
+                ':createdby' => $createdby
+            ]);
+        } catch (Exception $e) {
+            throw new Exception("Error saving draft: " . $e->getMessage());
+        }
+    }
+
+    // Save station request
+    public function saveStationRequest($jdrequestid, $station, $employmenttype, $staffperstation, $createdby)
+    {
+        try {
+            // Get main request status
+            $mainStatus = $this->getRequestStatus($jdrequestid);
+            if ($mainStatus === 'pending') {
+                throw new Exception("Cannot modify a pending request");
+            }
+
+            $sql = "INSERT INTO staffrequestperstation 
+                    (jdrequestid, station, employmenttype, staffperstation, status, createdby)
+                    VALUES (:jdrequestid, :station, :employmenttype, :staffperstation, 'draft', :createdby)";
+
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([
+                ':jdrequestid' => $jdrequestid,
+                ':station' => $station,
+                ':employmenttype' => $employmenttype,
+                ':staffperstation' => $staffperstation,
+                ':createdby' => $createdby
+            ]);
+        } catch (Exception $e) {
+            throw new Exception("Error saving station request: " . $e->getMessage());
+        }
+    }
+
+    // Submit final request
+    public function submitRequest($jdrequestid)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Get request details first
+            $request = $this->getRequestDetails($jdrequestid);
+
+            // Validate total staff count matches novacpost
+            $this->validateStaffCount($request['novacpost'], $this->getAllStationRequests($jdrequestid));
+
+            // Update main request status
+            $sql1 = "UPDATE staffrequest SET status = 'pending' WHERE jdrequestid = :jdrequestid";
+            $stmt1 = $this->db->prepare($sql1);
+            $stmt1->execute([':jdrequestid' => $jdrequestid]);
+
+            // Update all station requests status
+            $sql2 = "UPDATE staffrequestperstation SET status = 'pending' 
+                    WHERE jdrequestid = :jdrequestid AND status = 'draft'";
+            $stmt2 = $this->db->prepare($sql2);
+            $stmt2->execute([':jdrequestid' => $jdrequestid]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error submitting request: " . $e->getMessage());
+        }
+    }
+
+    // HR Methods
+    public function updateStationRequestStatus($jdrequestid, $station, $status, $reason = null)
+    {
+        try {
+            // Validate status
+            $validStatuses = ['approved', 'declined', 'pending'];
+            if (!in_array($status, $validStatuses)) {
+                throw new Exception("Invalid status provided");
+            }
+
+            $sql = "UPDATE staffrequestperstation 
+                    SET status = :status, 
+                        reason = :reason,
+                        modifiedby = :modifiedby,
+                        modifieddandt = NOW()
+                    WHERE jdrequestid = :jdrequestid 
+                    AND station = :station";
+
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute([
+                ':status' => $status,
+                ':reason' => $reason,
+                ':modifiedby' => $_SESSION['email'] ?? DEFAULT_CREATED_BY,
+                ':jdrequestid' => $jdrequestid,
+                ':station' => $station
+            ]);
+
+            if ($result) {
+                // Update main request status if all sub-requests are processed
+                $this->updateMainRequestStatus($jdrequestid);
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            throw new Exception("Error updating status: " . $e->getMessage());
+        }
+    }
+
+    // Get request summary for display
+    public function getRequestSummary($jdrequestid, $format = 'json')
+    {
+        $query = "SELECT 
+                    COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
+                    COUNT(CASE WHEN status = 'declined' THEN 1 END) as declined,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
+                 FROM staffrequestperstation 
+                 WHERE jdrequestid = ?";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$jdrequestid]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($format === 'html') {
+            return "<div class='request-summary'>
+                        <p>Approved: {$result['approved']}</p>
+                        <p>Declined: {$result['declined']}</p>
+                        <p>Pending: {$result['pending']}</p>
+                    </div>";
+        }
+
+        return $result;
     }
 
     // Get job titles for dropdown
@@ -117,24 +263,6 @@ class Revenue
         }
     }
 
-    // Save station-specific request
-    public function saveStationRequest($jdrequestid, $station, $employmenttype, $staffperstation, $status, $createdby)
-    {
-        $query = "INSERT INTO staffrequestperstation 
-                 (jdrequestid, station, employmenttype, staffperstation, status, createdby) 
-                 VALUES (?, ?, ?, ?, ?, ?)";
-
-        $stmt = $this->db->prepare($query);
-        return $stmt->execute([
-            $jdrequestid,
-            $station,
-            $employmenttype,
-            $staffperstation,
-            $status,
-            $createdby
-        ]);
-    }
-
     // Add method to validate total staff count
     public function validateStaffCount($novacpost, $stationRequests)
     {
@@ -165,38 +293,6 @@ class Revenue
             $output .= "</div>";
         }
         return $output;
-    }
-
-    // Update status of a station request
-    public function updateStationRequestStatus($jdrequestid, $station, $status, $reason = null)
-    {
-        $query = "UPDATE staffrequestperstation 
-                 SET status = ?, reason = ? 
-                 WHERE jdrequestid = ? AND station = ?";
-
-        $stmt = $this->db->prepare($query);
-        return $stmt->execute([$status, $reason, $jdrequestid, $station]);
-    }
-
-    // Get summary of request statuses
-    public function getRequestSummary($jdrequestid)
-    {
-        $query = "SELECT 
-                    COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
-                    COUNT(CASE WHEN status = 'declined' THEN 1 END) as declined,
-                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
-                 FROM staffrequestperstation 
-                 WHERE jdrequestid = ?";
-
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$jdrequestid]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        return "<div class='request-summary'>
-                    <p>Approved: {$result['approved']}</p>
-                    <p>Declined: {$result['declined']}</p>
-                    <p>Pending: {$result['pending']}</p>
-                </div>";
     }
 
     // Check if request is editable
@@ -424,12 +520,49 @@ class Revenue
 
     public function getRequestsByDepartment($deptunitcode)
     {
-        $query = "SELECT * FROM staffrequest 
-                  WHERE deptunitcode = ? 
-                  ORDER BY createdon DESC";
+        try {
+            // First get all main requests for the department
+            $query = "SELECT sr.*, 
+                      (SELECT COUNT(*) FROM staffrequestperstation WHERE jdrequestid = sr.jdrequestid) as station_count,
+                      (SELECT SUM(staffperstation) FROM staffrequestperstation WHERE jdrequestid = sr.jdrequestid) as total_staff
+                      FROM staffrequest sr
+                      WHERE sr.deptunitcode = ? 
+                      ORDER BY sr.dandt DESC";
 
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$deptunitcode]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$deptunitcode]);
+            $mainRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // For each main request, get its station requests
+            foreach ($mainRequests as &$request) {
+                $stationQuery = "SELECT station, employmenttype, staffperstation, status 
+                               FROM staffrequestperstation 
+                               WHERE jdrequestid = ?";
+
+                $stationStmt = $this->db->prepare($stationQuery);
+                $stationStmt->execute([$request['jdrequestid']]);
+                $request['stations'] = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            return $mainRequests;
+        } catch (Exception $e) {
+            throw new Exception("Error fetching requests: " . $e->getMessage());
+        }
+    }
+
+    public function createStaffRequest($requestId, $jdtitle, $novacpost, $deptunitcode, $status, $createdby)
+    {
+        $sql = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby) 
+                VALUES (?, ?, ?, ?, ?, ?)";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$requestId, $jdtitle, $novacpost, $deptunitcode, $status, $createdby]);
+    }
+
+    public function createStaffRequestPerStation($requestId, $station, $employmenttype, $staffperstation, $status, $createdby)
+    {
+        $sql = "INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation, status, createdby) 
+                VALUES (?, ?, ?, ?, ?, ?)";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$requestId, $station, $employmenttype, $staffperstation, $status, $createdby]);
     }
 }

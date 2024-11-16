@@ -1,21 +1,21 @@
 <?php
 session_start();
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acn/include/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acn/class/Revenue.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
 
 // Include header, sidebar, and footer
-include("addon\header");
-include("addon\sidebar");
+include("addon\header.html");
+include("addon\sidebar.html");
 
 $revenue = new Revenue($con);
 
 // Get dropdown data
-$jobTitles = $revenue->getJobTitles();
-$stations = $revenue->getStations();
-$staffTypes = $revenue->getStaffTypes();
+
+
 $requestId = $revenue->generateRequestId();
 $availablepositions = $revenue->getAvailablePositions($_SESSION['deptunitcode']);
+$staffRequests = $revenue->getRequestsByDepartment($_SESSION['deptunitcode']);
 
 ?>
 <main id="main" class="main">
@@ -40,42 +40,52 @@ $availablepositions = $revenue->getAvailablePositions($_SESSION['deptunitcode'])
 
                                 <form>
                                     <div class="row mb-3">
-                                        <label for="jdtitle" class="col-sm-2 col-form-label">Job Title</label>
-                                        <div class="col-sm-10">
-                                            <select id="jdtitle" class="form-select" name="jdtitle"
-                                                style="border-radius: 8px;">
-                                                <option selected disabled value>Select</option>
-                                                <?php echo $jobTitles; ?>
+                                        <div class="col-sm-6">
+                                            <label class="form-label">Job Title</label>
+                                            <select class="form-control" id="jdtitle" name="jdtitle" style="border-radius: 8px" required>
+                                                <option value="">Select Job Title</option>
+                                                <?php echo $revenue->getJobTitles(); ?>
                                             </select>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label">Total Staff Required</label>
+                                            <input type="number" class="form-control" id="totalStaff" name="totalStaff"
+                                                style="border-radius: 8px" required min="1">
                                         </div>
                                     </div>
-                                    <h6 style="margin-bottom: 20px; margin-top: 40px; font-size: 13px; font-weight: 700;">Staff Per Station</h6>
-                                    <div class="row mb-3">
-                                        <div class="col-md-4">
-                                            <label for="employmenttype" class="form-label"
-                                                style="font-weight: bolder;  margin-bottom: 20px;">Employment Type</label>
-                                            <select id="employmenttype" name="employmenttype" class="form-select"
-                                                style="border-radius: 8px">
-                                                <option selected disabled value>Select</option>
-                                                <?php echo $staffTypes; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label for="station" class="form-label"
-                                                style="font-weight: bolder; margin-bottom: 20px;">Station</label>
-                                            <select id="station" name="station" class="form-select"
-                                                style="border-radius: 8px">
-                                                <option selected disabled value>Select</option>
-                                                <?php echo $stations; ?>
-                                            </select>
-                                        </div>
 
-                                        <div class="col-md-4">
-                                            <label for="staffperstation" class="form-label"
-                                                style="font-weight: bolder; margin-bottom: 20px;">No. Of Staff
-                                                Required</label>
-                                            <input type="text" class="form-control" id="staffperstation"
-                                                name="staffperstation" style="border-radius: 8px">
+                                    <div id="stationRequests">
+                                        <div class="station-request">
+                                            <div class="row mb-3">
+                                                <div class="col-sm-4">
+                                                    <label class="form-label">Station</label>
+                                                    <select class="form-control" id="station" name="station" style="border-radius: 8px" required>
+                                                        <option value="">Select Station</option>
+                                                        <?php echo $revenue->getStations(); ?>
+                                                    </select>
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <label class="form-label">Employment Type</label>
+                                                    <select class="form-control" id="employmenttype" name="employmenttype" style="border-radius: 8px" required>
+                                                        <option value="">Select Type</option>
+                                                        <?php echo $revenue->getStaffTypes(); ?>
+                                                    </select>
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <label class="form-label">Staff Per Station</label>
+                                                    <input type="number" class="form-control staffperstation" id="staffperstation" name="staffperstation"
+                                                        style="border-radius: 8px" required min="1">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-sm-12">
+                                            <button type="button" class="btn btn-secondary" onclick="addStationRequest()"
+                                                style="display: block; margin: 0 auto;">
+                                                + Add Another Station
+                                            </button>
                                         </div>
                                     </div>
 
@@ -85,7 +95,7 @@ $availablepositions = $revenue->getAvailablePositions($_SESSION['deptunitcode'])
                                                 onclick="return createstaffreqperstation()"
                                                 style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
                                                 onmouseover="this.style.backgroundColor='#000000';"
-                                                onmouseout="this.style.backgroundColor='#fc7f14';">Add
+                                                onmouseout="this.style.backgroundColor='#fc7f14';">Save Request
                                             </button>
                                         </div>
                                     </div>
@@ -140,6 +150,6 @@ $availablepositions = $revenue->getAvailablePositions($_SESSION['deptunitcode'])
 
 </main><!-- End #main -->
 <?php
-include("addon\footer");
+include("addon\footer.html");
 ?>
 <script src="assets\js\ac.js"></script>

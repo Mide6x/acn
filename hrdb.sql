@@ -210,9 +210,9 @@ INSERT INTO positiontbl (deptunitcode, poname, createdby) VALUES
 ('DGM', 'Digital Marketing Manager', 'adewole.o@acn.aero');
 
 INSERT INTO jobtitletbl (deptunitcode, jdtitle, jddescription, eduqualification, jdposition, createdby) VALUES
-('PLT', 'Senior Captain', 'Lead pilot position with extensive experience', 'ATPL License', 'Senior Management', 'adewole.o@acn.aero'),
-('RMP', 'Ramp Operations Manager', 'Oversee all ramp operations', 'Bachelors Degree', 'Middle Management', 'adewole.o@acn.aero'),
-('DGM', 'Digital Marketing Specialist', 'Handle digital marketing campaigns', 'Bachelors Degree', 'Officer', 'adewole.o@acn.aero');
+('ICT', 'Senior Developer', 'Lead pilot position with extensive experience', 'Bachelors Degree', 'Senior Management', 'adewole.o@acn.aero'),
+('ICT', 'Software Engineer', 'Oversee all ramp operations', 'Bachelors Degree', 'Middle Management', 'adewole.o@acn.aero'),
+('ICT', 'IT Support Officer', 'Handle digital marketing campaigns', 'Bachelors Degree', 'Officer', 'adewole.o@acn.aero');
 
 -- Fifth-level inserts
 INSERT INTO reportingline (rponame, linemanager, createdby) VALUES
