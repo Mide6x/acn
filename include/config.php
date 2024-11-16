@@ -5,7 +5,9 @@ ini_set('max_execution_time', 100);
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "hititdatadump";
+$dbname = "hrdb";
+
+require_once 'constants.php';
 
 try {
 	$con = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
