@@ -2,9 +2,9 @@
 function initializeStaffRequest() {
     // Generate request ID on page load
     fetch('parameter/parameter.php?action=generate_id')
-        .then(response => response.json())
+        .then(response => response.text())
         .then(data => {
-            document.getElementById('jdrequestid').value = data.requestId;
+            document.getElementById('jdrequestid').value = data;
         });
 }
 
@@ -16,9 +16,9 @@ function saveDraft() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => response.text())
     .then(data => {
-        if (data.success) {
+        if (data === 'success') {
             alert('Draft saved successfully');
         } else {
             alert('Error saving draft');
@@ -34,9 +34,9 @@ function addStation() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => response.text())
     .then(data => {
-        if (data.success) {
+        if (data === 'success') {
             loadStationRequests();
         }
     });
@@ -145,9 +145,9 @@ function createstaffreqperstation() {
         method: 'POST',
         body: mainRequestData
     })
-    .then(response => response.json())
+    .then(response => response.text())
     .then(data => {
-        if (data.success) {
+        if (data === 'success') {
             // Save all station requests
             return Promise.all(stationRequests.map(request => {
                 const stationData = new FormData();
@@ -160,7 +160,7 @@ function createstaffreqperstation() {
                 return fetch('parameter/parameter.php', {
                     method: 'POST',
                     body: stationData
-                }).then(response => response.json());
+                }).then(response => response.text());
             }));
         }
         throw new Error('Failed to save main request');
@@ -185,11 +185,9 @@ function loadstaffreqperstation() {
     const container = document.getElementById('loadstaffreqperstation');
 
     fetch(`parameter/parameter.php?action=get_stations&jdrequestid=${jdrequestid}`)
-    .then(response => response.json())
+    .then(response => response.text())
     .then(data => {
-        if (data.stations) {
-            container.innerHTML = data.stations;
-        }
+        container.innerHTML = data;
     })
     .catch(error => console.error('Error:', error));
 }
@@ -202,57 +200,9 @@ function loadStaffRequests() {
     const deptunitcode = document.getElementById('availablevacant').textContent.split(':')[0].trim().split(' ').pop();
     
     fetch(`parameter/parameter.php?action=get_requests&deptunitcode=${deptunitcode}`)
-        .then(response => response.json())
+        .then(response => response.text())
         .then(data => {
-            if (data.requests && data.requests.length > 0) {
-                tableBody.innerHTML = data.requests.map(request => `
-                    <tr>
-                        <td>${request.jdrequestid}</td>
-                        <td>${request.jdtitle}</td>
-                        <td>${request.novacpost} (${request.station_count} stations)</td>
-                        <td>${request.status}</td>
-                        <td>
-                            ${request.status === 'draft' ? 
-                                `<button onclick="editRequest('${request.jdrequestid}')" class="btn btn-sm btn-warning">
-                                    Edit
-                                </button>
-                                <button onclick="submitRequest('${request.jdrequestid}')" class="btn btn-sm btn-primary">
-                                    Submit
-                                </button>
-                                <button onclick="toggleStationDetails('${request.jdrequestid}')" class="btn btn-sm btn-info">
-                                    View Stations
-                                </button>`
-                            : ''}
-                        </td>
-                    </tr>
-                    <tr id="stations-${request.jdrequestid}" style="display: none;">
-                        <td colspan="5">
-                            <table class="table table-bordered table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Station</th>
-                                        <th>Employment Type</th>
-                                        <th>Staff Count</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${request.stations.map(station => `
-                                        <tr>
-                                            <td>${station.station}</td>
-                                            <td>${station.employmenttype}</td>
-                                            <td>${station.staffperstation}</td>
-                                            <td>${station.status}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                `).join('');
-            } else {
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No requests found</td></tr>';
-            }
+            tableBody.innerHTML = data;
         });
 }
 
@@ -308,9 +258,9 @@ function submitstaffrequest() {
         method: 'POST',
         body: mainRequestData
     })
-    .then(response => response.json())
+    .then(response => response.text())
     .then(data => {
-        if (data.success) {
+        if (data === 'success') {
             // Add all station requests
             return Promise.all(stationRequests.map(request => {
                 const stationData = new FormData();
@@ -323,7 +273,7 @@ function submitstaffrequest() {
                 return fetch('parameter/parameter.php', {
                     method: 'POST',
                     body: stationData
-                }).then(response => response.json());
+                }).then(response => response.text());
             }));
         }
         throw new Error('Failed to save main request');
@@ -352,13 +302,13 @@ function submitRequest(jdrequestid) {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => response.text())
         .then(data => {
-            if (data.success) {
+            if (data === 'success') {
                 alert('Request submitted successfully');
                 loadStaffRequests();
             } else {
-                alert('Error submitting request: ' + (data.error || 'Unknown error'));
+                alert('Error submitting request: ' + data);
             }
         })
         .catch(error => {
