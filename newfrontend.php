@@ -5,8 +5,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
 
 // Include header, sidebar, and footer
-include("addon\header.html");
-include("addon\sidebar.html");
+include("addon/header.html");
+include("addon/sidebar.html");
 
 $revenue = new Revenue($con);
 
@@ -150,6 +150,6 @@ $staffRequests = $revenue->getRequestsByDepartment($_SESSION['deptunitcode']);
 
 </main><!-- End #main -->
 <?php
-include("addon\footer.html");
+include("addon/footer.html");
 ?>
 <script src="assets\js\ac.js"></script>
