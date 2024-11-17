@@ -580,4 +580,34 @@ class Revenue
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([$requestId, $station, $employmenttype, $staffperstation, $status, $createdby]);
     }
+
+    public function getPendingRequests()
+    {
+        try {
+            // Get all requests with pending status
+            $query = "SELECT sr.* 
+                     FROM staffrequest sr 
+                     WHERE sr.status = 'pending'
+                     ORDER BY sr.dandt DESC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // For each main request, get its station requests
+            foreach ($requests as &$request) {
+                $stationQuery = "SELECT station, employmenttype, staffperstation, status, reason 
+                               FROM staffrequestperstation 
+                               WHERE jdrequestid = ?";
+
+                $stationStmt = $this->db->prepare($stationQuery);
+                $stationStmt->execute([$request['jdrequestid']]);
+                $request['stations'] = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            return $requests;
+        } catch (Exception $e) {
+            throw new Exception("Error fetching pending requests: " . $e->getMessage());
+        }
+    }
 }
