@@ -124,8 +124,8 @@ class Revenue
             $sql = "UPDATE staffrequestperstation 
                     SET status = :status, 
                         reason = :reason,
-                        modifiedby = :modifiedby,
-                        modifieddandt = NOW()
+                        hrmodifiedby = :hrmodifiedby,
+                        hrmodifieddandt = NOW()
                     WHERE jdrequestid = :jdrequestid 
                     AND station = :station";
 
@@ -133,7 +133,7 @@ class Revenue
             $result = $stmt->execute([
                 ':status' => $status,
                 ':reason' => $reason,
-                ':modifiedby' => $_SESSION['email'] ?? DEFAULT_CREATED_BY,
+                ':hrmodifiedby' => $_SESSION['email'] ?? DEFAULT_CREATED_BY,
                 ':jdrequestid' => $jdrequestid,
                 ':station' => $station
             ]);
@@ -419,16 +419,26 @@ class Revenue
                  FROM staffrequest 
                  WHERE deptunitcode = ? AND status = 'pending'";
 
+
         $stmt = $this->db->prepare($query);
         $stmt->execute([$deptunitcode]);
         $pendingRequests = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        // Get sum of processed requests
+        $query = "SELECT COALESCE(SUM(novacpost), 0) as processed_count 
+                 FROM staffrequest 
+                 WHERE deptunitcode = ? AND status = 'processed'";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$deptunitcode]);
+        $processedRequests = $stmt->fetch(PDO::FETCH_ASSOC);
+
         $currentCount = intval($currentEmployees['current_count']);
         $pendingCount = intval($pendingRequests['pending_count']);
+        $processedCount = intval($processedRequests['processed_count']);
         $shcnostaff = intval($headcount['shcnostaff']);
-
         // Calculate available positions
-        $availablePositions = $shcnostaff - ($currentCount + $pendingCount);
+        $availablePositions = $shcnostaff - ($currentCount + $pendingCount + $processedCount);
 
         // Throw exception if requested positions exceed available positions
         if ($requestedPositions > $availablePositions) {
@@ -468,16 +478,28 @@ class Revenue
                  FROM staffrequest 
                  WHERE deptunitcode = ? AND status = 'pending'";
 
+
+
         $stmt = $this->db->prepare($query);
         $stmt->execute([$deptunitcode]);
         $pendingRequests = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        // Get sum of processed requests
+        $query = "SELECT COALESCE(SUM(novacpost), 0) as processed_count 
+                 FROM staffrequest 
+                 WHERE deptunitcode = ? AND status = 'processed'";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$deptunitcode]);
+        $processedRequests = $stmt->fetch(PDO::FETCH_ASSOC);
+
         $currentCount = intval($currentEmployees['current_count']);
         $pendingCount = intval($pendingRequests['pending_count']);
+        $processedCount = intval($processedRequests['processed_count']);
         $shcnostaff = intval($headcount['shcnostaff']);
 
-        // Available positions = shcnostaff - (current employees + pending requests)
-        $availablePositions = $shcnostaff - ($currentCount + $pendingCount);
+        // Available positions = shcnostaff - (current employees + pending requests + processed requests)
+        $availablePositions = $shcnostaff - ($currentCount + $pendingCount + $processedCount);
         return max(0, $availablePositions); // Never return negative values
     }
 
@@ -584,22 +606,24 @@ class Revenue
     public function getPendingRequests()
     {
         try {
-            // Get all requests with pending status
-            $query = "SELECT sr.* 
-                     FROM staffrequest sr 
-                     WHERE sr.status = 'pending'
-                     ORDER BY sr.dandt DESC";
+            $query = "SELECT sr.jdrequestid, sr.deptunitcode, sr.jdtitle, sr.novacpost, sr.status,
+                             jt.jddescription, jt.eduqualification, jt.proqualification,
+                             jt.workrelation, jt.jdposition, jt.jdcondition, jt.agebracket,
+                             jt.personspec
+                      FROM staffrequest sr
+                      LEFT JOIN jobtitletbl jt ON sr.jdtitle = jt.jdtitle
+                      WHERE sr.status = 'pending'
+                      ORDER BY sr.dandt DESC";
 
             $stmt = $this->db->prepare($query);
             $stmt->execute();
             $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // For each main request, get its station requests
+            // Get station requests for each main request
             foreach ($requests as &$request) {
                 $stationQuery = "SELECT station, employmenttype, staffperstation, status, reason 
                                FROM staffrequestperstation 
                                WHERE jdrequestid = ?";
-
                 $stationStmt = $this->db->prepare($stationQuery);
                 $stationStmt->execute([$request['jdrequestid']]);
                 $request['stations'] = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -608,6 +632,30 @@ class Revenue
             return $requests;
         } catch (Exception $e) {
             throw new Exception("Error fetching pending requests: " . $e->getMessage());
+        }
+    }
+
+    public function getJobTitleDetails($jdtitle)
+    {
+        try {
+            $query = "SELECT * FROM jobtitletbl WHERE jdtitle = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$jdtitle]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching job title details: " . $e->getMessage());
+        }
+    }
+
+    public function getStationRequests($jdrequestid)
+    {
+        try {
+            $query = "SELECT * FROM staffrequestperstation WHERE jdrequestid = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$jdrequestid]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching station requests: " . $e->getMessage());
         }
     }
 }

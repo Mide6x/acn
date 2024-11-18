@@ -65,5 +65,40 @@ $pendingRequests = $revenue->getPendingRequests();
     </div>
 </div>
 
+<!-- Request Details Modal -->
+<div class="modal fade" id="requestDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="jobTitleDetails"></div>
+                <hr>
+                <h6>Station Requests</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Station</th>
+                                <th>Employment Type</th>
+                                <th>Staff Count</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stationRequestsTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="assets/js/hr.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', loadPendingRequests);
+</script>
 <?php include("addon/footer.html"); ?>
