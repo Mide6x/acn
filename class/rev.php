@@ -606,28 +606,14 @@ class Revenue
     public function getPendingRequests()
     {
         try {
-            $query = "SELECT sr.jdrequestid, sr.deptunitcode, sr.jdtitle, sr.novacpost, sr.status,
-                             jt.jddescription, jt.eduqualification, jt.proqualification,
-                             jt.workrelation, jt.jdposition, jt.jdcondition, jt.agebracket,
-                             jt.personspec
-                      FROM staffrequest sr
-                      LEFT JOIN jobtitletbl jt ON sr.jdtitle = jt.jdtitle
-                      WHERE sr.status = 'pending'
-                      ORDER BY sr.dandt DESC";
+            $query = "SELECT sr.jdrequestid, sr.deptunitcode, sr.jdtitle, sr.novacpost, sr.status
+                     FROM staffrequest sr
+                     WHERE sr.status = 'pending'
+                     ORDER BY sr.dandt DESC";
 
             $stmt = $this->db->prepare($query);
             $stmt->execute();
             $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Get station requests for each main request
-            foreach ($requests as &$request) {
-                $stationQuery = "SELECT station, employmenttype, staffperstation, status, reason 
-                               FROM staffrequestperstation 
-                               WHERE jdrequestid = ?";
-                $stationStmt = $this->db->prepare($stationQuery);
-                $stationStmt->execute([$request['jdrequestid']]);
-                $request['stations'] = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
-            }
 
             return $requests;
         } catch (Exception $e) {
@@ -650,12 +636,43 @@ class Revenue
     public function getStationRequests($jdrequestid)
     {
         try {
-            $query = "SELECT * FROM staffrequestperstation WHERE jdrequestid = ?";
+            $query = "SELECT station, employmenttype, staffperstation, status, reason 
+                     FROM staffrequestperstation 
+                     WHERE jdrequestid = :jdrequestid";
+
             $stmt = $this->db->prepare($query);
-            $stmt->execute([$jdrequestid]);
+            $stmt->execute([':jdrequestid' => $jdrequestid]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             throw new Exception("Error fetching station requests: " . $e->getMessage());
+        }
+    }
+
+    public function updateStationStatus($jdrequestid, $station, $status, $reason = null)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $sql = "UPDATE staffrequestperstation 
+                    SET status = :status, reason = :reason 
+                    WHERE jdrequestid = :jdrequestid AND station = :station";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':jdrequestid' => $jdrequestid,
+                ':station' => $station,
+                ':status' => $status,
+                ':reason' => $reason
+            ]);
+
+            // Update main request status
+            $this->updateMainRequestStatus($jdrequestid);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error updating status: " . $e->getMessage());
         }
     }
 }

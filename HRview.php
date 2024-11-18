@@ -40,7 +40,7 @@ $pendingRequests = $revenue->getPendingRequests();
 </main>
 
 <!-- Decline Reason Modal -->
-<div class="modal fade" id="declineModal" tabindex="-1">
+<div class="modal fade" id="declineModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -48,18 +48,19 @@ $pendingRequests = $revenue->getPendingRequests();
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="declineForm">
+                <form id="declineForm" onsubmit="event.preventDefault(); submitDecline();">
                     <input type="hidden" id="decline_jdrequestid">
                     <input type="hidden" id="decline_station">
                     <div class="mb-3">
                         <label for="decline_reason" class="form-label">Reason for Declining</label>
-                        <textarea class="form-control" id="decline_reason" rows="3" required></textarea>
+                        <textarea class="form-control" id="decline_reason" rows="3" required
+                            placeholder="Please provide a reason for declining this request"></textarea>
+                    </div>
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Submit</button>
                     </div>
                 </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-danger" onclick="submitDecline()">Submit</button>
             </div>
         </div>
     </div>
@@ -85,10 +86,11 @@ $pendingRequests = $revenue->getPendingRequests();
                                 <th>Employment Type</th>
                                 <th>Staff Count</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                <th width="200" class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="stationRequestsTable">
+                            <!-- Station requests will be loaded here dynamically -->
                         </tbody>
                     </table>
                 </div>
@@ -97,8 +99,7 @@ $pendingRequests = $revenue->getPendingRequests();
     </div>
 </div>
 
-<script src="assets/js/hr.js"></script>
-<script>
+<script src="assets/js/hr.js">
     document.addEventListener('DOMContentLoaded', loadPendingRequests);
 </script>
 <?php include("addon/footer.html"); ?>

@@ -42,15 +42,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'update_station_status':
                 try {
-                    $result = $revenue->updateStationRequestStatus(
-                        $_POST['jdrequestid'],
-                        $_POST['station'],
-                        $_POST['status'],
-                        $_POST['reason'] ?? null
-                    );
-                    echo $result ? 'success' : 'failure';
+                    $jdrequestid = $_POST['jdrequestid'];
+                    $station = $_POST['station'];
+                    $status = $_POST['status'];
+                    $reason = isset($_POST['reason']) ? $_POST['reason'] : null;
+
+                    $revenue->updateStationStatus($jdrequestid, $station, $status, $reason);
+                    echo 'success';
                 } catch (Exception $e) {
-                    echo 'error: ' . $e->getMessage();
+                    http_response_code(500);
+                    echo $e->getMessage();
                 }
                 break;
         }
@@ -125,20 +126,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $requests = $revenue->getPendingRequests();
                     $output = '';
 
-                    foreach ($requests as $request) {
-                        $output .= "<tr>";
-                        $output .= "<td>{$request['jdrequestid']}</td>";
-                        $output .= "<td>{$request['deptunitcode']}</td>";
-                        $output .= "<td>{$request['jdtitle']}</td>";
-                        $output .= "<td>{$request['novacpost']}</td>";
-                        $output .= "<td>";
-                        $output .= "<button onclick=\"toggleStationDetails('{$request['jdrequestid']}', '{$request['jdtitle']}')\" 
-                                    class='btn btn-sm btn-info'>View Details</button>";
-                        $output .= "</td>";
-                        $output .= "</tr>";
+                    if (!empty($requests)) {
+                        foreach ($requests as $request) {
+                            $output .= "<tr>";
+                            $output .= "<td>{$request['jdrequestid']}</td>";
+                            $output .= "<td>{$request['deptunitcode']}</td>";
+                            $output .= "<td>{$request['jdtitle']}</td>";
+                            $output .= "<td>{$request['novacpost']}</td>";
+                            $output .= "<td>";
+                            $output .= "<button onclick=\"toggleStationDetails('{$request['jdrequestid']}', '{$request['jdtitle']}')\" 
+                                        class='btn btn-sm btn-info'>View Details</button>";
+                            $output .= "</td>";
+                            $output .= "</tr>";
+                        }
+                    } else {
+                        $output = "<tr><td colspan='5' class='text-center'>No pending requests found</td></tr>";
                     }
 
-                    echo $output ?: "<tr><td colspan='5' class='text-center'>No pending requests found</td></tr>";
+                    echo $output;
                 } catch (Exception $e) {
                     echo "<tr><td colspan='5' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
                 }
@@ -156,23 +161,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 exit;
 
             case 'get_station_requests':
-                $stations = $revenue->getStationRequests($_GET['jdrequestid']);
-                $output = '';
-                foreach ($stations as $station) {
-                    $output .= "<tr>";
-                    $output .= "<td>{$station['station']}</td>";
-                    $output .= "<td>{$station['employmenttype']}</td>";
-                    $output .= "<td>{$station['staffperstation']}</td>";
-                    $output .= "<td>{$station['status']}</td>";
-                    $output .= "<td>";
-                    if ($station['status'] === 'pending') {
-                        $output .= "<button onclick=\"approveStation('{$_GET['jdrequestid']}', '{$station['station']}')\" class='btn btn-sm btn-success'>Approve</button> ";
-                        $output .= "<button onclick=\"declineStation('{$_GET['jdrequestid']}', '{$station['station']}')\" class='btn btn-sm btn-danger'>Decline</button>";
+                try {
+                    $stations = $revenue->getStationRequests($_GET['jdrequestid']);
+                    $output = '';
+
+                    if (!empty($stations)) {
+                        foreach ($stations as $station) {
+                            $output .= "<tr>";
+                            $output .= "<td>{$station['station']}</td>";
+                            $output .= "<td>{$station['employmenttype']}</td>";
+                            $output .= "<td>{$station['staffperstation']}</td>";
+                            $output .= "<td>" . ucfirst($station['status']) . "</td>";
+                            $output .= "<td class='text-center'>";
+
+                            // Always show action buttons for pending requests
+                            if ($station['status'] === 'pending' || $station['status'] === '') {
+                                $output .= "<div class='btn-group btn-group-sm'>";
+                                $output .= "<button onclick=\"approveStation('{$_GET['jdrequestid']}', '{$station['station']}')\" 
+                                            class='btn btn-success me-1'><i class='bi bi-check-circle'></i> Approve</button>";
+                                $output .= "<button onclick=\"showDeclineModal('{$_GET['jdrequestid']}', '{$station['station']}')\" 
+                                            class='btn btn-danger'><i class='bi bi-x-circle'></i> Decline</button>";
+                                $output .= "</div>";
+                            } else {
+                                $output .= "<span class='badge " . ($station['status'] === 'approved' ? 'bg-success' : 'bg-danger') . "'>";
+                                $output .= ucfirst($station['status']);
+                                $output .= "</span>";
+                                if ($station['reason']) {
+                                    $output .= "<br><small class='text-muted'>Reason: {$station['reason']}</small>";
+                                }
+                            }
+                            $output .= "</td>";
+                            $output .= "</tr>";
+                        }
+                    } else {
+                        $output = "<tr><td colspan='5' class='text-center'>No station requests found</td></tr>";
                     }
-                    $output .= "</td>";
-                    $output .= "</tr>";
+
+                    echo $output;
+                } catch (Exception $e) {
+                    echo "<tr><td colspan='5' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
                 }
-                echo $output;
                 break;
         }
     } catch (Exception $e) {
