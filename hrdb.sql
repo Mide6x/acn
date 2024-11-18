@@ -28,8 +28,8 @@ CREATE TABLE stationtbl (
     id INT AUTO_INCREMENT PRIMARY KEY,
     stationname VARCHAR(100) NOT NULL,
     stationcode VARCHAR(10) NOT NULL UNIQUE,
-    stationtype ENUM('Hub', 'Spoke', 'International') DEFAULT 'Hub',
-    operationtype ENUM('Full', 'Limited', 'Seasonal') DEFAULT 'Full',
+    stationtype ENUM('Domestic','Regional','International') DEFAULT 'Domestic',
+    operationtype ENUM('Fixed', 'Rotary') DEFAULT 'Fixed',
     status ENUM('Active', 'Inactive') DEFAULT 'Active',
     createdby VARCHAR(100),
     dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -172,10 +172,12 @@ INSERT INTO departments (departmentname, departmentcode, createdby) VALUES
 ('Ground Operations', 'GND', 'adewole.o@acn.aero'),
 ('Marketing', 'MKT', 'adewole.o@acn.aero');
 
+
 INSERT INTO stationtbl (stationname, stationcode, stationtype, operationtype, createdby) VALUES
-('Lagos', 'LOS', 'Hub', 'Full', 'adewole.o@acn.aero'),
-('Abuja', 'ABV', 'Hub', 'Full', 'adewole.o@acn.aero'),
-('Kano', 'KAN', 'Spoke', 'Limited', 'adewole.o@acn.aero');
+('Lagos', 'LOS', 'Domestic', 'Fixed', 'adewole.o@acn.aero'),
+('Abuja', 'ABV', 'Domestic', 'Fixed', 'adewole.o@acn.aero'),
+('Kano', 'KAN', 'Domestic', 'Fixed', 'adewole.o@acn.aero'),
+('United Kingdom', 'UK', 'International', 'Fixed', 'adewole.o@acn.aero');
 
 INSERT INTO stafftype (stafftype, stprefix, createdby) VALUES
 ('Permanent', 'PER', 'adewole.o@acn.aero'),
