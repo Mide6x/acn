@@ -1,12 +1,12 @@
 <?php
 session_start();
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/ARMS/include/config.php';
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/ARMS/class/rev.php';
 
 // Include header, sidebar, and footer
-include("addon/header.html");
-include("addon/sidebar.html");
+include("header");
+include("sidebar");
 
 $revenue = new Revenue($con);
 
@@ -16,7 +16,6 @@ $deptunitcode = $_SESSION['deptunitcode'] ?? DEFAULT_DEPT_UNIT_CODE;
 $requestId = $revenue->generateRequestId();
 $availablepositions = $revenue->getAvailablePositions($deptunitcode);
 $staffRequests = $revenue->getRequestsByDepartment($deptunitcode);
-
 
 ?>
 <main id="main" class="main">
@@ -145,9 +144,7 @@ $staffRequests = $revenue->getRequestsByDepartment($deptunitcode);
     </section>
 
 </main><!-- End #main -->
-<script src="assets\js\ac.js">
-
-</script>
 <?php
-include("addon/footer.html");
+include("footer");
 ?>
+<script src="assets\js\ac.js"></script>

@@ -45,27 +45,53 @@ function addStation() {
 let stationRequests = []; // Store all station requests
 
 function addStationRequest() {
-    const totalStaff = parseInt(document.getElementById('totalStaff').value) || 0;
-    const currentTotal = stationRequests.reduce((sum, req) => sum + parseInt(req.staffperstation), 0);
-    
-    if (currentTotal >= totalStaff) {
-        alert('Cannot add more stations. Total staff count would exceed the requested amount.');
+    const availableVacant = document.getElementById('availablevacant');
+    const stationElement = document.getElementById('station');
+    const employmentTypeElement = document.getElementById('employmenttype');
+    const staffPerStationElement = document.getElementById('staffperstation');
+
+    if (!availableVacant || !stationElement || !employmentTypeElement || !staffPerStationElement) {
+        console.error('Required elements not found');
         return;
     }
 
-    const station = document.getElementById('station').value;
-    const employmenttype = document.getElementById('employmenttype').value;
-    const staffperstation = document.getElementById('staffperstation').value;
+    const availablePositions = parseInt(availableVacant.textContent.split(':')[1].trim());
+    const currentTotal = stationRequests.reduce((sum, req) => sum + parseInt(req.staffperstation), 0);
+    
+    const station = stationElement.value;
+    const employmenttype = employmentTypeElement.value;
+    const staffperstation = parseInt(staffPerStationElement.value) || 0;
 
+    // Validation
     if (!station || !employmenttype || !staffperstation) {
         alert('Please fill all station request fields');
+        return;
+    }
+
+    console.log({ station, employmenttype, staffperstation });
+
+    // Validation
+    if (!station || !employmenttype || !staffperstation) {
+        alert('Please fill all station request fields');
+        return;
+    }
+
+    // Check if station already exists
+    if (stationRequests.some(req => req.station === station)) {
+        alert('This station has already been added');
+        return;
+    }
+
+    // Check if adding new staff would exceed available positions
+    if ((currentTotal + staffperstation) > availablePositions) {
+        alert(`Cannot add more staff. Total staff count (${currentTotal + staffperstation}) would exceed available positions (${availablePositions})`);
         return;
     }
 
     stationRequests.push({
         station,
         employmenttype,
-        staffperstation: parseInt(staffperstation)
+        staffperstation
     });
 
     // Clear form fields
@@ -77,60 +103,40 @@ function addStationRequest() {
 }
 
 function updateStationRequestsTable() {
-    const container = document.getElementById('loadstaffreqperstation');
-    const totalStaff = parseInt(document.getElementById('totalStaff').value) || 0;
-    const currentTotal = stationRequests.reduce((sum, req) => sum + req.staffperstation, 0);
-
-    const html = `
-        <table class="table table-bordered mt-3">
-            <thead>
-                <tr>
-                    <th>Station</th>
-                    <th>Employment Type</th>
-                    <th>Staff Count</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${stationRequests.map((req, index) => `
-                    <tr>
-                        <td>${req.station}</td>
-                        <td>${req.employmenttype}</td>
-                        <td>${req.staffperstation}</td>
-                        <td>
-                            <button onclick="removeStationRequest(${index})" class="btn btn-sm btn-danger">Remove</button>
-                        </td>
-                    </tr>
-                `).join('')}
-                <tr>
-                    <td colspan="2">Total Staff</td>
-                    <td colspan="2">${currentTotal} / ${totalStaff}</td>
-                </tr>
-            </tbody>
-        </table>
-    `;
+    const tableBody = document.getElementById('loadstaffreqperstation');
+    let html = '<table class="table table-bordered mt-3">';
+    html += '<thead><tr><th>Station</th><th>Employment Type</th><th>Staff Count</th></tr></thead><tbody>';
     
-    container.innerHTML = html;
+    stationRequests.forEach(request => {
+        html += `<tr>
+            <td>${request.station}</td>
+            <td>${request.employmenttype}</td>
+            <td>${request.staffperstation}</td>
+        </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    tableBody.innerHTML = html;
 }
 
 function removeStationRequest(index) {
     stationRequests.splice(index, 1);
     updateStationRequestsTable();
 }
-
 function createstaffreqperstation() {
     const jdrequestid = document.getElementById('jdrequestid').textContent.split(': ')[1];
     const jdtitle = document.getElementById('jdtitle').value;
-    const totalStaff = parseInt(document.getElementById('totalStaff').value);
     
     if (!jdtitle || stationRequests.length === 0) {
         alert('Please fill job title and add at least one station request');
         return false;
     }
 
-    const currentTotal = stationRequests.reduce((sum, req) => sum + req.staffperstation, 0);
-    if (currentTotal !== totalStaff) {
-        alert(`Total staff per station (${currentTotal}) must equal total staff requested (${totalStaff})`);
+    const currentTotal = stationRequests.reduce((sum, req) => sum + parseInt(req.staffperstation), 0);
+    const availablePositions = parseInt(document.getElementById('availablevacant').textContent.split(':')[1].trim());
+
+    if (currentTotal > availablePositions) {
+        alert(`Total staff count (${currentTotal}) cannot exceed available positions (${availablePositions})`);
         return false;
     }
 
@@ -139,7 +145,7 @@ function createstaffreqperstation() {
     mainRequestData.append('action', 'save_draft');
     mainRequestData.append('jdrequestid', jdrequestid);
     mainRequestData.append('jdtitle', jdtitle);
-    mainRequestData.append('novacpost', totalStaff);
+    mainRequestData.append('novacpost', currentTotal);
 
     fetch('parameter/parameter.php', {
         method: 'POST',
@@ -148,7 +154,6 @@ function createstaffreqperstation() {
     .then(response => response.text())
     .then(data => {
         if (data === 'success') {
-            // Save all station requests
             return Promise.all(stationRequests.map(request => {
                 const stationData = new FormData();
                 stationData.append('action', 'add_station');
@@ -167,8 +172,6 @@ function createstaffreqperstation() {
     })
     .then(() => {
         alert('Staff request saved successfully');
-        stationRequests = [];
-        updateStationRequestsTable();
         loadStaffRequests();
     })
     .catch(error => {
@@ -178,7 +181,6 @@ function createstaffreqperstation() {
 
     return false;
 }
-
 // Add this function to load the station requests table
 function loadstaffreqperstation() {
     const jdrequestid = document.getElementById('jdrequestid').textContent.split(': ')[1];
@@ -214,7 +216,6 @@ function editRequest(jdrequestid) {
                 // Populate form with existing data
                 document.getElementById('jdrequestid').textContent = `Request ID: ${data.request.jdrequestid}`;
                 document.getElementById('jdtitle').value = data.request.jdtitle;
-                document.getElementById('totalStaff').value = data.request.novacpost;
                 
                 // Load station requests into global array
                 stationRequests = data.request.stations.map(station => ({
@@ -235,7 +236,6 @@ function toggleStationDetails(requestId) {
     const stationsRow = document.getElementById(`stations-${requestId}`);
     stationsRow.style.display = stationsRow.style.display === 'none' ? 'table-row' : 'none';
 }
-
 function submitstaffrequest() {
     const jdrequestid = document.getElementById('jdrequestid').textContent.split(': ')[1];
     const jdtitle = document.getElementById('jdtitle').value;
@@ -245,14 +245,14 @@ function submitstaffrequest() {
         return false;
     }
 
-    const totalStaff = stationRequests.reduce((sum, req) => sum + req.staffperstation, 0);
+    const currentTotal = stationRequests.reduce((sum, req) => sum + parseInt(req.staffperstation), 0);
 
     // First create/update main staff request
     const mainRequestData = new FormData();
     mainRequestData.append('action', 'save_draft');
     mainRequestData.append('jdrequestid', jdrequestid);
     mainRequestData.append('jdtitle', jdtitle);
-    mainRequestData.append('novacpost', totalStaff);
+    mainRequestData.append('novacpost', currentTotal);
 
     fetch('parameter/parameter.php', {
         method: 'POST',
