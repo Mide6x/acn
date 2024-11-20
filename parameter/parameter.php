@@ -175,6 +175,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 break;
 
+
+
             case 'get_pending_requests':
                 try {
                     $requests = $revenue->getPendingRequests();

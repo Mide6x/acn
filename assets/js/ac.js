@@ -307,6 +307,7 @@ function toggleStationDetails(requestId) {
     const stationsRow = document.getElementById(`stations-${requestId}`);
     stationsRow.style.display = stationsRow.style.display === 'none' ? 'table-row' : 'none';
 }
+
 function submitstaffrequest() {
     const jdrequestid = document.getElementById('jdrequestid').textContent.split(': ')[1];
     const jdtitle = document.getElementById('jdtitle').value;
@@ -354,6 +355,7 @@ function submitstaffrequest() {
         stationRequests = [];
         updateStationRequestsTable();
         loadStaffRequests();
+        window.location.href = 'staffrequeststep1.php'; // Redirect to staffrequeststep1.php
     })
     .catch(error => {
         console.error('Error:', error);

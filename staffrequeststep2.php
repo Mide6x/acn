@@ -45,7 +45,9 @@ $revenue = new Revenue($con);
                         </form>
 
 
-
+                        <div class="col-sm-6">
+                            <h6 class="card-title" style="font-weight: 800; font-size: small;">STAFF PER STATION DETAILS</h6>
+                        </div>
                         <div id="stationRequests">
                             <div class="station-request">
                                 <div class="row mb-3">
@@ -75,21 +77,12 @@ $revenue = new Revenue($con);
                         <div class="row mb-3">
 
                             <button type="button" class="btn btn-secondary" onclick="addStationRequest()" style="display: block; margin: 0 auto;">
-                                + Add Another Station
+                                + Add
                             </button>
 
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-sm-10">
-                                <button type="button" class="btn btn-primary"
-                                    onclick="return createstaffreqperstation()"
-                                    style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px; display: none; margin: 0 auto; margin-top:20px"
-                                    onmouseover="this.style.backgroundColor='#000000';"
-                                    onmouseout="this.style.backgroundColor='#fc7f14';">Save Request
-                                </button>
-                            </div>
-                        </div>
+
 
                         <div class="col-lg-12" id="loadstaffreqperstation">
                         </div>
@@ -99,7 +92,7 @@ $revenue = new Revenue($con);
                                     onclick="return submitstaffrequest()"
                                     style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
                                     onmouseover="this.style.backgroundColor='#000000';"
-                                    onmouseout="this.style.backgroundColor='#fc7f14';">Submit
+                                    onmouseout="this.style.backgroundColor='#fc7f14';">Save as Draft
                                 </button>
                             </div>
                         </div>
