@@ -6,6 +6,11 @@ $revenue = new Revenue($con);
 $createdby = $_SESSION['email'] ?? DEFAULT_CREATED_BY;
 $deptunitcode = $_SESSION['deptunitcode'] ?? DEFAULT_DEPT_UNIT_CODE;
 
+// Add error logging
+error_log("Request Method: " . $_SERVER['REQUEST_METHOD']);
+error_log("Action: " . ($_POST['action'] ?? $_GET['action'] ?? 'no action'));
+error_log("Department Code: " . $deptunitcode);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         switch ($_POST['action']) {
@@ -59,9 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo 'error: ' . $e->getMessage();
     }
     exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+} else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         switch ($_GET['action']) {
             case 'generate_id':
@@ -69,45 +72,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 break;
 
             case 'get_requests':
-                $requests = $revenue->getRequestsByDepartment($deptunitcode);
-                $output = '';
+                try {
+                    $requests = $revenue->getRequestsByDepartment($deptunitcode);
+                    error_log("Requests found: " . json_encode($requests));
+                    $output = '';
 
-                foreach ($requests as $request) {
-                    $output .= "<tr>";
-                    $output .= "<td>{$request['jdrequestid']}</td>";
-                    $output .= "<td>{$request['jdtitle']}</td>";
-                    $output .= "<td>{$request['novacpost']}</td>";
-                    $output .= "<td>{$request['status']}</td>";
-                    $output .= "<td>";
-                    if ($request['status'] === 'draft') {
-                        $output .= "<button onclick=\"editRequest('{$request['jdrequestid']}')\" class='btn btn-sm btn-warning'>Edit</button> ";
-                        $output .= "<button onclick=\"submitRequest('{$request['jdrequestid']}')\" class='btn btn-sm btn-primary'>Submit</button> ";
-                    }
-                    $output .= "<button onclick=\"toggleStationDetails('{$request['jdrequestid']}')\" class='btn btn-sm btn-info'>View Stations</button>";
-                    $output .= "</td>";
-                    $output .= "</tr>";
-
-                    // Add hidden row for station details
-                    $output .= "<tr id='stations-{$request['jdrequestid']}' style='display:none'>";
-                    $output .= "<td colspan='5'>";
-                    $output .= "<table class='table table-sm'>";
-                    $output .= "<thead><tr><th>Station</th><th>Employment Type</th><th>Staff Count</th><th>Status</th></tr></thead>";
-                    $output .= "<tbody>";
-
-                    foreach ($request['stations'] as $station) {
+                    foreach ($requests as $request) {
                         $output .= "<tr>";
-                        $output .= "<td>{$station['station']}</td>";
-                        $output .= "<td>{$station['employmenttype']}</td>";
-                        $output .= "<td>{$station['staffperstation']}</td>";
-                        $output .= "<td>{$station['status']}</td>";
+                        $output .= "<td>{$request['jdrequestid']}</td>";
+                        $output .= "<td>{$request['jdtitle']}</td>";
+                        $output .= "<td>{$request['novacpost']}</td>";
+                        $output .= "<td>{$request['status']}</td>";
+                        $output .= "<td>";
+                        if ($request['status'] === 'draft') {
+                            $output .= "<button onclick=\"editRequest('{$request['jdrequestid']}')\" class='btn btn-sm btn-warning'>Edit</button> ";
+                            $output .= "<button onclick=\"submitRequest('{$request['jdrequestid']}')\" class='btn btn-sm btn-primary'>Submit</button> ";
+                        }
+                        $output .= "<button onclick=\"toggleStationDetails('{$request['jdrequestid']}')\" class='btn btn-sm btn-info'>View Stations</button>";
+                        $output .= "</td>";
                         $output .= "</tr>";
                     }
-
-                    $output .= "</tbody></table>";
-                    $output .= "</td></tr>";
+                    echo $output;
+                } catch (Exception $e) {
+                    error_log("Error in get_requests: " . $e->getMessage());
+                    echo "<tr><td colspan='5' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
                 }
-
-                echo $output ?: "<tr><td colspan='5' class='text-center'>No requests found</td></tr>";
                 break;
 
             case 'get_request_details':
@@ -204,6 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 break;
         }
     } catch (Exception $e) {
-        echo "<tr><td colspan='5' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
+        error_log("Error processing GET request: " . $e->getMessage());
+        echo "Error: " . $e->getMessage();
     }
 }

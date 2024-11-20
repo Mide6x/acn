@@ -175,6 +175,7 @@ class Revenue
     }
 
     // Get job titles for dropdown
+    /*
     public function getJobTitles()
     {
         $query = "SELECT jdtitle 
@@ -191,6 +192,25 @@ class Revenue
                 . htmlspecialchars($row['jdtitle']) . "</option>";
         }
         return $output;
+    }
+    */
+
+    public function getJobTitles()
+    {
+        try {
+            $query = "SELECT DISTINCT jdtitle FROM staffrequest ORDER BY jdtitle";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $titles = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            $output = '';
+            foreach ($titles as $title) {
+                $output .= "<option value='" . htmlspecialchars($title) . "'>" . htmlspecialchars($title) . "</option>";
+            }
+            return $output;
+        } catch (Exception $e) {
+            throw new Exception("Error getting job titles: " . $e->getMessage());
+        }
     }
 
     // Get stations for dropdown

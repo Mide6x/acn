@@ -1,4 +1,4 @@
-// Staff Request Handling
+
 function initializeStaffRequest() {
     // Generate request ID on page load
     fetch('parameter/parameter.php?action=generate_id')
@@ -198,38 +198,32 @@ function loadstaffreqperstation() {
 document.addEventListener('DOMContentLoaded', loadStaffRequests);
 
 function loadStaffRequests() {
+    console.log('Loading staff requests...');
     const tableBody = document.getElementById('staffRequestTableBody');
-    const deptunitcode = document.getElementById('availablevacant').textContent.split(':')[0].trim().split(' ').pop();
+    if (!tableBody) {
+        console.error('Staff request table body not found');
+        return;
+    }
     
-    fetch(`parameter/parameter.php?action=get_requests&deptunitcode=${deptunitcode}`)
-        .then(response => response.text())
+    fetch('parameter/parameter.php?action=get_requests')
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.text();
+        })
         .then(data => {
-            tableBody.innerHTML = data;
+            console.log('Received data:', data);
+            tableBody.innerHTML = data || '<tr><td colspan="5" class="text-center">No requests found</td></tr>';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading requests</td></tr>';
         });
 }
 
 function editRequest(jdrequestid) {
-    fetch(`parameter/parameter.php?action=get_request_details&jdrequestid=${jdrequestid}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.request) {
-                // Populate form with existing data
-                document.getElementById('jdrequestid').textContent = `Request ID: ${data.request.jdrequestid}`;
-                document.getElementById('jdtitle').value = data.request.jdtitle;
-                
-                // Load station requests into global array
-                stationRequests = data.request.stations.map(station => ({
-                    station: station.station,
-                    employmenttype: station.employmenttype,
-                    staffperstation: parseInt(station.staffperstation)
-                }));
-                
-                updateStationRequestsTable();
-                
-                // Scroll to form
-                document.getElementById('staffRequestForm').scrollIntoView();
-            }
-        });
+    // Redirect to staffrequeststep2.php with the request ID
+    window.location.href = `staffrequeststep2.php?jdrequestid=${jdrequestid}`;
 }
 
 function toggleStationDetails(requestId) {
