@@ -1,3 +1,25 @@
+function initializeRequestDetails(jdrequestid) {
+    fetch(`parameter/parameter.php?action=get_request_details&jdrequestid=${jdrequestid}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error loading request: ' + data.error);
+                window.location.href = 'staffrequeststep1.php';
+            } else {
+                document.getElementById('jdrequestid').textContent = `Request ID: ${data.jdrequestid}`;
+                document.getElementById('availablevacant').textContent = `Staff Request Available for ${data.deptunitcode}: ${data.availablepositions}`;
+                document.getElementById('jdtitle').value = data.jdtitle;
+                stationRequests = data.stations || [];
+                updateStationRequestsTable();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading request details');
+            window.location.href = 'staffrequeststep1.php';
+        });
+
+}
 
 function initializeStaffRequest() {
     // Generate request ID on page load
@@ -56,7 +78,7 @@ function addStationRequest() {
     }
 
     const availablePositions = parseInt(availableVacant.textContent.split(':')[1].trim());
-    const currentTotal = stationRequests.reduce((sum, req) => sum + parseInt(req.staffperstation), 0);
+    const currentTotal = calculateTotalStaffCount();
     
     const station = stationElement.value;
     const employmenttype = employmentTypeElement.value;
@@ -68,11 +90,9 @@ function addStationRequest() {
         return;
     }
 
-    console.log({ station, employmenttype, staffperstation });
-
-    // Validation
-    if (!station || !employmenttype || !staffperstation) {
-        alert('Please fill all station request fields');
+    // Check if adding this station would exceed available positions
+    if (currentTotal + staffperstation > availablePositions) {
+        alert(`Adding ${staffperstation} positions would exceed the available positions (${availablePositions})`);
         return;
     }
 
@@ -82,24 +102,13 @@ function addStationRequest() {
         return;
     }
 
-    // Check if adding new staff would exceed available positions
-    if ((currentTotal + staffperstation) > availablePositions) {
-        alert(`Cannot add more staff. Total staff count (${currentTotal + staffperstation}) would exceed available positions (${availablePositions})`);
-        return;
-    }
-
-    stationRequests.push({
-        station,
-        employmenttype,
-        staffperstation
-    });
-
-    // Clear form fields
-    document.getElementById('station').value = '';
-    document.getElementById('employmenttype').value = '';
-    document.getElementById('staffperstation').value = '';
-
+    stationRequests.push({ station, employmenttype, staffperstation });
     updateStationRequestsTable();
+
+    // Reset form
+    stationElement.value = '';
+    employmentTypeElement.value = '';
+    staffPerStationElement.value = '';
 }
 
 function updateStationRequestsTable() {
@@ -120,9 +129,48 @@ function updateStationRequestsTable() {
 }
 
 function removeStationRequest(index) {
-    stationRequests.splice(index, 1);
-    updateStationRequestsTable();
+    const jdrequestid = document.getElementById('jdrequestid').textContent.split(': ')[1];
+    const stationToRemove = stationRequests[index];
+
+    const deleteData = new FormData();
+    deleteData.append('action', 'delete_station');
+    deleteData.append('jdrequestid', jdrequestid);
+    deleteData.append('station', stationToRemove.station);
+
+    fetch('parameter/parameter.php', {
+        method: 'POST',
+        body: deleteData
+    })
+    .then(response => response.text())
+    .then(data => {
+        if (data === 'success') {
+            stationRequests.splice(index, 1);
+            updateStationRequestsTable();
+            
+            // Update novacpost in main request
+            const newTotal = calculateTotalStaffCount();
+            const updateData = new FormData();
+            updateData.append('action', 'update_novacpost');
+            updateData.append('jdrequestid', jdrequestid);
+            updateData.append('novacpost', newTotal);
+            
+            return fetch('parameter/parameter.php', {
+                method: 'POST',
+                body: updateData
+            });
+        }
+        throw new Error('Failed to delete station request');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error removing station request: ' + error.message);
+    });
 }
+
+function calculateTotalStaffCount() {
+    return stationRequests.reduce((sum, req) => sum + parseInt(req.staffperstation), 0);
+}
+
 function createstaffreqperstation() {
     const jdrequestid = document.getElementById('jdrequestid').textContent.split(': ')[1];
     const jdtitle = document.getElementById('jdtitle').value;
@@ -132,7 +180,7 @@ function createstaffreqperstation() {
         return false;
     }
 
-    const currentTotal = stationRequests.reduce((sum, req) => sum + parseInt(req.staffperstation), 0);
+    const currentTotal = calculateTotalStaffCount();
     const availablePositions = parseInt(document.getElementById('availablevacant').textContent.split(':')[1].trim());
 
     if (currentTotal > availablePositions) {
@@ -140,9 +188,9 @@ function createstaffreqperstation() {
         return false;
     }
 
-    // Save main request
+    // Create initial staff request
     const mainRequestData = new FormData();
-    mainRequestData.append('action', 'save_draft');
+    mainRequestData.append('action', 'create_staff_request');
     mainRequestData.append('jdrequestid', jdrequestid);
     mainRequestData.append('jdtitle', jdtitle);
     mainRequestData.append('novacpost', currentTotal);
@@ -154,6 +202,7 @@ function createstaffreqperstation() {
     .then(response => response.text())
     .then(data => {
         if (data === 'success') {
+            // After creating main request, add station requests
             return Promise.all(stationRequests.map(request => {
                 const stationData = new FormData();
                 stationData.append('action', 'add_station');
@@ -168,18 +217,16 @@ function createstaffreqperstation() {
                 }).then(response => response.text());
             }));
         }
-        throw new Error('Failed to save main request');
+        throw new Error('Failed to create staff request');
     })
     .then(() => {
         alert('Staff request saved successfully');
-        loadStaffRequests();
+        window.location.href = 'staffrequeststep1.php';
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Error saving request: ' + error.message);
     });
-
-    return false;
 }
 // Add this function to load the station requests table
 function loadstaffreqperstation() {
@@ -310,5 +357,24 @@ function submitRequest(jdrequestid) {
             alert('Error submitting request: ' + error.message);
         });
     }
+}
+
+function initializeNewRequestDetails() {
+    fetch('parameter/parameter.php?action=get_new_request_details')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error loading new request details: ' + data.error);
+                window.location.href = 'staffrequeststep1.php';
+            } else {
+                document.getElementById('jdrequestid').textContent = `Request ID: ${data.jdrequestid}`;
+                document.getElementById('availablevacant').textContent = `Staff Request Available for ${data.deptunitcode}: ${data.availablepositions}`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading new request details');
+            window.location.href = 'staffrequeststep1.php';
+        });
 }
 

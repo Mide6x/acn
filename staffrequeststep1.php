@@ -8,16 +8,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
 include("addon/header.html");
 include("addon/sidebar.html");
 
-$revenue = new Revenue($con);
-
-// Get dropdown data
-$deptunitcode = $_SESSION['deptunitcode'] ?? DEFAULT_DEPT_UNIT_CODE;
-
-$requestId = $revenue->generateRequestId();
-$availablepositions = $revenue->getAvailablePositions($deptunitcode);
-$staffRequests = $revenue->getRequestsByDepartment($deptunitcode);
-
-
 ?>
 <main id="main" class="main">
 

@@ -59,6 +59,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo $e->getMessage();
                 }
                 break;
+
+            case 'update_request':
+                try {
+                    $result = $revenue->updateStaffRequest(
+                        $_POST['jdrequestid'],
+                        $_POST['jdtitle'],
+                        $_POST['novacpost']
+                    );
+                    echo $result ? 'success' : 'error';
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'delete_stations':
+                try {
+                    $result = $revenue->deleteStationRequest($_POST['jdrequestid'], $_POST['station']);
+                    echo $result ? 'success' : 'error';
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'update_novacpost':
+                try {
+                    $jdrequestid = $_POST['jdrequestid'];
+                    $novacpost = $_POST['novacpost'];
+
+                    $sql = "UPDATE staffrequest 
+                            SET novacpost = :novacpost 
+                            WHERE jdrequestid = :jdrequestid";
+
+                    $stmt = $con->prepare($sql);
+                    $result = $stmt->execute([
+                        ':novacpost' => $novacpost,
+                        ':jdrequestid' => $jdrequestid
+                    ]);
+
+                    echo $result ? 'success' : 'error';
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'create_staff_request':
+                try {
+                    $jdrequestid = $_POST['jdrequestid'];
+                    $jdtitle = $_POST['jdtitle'];
+                    $novacpost = $_POST['novacpost'];
+
+                    $result = $revenue->createStaffRequest(
+                        $jdrequestid,
+                        $jdtitle,
+                        $novacpost,
+                        $deptunitcode,
+                        'draft',
+                        $createdby
+                    );
+
+                    echo $result ? 'success' : 'error';
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
         }
     } catch (Exception $e) {
         echo 'error: ' . $e->getMessage();
@@ -100,14 +164,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             case 'get_request_details':
-                $request = $revenue->getRequestDetails($_GET['jdrequestid']);
-                $output = "<div class='request-details'>";
-                $output .= "<h4>Request Details</h4>";
-                $output .= "<p><strong>Job Title:</strong> {$request['jdtitle']}</p>";
-                $output .= "<p><strong>Total Staff:</strong> {$request['novacpost']}</p>";
-                $output .= "<p><strong>Status:</strong> {$request['status']}</p>";
-                $output .= "</div>";
-                echo $output;
+                try {
+                    $jdrequestid = $_GET['jdrequestid'];
+                    $requestData = $revenue->getRequestDetails($jdrequestid);
+                    $requestData['deptunitcode'] = $deptunitcode;
+                    $requestData['availablepositions'] = $revenue->getAvailablePositions($deptunitcode);
+                    echo json_encode($requestData);
+                } catch (Exception $e) {
+                    echo json_encode(['error' => $e->getMessage()]);
+                }
                 break;
 
             case 'get_pending_requests':
@@ -189,6 +254,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo $output;
                 } catch (Exception $e) {
                     echo "<tr><td colspan='5' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
+                }
+                break;
+
+            case 'get_new_request_details':
+                try {
+                    $newRequestId = $revenue->generateRequestId();
+                    $availablePositions = $revenue->getAvailablePositions($deptunitcode);
+                    echo json_encode([
+                        'jdrequestid' => $newRequestId,
+                        'deptunitcode' => $deptunitcode,
+                        'availablepositions' => $availablePositions
+                    ]);
+                } catch (Exception $e) {
+                    echo json_encode(['error' => $e->getMessage()]);
                 }
                 break;
         }

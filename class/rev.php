@@ -175,7 +175,7 @@ class Revenue
     }
 
     // Get job titles for dropdown
-    /*
+
     public function getJobTitles()
     {
         $query = "SELECT jdtitle 
@@ -193,8 +193,8 @@ class Revenue
         }
         return $output;
     }
-    */
 
+    /*
     public function getJobTitles()
     {
         try {
@@ -211,7 +211,7 @@ class Revenue
         } catch (Exception $e) {
             throw new Exception("Error getting job titles: " . $e->getMessage());
         }
-    }
+    } */
 
     // Get stations for dropdown
     public function getStations()
@@ -693,6 +693,43 @@ class Revenue
         } catch (Exception $e) {
             $this->db->rollBack();
             throw new Exception("Error updating status: " . $e->getMessage());
+        }
+    }
+
+    public function updateStaffRequest($jdrequestid, $jdtitle, $novacpost)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $sql = "UPDATE staffrequest 
+                SET jdtitle = ?, novacpost = ? 
+                WHERE jdrequestid = ? AND status = 'draft'";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$jdtitle, $novacpost, $jdrequestid]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error updating request: " . $e->getMessage());
+        }
+    }
+
+    public function deleteStationRequest($jdrequestid, $station)
+    {
+        try {
+            $sql = "DELETE FROM staffrequestperstation 
+                    WHERE jdrequestid = :jdrequestid 
+                    AND station = :station 
+                    AND status = 'draft'";
+
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([
+                ':jdrequestid' => $jdrequestid,
+                ':station' => $station
+            ]);
+        } catch (Exception $e) {
+            throw new Exception("Error deleting station request: " . $e->getMessage());
         }
     }
 }

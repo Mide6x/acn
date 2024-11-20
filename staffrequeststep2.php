@@ -9,29 +9,7 @@ include("addon/header.html");
 include("addon/sidebar.html");
 
 $revenue = new Revenue($con);
-// Get dropdown data
-$deptunitcode = $_SESSION['deptunitcode'] ?? DEFAULT_DEPT_UNIT_CODE;
 
-// Check if editing existing request
-$jdrequestid = $_GET['jdrequestid'] ?? null;
-$requestData = null;
-$requestId = null;
-
-if ($jdrequestid) {
-    try {
-        $requestData = $revenue->getRequestDetails($jdrequestid);
-        $requestId = $jdrequestid; // Use existing ID for edit mode
-    } catch (Exception $e) {
-        echo "<script>alert('Error loading request: " . $e->getMessage() . "'); 
-              window.location.href='staffrequeststep1.php';</script>";
-        exit;
-    }
-} else {
-    // Only generate new ID if we're creating a new request
-    $requestId = $revenue->generateRequestId();
-}
-
-$availablepositions = $revenue->getAvailablePositions($deptunitcode);
 
 
 ?>
@@ -49,8 +27,8 @@ $availablepositions = $revenue->getAvailablePositions($deptunitcode);
                                 <h6 class="card-title" style="font-weight: 800; font-size: small;">STAFF REQUEST DETAILS</h6>
                             </div>
                             <div class="col-sm-6 text-end">
-                                <span id="jdrequestid" style="font-size: small; font-weight: 700;">Request Id: <?php echo $requestId; ?></span>
-                                <span id="availablevacant" style="font-size: small; font-weight: 700;">Staff Request Available for <?php echo $deptunitcode; ?>: <?php echo $availablepositions; ?></span>
+                                <span id="jdrequestid" style="font-size: small; font-weight: 700;"></span>
+                                <span id="availablevacant" style="font-size: small; font-weight: 700;"></span>
                             </div>
                         </div>
 
@@ -66,18 +44,7 @@ $availablepositions = $revenue->getAvailablePositions($deptunitcode);
                             </div>
                         </form>
 
-                        <script>
-                            <?php if ($requestData): ?>
-                                document.addEventListener('DOMContentLoaded', function() {
-                                    // Set job title
-                                    document.getElementById('jdtitle').value = <?php echo json_encode($requestData['jdtitle']); ?>;
 
-                                    // Initialize station requests
-                                    stationRequests = <?php echo json_encode($requestData['stations'] ?? []); ?>;
-                                    updateStationRequestsTable();
-                                });
-                            <?php endif; ?>
-                        </script>
 
                         <div id="stationRequests">
                             <div class="station-request">
@@ -145,6 +112,16 @@ $availablepositions = $revenue->getAvailablePositions($deptunitcode);
     </section>
 
 </main><!-- End #main -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const jdrequestid = new URLSearchParams(window.location.search).get('jdrequestid');
+        if (jdrequestid) {
+            initializeRequestDetails(jdrequestid);
+        } else {
+            initializeNewRequestDetails();
+        }
+    });
+</script>
 <?php
 include("addon/footer.html");
 ?>
