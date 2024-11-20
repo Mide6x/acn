@@ -84,7 +84,7 @@ $revenue = new Revenue($con);
                             <div class="col-sm-10">
                                 <button type="button" class="btn btn-primary"
                                     onclick="return createstaffreqperstation()"
-                                    style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
+                                    style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px; display: none; margin: 0 auto; margin-top:20px"
                                     onmouseover="this.style.backgroundColor='#000000';"
                                     onmouseout="this.style.backgroundColor='#fc7f14';">Save Request
                                 </button>

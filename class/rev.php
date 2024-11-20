@@ -57,19 +57,24 @@ class Revenue
     public function saveStationRequest($jdrequestid, $station, $employmenttype, $staffperstation, $createdby)
     {
         try {
-            // Get main request status
             $mainStatus = $this->getRequestStatus($jdrequestid);
             if ($mainStatus === 'pending') {
                 throw new Exception("Cannot modify a pending request");
             }
 
+            $subrequestid = $jdrequestid . $station;
+
             $sql = "INSERT INTO staffrequestperstation 
-                    (jdrequestid, station, employmenttype, staffperstation, status, createdby)
-                    VALUES (:jdrequestid, :station, :employmenttype, :staffperstation, 'draft', :createdby)";
+                    (jdrequestid, subrequestid, station, employmenttype, staffperstation, status, createdby)
+                    VALUES (:jdrequestid, :subrequestid, :station, :employmenttype, :staffperstation, 'draft', :createdby)
+                    ON DUPLICATE KEY UPDATE
+                    employmenttype = VALUES(employmenttype),
+                    staffperstation = VALUES(staffperstation)";
 
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':jdrequestid' => $jdrequestid,
+                ':subrequestid' => $subrequestid,
                 ':station' => $station,
                 ':employmenttype' => $employmenttype,
                 ':staffperstation' => $staffperstation,

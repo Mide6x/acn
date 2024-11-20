@@ -11,6 +11,12 @@ function initializeRequestDetails(jdrequestid) {
                 document.getElementById('jdtitle').value = data.jdtitle;
                 stationRequests = data.stations || [];
                 updateStationRequestsTable();
+                
+                // Enable/disable save button based on status
+                const saveButton = document.querySelector('button[onclick="return createstaffreqperstation()"]');
+                if (saveButton) {
+                    saveButton.style.display = data.status === 'draft' ? 'block' : 'none';
+                }
             }
         })
         .catch(error => {
@@ -18,7 +24,6 @@ function initializeRequestDetails(jdrequestid) {
             alert('Error loading request details');
             window.location.href = 'staffrequeststep1.php';
         });
-
 }
 
 function initializeStaffRequest() {
@@ -174,7 +179,22 @@ function calculateTotalStaffCount() {
 function createstaffreqperstation() {
     const jdrequestid = document.getElementById('jdrequestid').textContent.split(': ')[1];
     const jdtitle = document.getElementById('jdtitle').value;
+    const originalStations = window.originalStations || [];
     
+    // Compare current stations with original stations
+    const hasChanges = stationRequests.some(station => {
+        return !originalStations.find(orig => 
+            orig.station === station.station && 
+            orig.employmenttype === station.employmenttype && 
+            orig.staffperstation === station.staffperstation
+        );
+    }) || originalStations.length !== stationRequests.length;
+
+    if (!hasChanges) {
+        window.location.href = 'staffrequeststep1.php';
+        return false;
+    }
+
     if (!jdtitle || stationRequests.length === 0) {
         alert('Please fill job title and add at least one station request');
         return false;
@@ -188,9 +208,21 @@ function createstaffreqperstation() {
         return false;
     }
 
-    // Create initial staff request
+    // Save only new or modified station requests
+    const newOrModifiedStations = stationRequests.filter(station => {
+        return !originalStations.find(orig => 
+            orig.station === station.station
+        );
+    });
+
+    if (newOrModifiedStations.length === 0) {
+        window.location.href = 'staffrequeststep1.php';
+        return false;
+    }
+
+    // Update main request with new total
     const mainRequestData = new FormData();
-    mainRequestData.append('action', 'create_staff_request');
+    mainRequestData.append('action', 'update_request');
     mainRequestData.append('jdrequestid', jdrequestid);
     mainRequestData.append('jdtitle', jdtitle);
     mainRequestData.append('novacpost', currentTotal);
@@ -202,8 +234,7 @@ function createstaffreqperstation() {
     .then(response => response.text())
     .then(data => {
         if (data === 'success') {
-            // After creating main request, add station requests
-            return Promise.all(stationRequests.map(request => {
+            return Promise.all(newOrModifiedStations.map(request => {
                 const stationData = new FormData();
                 stationData.append('action', 'add_station');
                 stationData.append('jdrequestid', jdrequestid);
@@ -217,10 +248,9 @@ function createstaffreqperstation() {
                 }).then(response => response.text());
             }));
         }
-        throw new Error('Failed to create staff request');
+        throw new Error('Failed to update request');
     })
     .then(() => {
-        alert('Staff request saved successfully');
         window.location.href = 'staffrequeststep1.php';
     })
     .catch(error => {
@@ -369,6 +399,12 @@ function initializeNewRequestDetails() {
             } else {
                 document.getElementById('jdrequestid').textContent = `Request ID: ${data.jdrequestid}`;
                 document.getElementById('availablevacant').textContent = `Staff Request Available for ${data.deptunitcode}: ${data.availablepositions}`;
+                
+                // Always show save button for new requests
+                const saveButton = document.querySelector('button[onclick="return createstaffreqperstation()"]');
+                if (saveButton) {
+                    saveButton.style.display = 'block';
+                }
             }
         })
         .catch(error => {
