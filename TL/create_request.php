@@ -1,19 +1,19 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
+require_once 'subunit.php';
 
 include("../includes/header.html");
 include("../includes/sidebar.html");
 
-$revenue = new Revenue($con);
+$subunit = new Subunit($con);
 $staffid = $_SESSION['staffid'];
-$teamLeadInfo = $revenue->getTeamLeadInfo($staffid);
-$availablePositions = $revenue->getSubunitAvailablePositions($teamLeadInfo['subdeptunitcode']);
-$jdrequestid = $revenue->generateRequestId();
+$teamLeadInfo = $subunit->getTeamLeadInfo($staffid);
+$availablePositions = $subunit->getSubunitAvailablePositions($teamLeadInfo['subdeptunitcode']);
+$jdrequestid = $subunit->generateRequestId();
 $subdeptunitcode = $teamLeadInfo['subdeptunitcode'];
 
 // Redirect if not authorized
-if (!$teamLeadInfo['subdeptunitcode'] && !$_SESSION['isAdmin']) {
+if (!$subdeptunitcode && !$_SESSION['isAdmin']) {
     header("Location: ../index.php");
     exit;
 }
@@ -27,68 +27,63 @@ if (!$teamLeadInfo['subdeptunitcode'] && !$_SESSION['isAdmin']) {
                     <div class="card-body">
                         <div class="row mb-3">
                             <div class="col-sm-6">
-                                <h6 class="card-title" style="font-weight: 800; font-size: small;">STAFF REQUEST DETAILS</h6>
+                                <h6 class="card-title" style="font-weight: 800; font-size: small;">SUBUNIT STAFF REQUEST</h6>
                             </div>
                             <div class="col-sm-6 text-end">
-                                <span id="jdrequestid" style="font-size: small; font-weight: 700;">
+                                <span id="subunit-request-id" style="font-size: small; font-weight: 700;">
                                     <?php echo $jdrequestid; ?>
                                 </span>
-                                <span id="availablevacant" style="font-size: small; font-weight: 700;">
+                                <span id="subunit-available-positions" style="font-size: small; font-weight: 700;">
                                     Available Positions for <?php echo $subdeptunitcode; ?>: <?php echo $availablePositions; ?>
                                 </span>
                             </div>
                         </div>
 
-                        <form id="staffRequestForm" method="POST">
+                        <form id="subunitRequestForm" method="POST">
                             <div class="row mb-3">
                                 <div class="col-sm-6">
                                     <label class="form-label">Job Title</label>
-                                    <select class="form-control" id="jdtitle" name="jdtitle" required>
+                                    <select class="form-control" id="subunit-job-title" name="jdtitle" required>
                                         <option value="">Select Job Title</option>
-                                        <?php echo $revenue->getSubunitJobTitles($teamLeadInfo['subdeptunitcode']); ?>
+                                        <?php echo $subunit->getSubunitJobTitles($subdeptunitcode); ?>
                                     </select>
                                 </div>
                             </div>
 
-                            <div id="stationContainer">
-                                <div class="station-entry">
+                            <div id="subunit-station-container">
+                                <div class="subunit-station-entry">
                                     <div class="row mb-3">
                                         <div class="col-sm-4">
                                             <label class="form-label">Station</label>
-                                            <select class="form-control station-select" name="stations[]" required>
+                                            <select class="form-control subunit-station" name="station" required>
                                                 <option value="">Select Station</option>
-                                                <?php echo $revenue->getStations(); ?>
+                                                <?php echo $subunit->getStations(); ?>
                                             </select>
                                         </div>
                                         <div class="col-sm-4">
                                             <label class="form-label">Employment Type</label>
-                                            <select class="form-control" name="employmentTypes[]" required>
+                                            <select class="form-control subunit-employment-type" name="employmenttype" required>
                                                 <option value="">Select Type</option>
-                                                <?php echo $revenue->getStaffTypes(); ?>
+                                                <?php echo $subunit->getStaffTypes(); ?>
                                             </select>
                                         </div>
                                         <div class="col-sm-3">
                                             <label class="form-label">Staff Per Station</label>
-                                            <input type="number" class="form-control staff-per-station" name="staffPerStation[]" required>
+                                            <input type="number" class="form-control subunit-staff-count" name="staffperstation" required>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <button type="button" id="addStation" class="btn btn-secondary mb-3">+ Add Another Station</button>
+                            <button type="button" id="addSubunitStation" class="btn btn-secondary mb-3">+ Add Another Station</button>
+                            <button type="button" class="btn btn-primary" onclick="submitSubunitRequest()"
+                                style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px; display: block; margin: 0 auto; margin-top: 20px"
+                                onmouseover="this.style.backgroundColor='#000000';"
+                                onmouseout="this.style.backgroundColor='#fc7f14';">Save as Draft
+                            </button>
                         </form>
 
-                        <div class="col-lg-12" id="loadstaffreqperstation">
-                        </div>
-                        <div class="row">
-                            <div class="col-sm-10">
-                                <button type="button" class="btn btn-primary"
-                                    onclick="return submitTeamLeadRequest()"
-                                    style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
-                                    onmouseover="this.style.backgroundColor='#000000';"
-                                    onmouseout="this.style.backgroundColor='#fc7f14';">Save as Draft
-                                </button>
-                            </div>
+                        <div class="col-lg-12" id="subunit-request-list">
                         </div>
                     </div>
                 </div>
@@ -98,4 +93,53 @@ if (!$teamLeadInfo['subdeptunitcode'] && !$_SESSION['isAdmin']) {
 </main>
 
 <?php include("../includes/footer.html"); ?>
-<script src="../assets/js/teamlead.js"></script>
+<script>
+    function submitSubunitRequest() {
+        const form = document.getElementById('subunitRequestForm');
+        const stations = [];
+
+        // Collect all station entries
+        document.querySelectorAll('.subunit-station-entry').forEach(entry => {
+            stations.push({
+                station: entry.querySelector('.subunit-station').value,
+                employmenttype: entry.querySelector('.subunit-employment-type').value,
+                staffperstation: entry.querySelector('.subunit-staff-count').value
+            });
+        });
+
+        const formData = new FormData();
+        formData.append('action', 'createSubunitRequest');
+        formData.append('jdtitle', document.getElementById('subunit-job-title').value);
+        formData.append('stations', JSON.stringify(stations));
+
+        fetch('subunitparameters.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Request created successfully!');
+                    window.location.href = 'TeamLead.php';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while submitting the request');
+            });
+    }
+
+    document.getElementById('addSubunitStation').addEventListener('click', function() {
+        const container = document.getElementById('subunit-station-container');
+        const template = container.querySelector('.subunit-station-entry').cloneNode(true);
+
+        // Clear the values
+        template.querySelectorAll('select, input').forEach(element => {
+            element.value = '';
+        });
+
+        container.appendChild(template);
+    });
+</script>

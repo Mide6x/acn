@@ -30,23 +30,18 @@ class Revenue
         try {
             $this->db->beginTransaction();
 
-            // Convert staffPerStation to array if it's a string
-            if (is_string($data['staffPerStation'])) {
-                $data['staffPerStation'] = explode(',', $data['staffPerStation']);
-            }
+            // Calculate total staff
+            $totalStaff = intval($data['staffperstation']);
 
-            // Calculate total staff from station requests
-            $totalStaff = array_sum(array_map('intval', $data['staffPerStation']));
-            $subdeptunitcode = getCurrentUser('subdeptunitcode');
-
-            // Insert/Update main request
-            $query = "INSERT INTO staffrequest 
-                 (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, status, createdby, dandt, staffid) 
-                 VALUES (?, ?, ?, ?, ?, 'draft', ?, NOW(), ?)
-                 ON DUPLICATE KEY UPDATE 
-                 jdtitle = VALUES(jdtitle),
-                 novacpost = VALUES(novacpost),
-                 dandt = NOW()";
+            // Insert into staffrequest
+            $query = "INSERT INTO staffrequest (
+                jdrequestid, 
+                jdtitle, 
+                novacpost, 
+                deptunitcode, 
+                status, 
+                createdby
+            ) VALUES (?, ?, ?, ?, 'draft', ?)";
 
             $stmt = $this->db->prepare($query);
             $stmt->execute([
@@ -54,34 +49,27 @@ class Revenue
                 $data['jdtitle'],
                 $totalStaff,
                 $data['deptunitcode'],
-                $subdeptunitcode,
-                $data['createdby'],
-                $data['staffid']
+                $data['createdby']
             ]);
 
-            // Delete existing station requests for this jdrequestid
-            $deleteQuery = "DELETE FROM staffrequestperstation WHERE jdrequestid = ?";
-            $stmt = $this->db->prepare($deleteQuery);
-            $stmt->execute([$data['jdrequestid']]);
+            // Insert into staffrequestperstation
+            $stationQuery = "INSERT INTO staffrequestperstation (
+                jdrequestid,
+                station,
+                employmenttype,
+                staffperstation,
+                status,
+                createdby
+            ) VALUES (?, ?, ?, ?, 'draft', ?)";
 
-            // Insert new station requests
-            foreach ($data['stations'] as $index => $station) {
-                if (empty($station)) continue;
-
-                $query = "INSERT INTO staffrequestperstation 
-                     (jdrequestid, station, employmenttype, staffperstation, status, createdby, dandt, staffid)
-                     VALUES (?, ?, ?, ?, 'draft', ?, NOW(), ?)";
-
-                $stmt = $this->db->prepare($query);
-                $stmt->execute([
-                    $data['jdrequestid'],
-                    $station,
-                    $data['employmentTypes'][$index],
-                    $data['staffPerStation'][$index],
-                    $data['createdby'],
-                    $data['staffid']
-                ]);
-            }
+            $stationStmt = $this->db->prepare($stationQuery);
+            $stationStmt->execute([
+                $data['jdrequestid'],
+                $data['station'],
+                $data['employmenttype'],
+                $data['staffperstation'],
+                $data['createdby']
+            ]);
 
             $this->db->commit();
             return true;
@@ -90,6 +78,7 @@ class Revenue
             throw new Exception("Error saving team lead draft: " . $e->getMessage());
         }
     }
+
 
     //save draft request
     public function saveDraftRequest()
@@ -102,31 +91,21 @@ class Revenue
     public function saveStationRequest($jdrequestid, $station, $employmenttype, $staffperstation, $createdby)
     {
         try {
-            $mainStatus = $this->getRequestStatus($jdrequestid);
-            if ($mainStatus === 'pending') {
-                throw new Exception("Cannot modify a pending request");
-            }
+            $query = "INSERT INTO staffrequestperstation 
+                    (jdrequestid, station, employmenttype, staffperstation, status, createdby) 
+                    VALUES (?, ?, ?, ?, 'draft', ?)";
 
-            $subrequestid = $jdrequestid . $station;
-
-            $sql = "INSERT INTO staffrequestperstation 
-                    (jdrequestid, subrequestid, station, employmenttype, staffperstation, status, createdby)
-                    VALUES (:jdrequestid, :subrequestid, :station, :employmenttype, :staffperstation, 'draft', :createdby)
-                    ON DUPLICATE KEY UPDATE
-                    employmenttype = VALUES(employmenttype),
-                    staffperstation = VALUES(staffperstation)";
-
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->db->prepare($query);
             return $stmt->execute([
-                ':jdrequestid' => $jdrequestid,
-                ':subrequestid' => $subrequestid,
-                ':station' => $station,
-                ':employmenttype' => $employmenttype,
-                ':staffperstation' => $staffperstation,
-                ':createdby' => $createdby
+                $jdrequestid,
+                $station,
+                $employmenttype,
+                $staffperstation,
+                $createdby
             ]);
         } catch (Exception $e) {
-            throw new Exception("Error saving station request: " . $e->getMessage());
+            error_log("Error saving station request: " . $e->getMessage());
+            throw new Exception("Error saving station request");
         }
     }
 
@@ -918,142 +897,6 @@ class Revenue
             'HOD' => 'HR'
         ];
         return $levels[$currentLevel] ?? $currentLevel;
-    }
-
-    public function createSubunitRequest($jdtitle, $novacpost, $subdeptunitcode, $createdby)
-    {
-        try {
-            $this->db->beginTransaction();
-
-            // Get department unit code from subunit
-            $query = "SELECT deptunitcode FROM subdeptunittbl WHERE subdeptunitcode = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$subdeptunitcode]);
-            $deptUnit = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$deptUnit) {
-                throw new Exception("Invalid subunit code");
-            }
-
-            // Generate request ID
-            $requestId = 'REQ' . date('Y') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
-
-            // Create staff request with subdeptunitcode
-            $sql = "INSERT INTO staffrequest 
-                    (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, status, createdby) 
-                    VALUES (?, ?, ?, ?, ?, 'draft', ?)";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
-                $requestId,
-                $jdtitle,
-                $novacpost,
-                $deptUnit['deptunitcode'],
-                $subdeptunitcode,
-                $createdby
-            ]);
-
-            $this->db->commit();
-            return $requestId;
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            throw new Exception("Error creating request: " . $e->getMessage());
-        }
-    }
-
-    public function getSubunitAvailablePositions($subdeptunitcode)
-    {
-        try {
-            // Get subunit headcount allocation
-            $query = "SELECT subdeptnostaff 
-                 FROM subdeptunittbl 
-                 WHERE subdeptunitcode = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$subdeptunitcode]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$result) {
-                return 0;
-            }
-
-            $allocatedStaff = intval($result['subdeptnostaff']);
-
-            // Get current staff count for the subunit
-            $query = "SELECT COUNT(*) as current_count 
-                 FROM employeetbl 
-                 WHERE subdeptunitcode = ? 
-                 AND status = 'Active'";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$subdeptunitcode]);
-            $currentStaff = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            $currentCount = intval($currentStaff['current_count']);
-
-            // Calculate available positions
-            $availablePositions = $allocatedStaff - $currentCount;
-
-            // Return 0 if negative (shouldn't happen in normal circumstances)
-            return max(0, $availablePositions);
-        } catch (Exception $e) {
-            error_log("Error in getSubunitAvailablePositions: " . $e->getMessage());
-            return 0;
-        }
-    }
-    public function getSubunitJobTitles($subdeptunitcode)
-    {
-        $query = "SELECT jdtitle FROM jobtitletbl WHERE subdeptunitcode = ?";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$subdeptunitcode]);
-
-        $output = '';
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $output .= "<option value='{$row['jdtitle']}'>{$row['jdtitle']}</option>";
-        }
-        return $output;
-    }
-
-    public function createTeamLeadRequest($data)
-    {
-        try {
-            $this->db->beginTransaction();
-
-            // Calculate total staff from station requests
-            $totalStaff = array_sum($data['staffPerStation']);
-
-            // Insert into staffrequest with draft status and staffid
-            $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, 
-                     subdeptunitcode, status, createdby, staffid) 
-                     VALUES (?, ?, ?, ?, ?, 'draft', ?, ?)";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([
-                $data['jdrequestid'],
-                $data['jdtitle'],
-                $totalStaff,
-                $data['deptunitcode'],
-                $data['subdeptunitcode'],
-                $data['createdby'],
-                $data['staffid']  // Add staffid here
-            ]);
-
-            // Insert station details
-            foreach ($data['stations'] as $index => $station) {
-                $query = "INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation, status, createdby)
-                         VALUES (?, ?, ?, ?, 'draft', ?)";
-                $stmt = $this->db->prepare($query);
-                $stmt->execute([
-                    $data['jdrequestid'],
-                    $station,
-                    $data['employmentTypes'][$index],
-                    $data['staffPerStation'][$index],
-                    $data['createdby']
-                ]);
-            }
-
-            $this->db->commit();
-            return $data['jdrequestid'];
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            throw $e;
-        }
     }
 
     // Add new function to get draft requests for DeptUnitLead

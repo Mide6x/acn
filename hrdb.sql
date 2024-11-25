@@ -152,7 +152,7 @@ CREATE TABLE staffrequestperstation (
     station VARCHAR(10),
     employmenttype VARCHAR(50),
     staffperstation INT NOT NULL,
-    status ENUM('pending', 'approved', 'declined', '') DEFAULT 'pending',
+    status VARCHAR(50) DEFAULT 'pending',
     reason TEXT,
     dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     createdby VARCHAR(100),

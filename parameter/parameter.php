@@ -123,29 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 break;
 
-            case 'createTeamLeadRequest':
-                try {
-                    $staffid = $_SESSION['staffid'];
-                    $teamLeadInfo = $revenue->getTeamLeadInfo($staffid);
-
-                    $requestData = [
-                        'jdrequestid' => $revenue->generateRequestId(),
-                        'jdtitle' => $_POST['jdtitle'],
-                        'novacpost' => $_POST['novacpost'],
-                        'deptunitcode' => $teamLeadInfo['deptunitcode'],
-                        'subdeptunitcode' => $teamLeadInfo['subdeptunitcode'],
-                        'createdby' => $staffid,
-                        'stations' => $_POST['stations'],
-                        'employmentTypes' => $_POST['employmentTypes'],
-                        'staffPerStation' => $_POST['staffPerStation']
-                    ];
-
-                    $revenue->createTeamLeadRequest($requestData);
-                    echo "Request created successfully!";
-                } catch (Exception $e) {
-                    echo "Error: " . $e->getMessage();
-                }
-                break;
 
             case 'submitFinalRequest':
                 try {
@@ -180,9 +157,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data = [
                         'jdrequestid' => $_POST['jdrequestid'],
                         'jdtitle' => $_POST['jdtitle'],
-                        'stations' => $_POST['stations'],
-                        'employmentTypes' => $_POST['employmentTypes'],
-                        'staffPerStation' => $_POST['staffPerStation'],
+                        'stations' => $_POST['stations[]'],
+                        'employmentTypes' => $_POST['employmentTypes[]'],
+                        'staffPerStation' => $_POST['staffPerStation[]'],
                         'createdby' => $createdby,
                         'deptunitcode' => $deptunitcode,
                         'subdeptunitcode' => $_SESSION['subdeptunitcode'],
@@ -280,6 +257,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     echo 'success';
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'save_station':
+                try {
+                    $result = $revenue->saveStationRequest(
+                        $_POST['jdrequestid'],
+                        $_POST['station'],
+                        $_POST['employmenttype'],
+                        $_POST['staffperstation'],
+                        $_SESSION['staffid']
+                    );
+                    echo $result ? "success" : "error";
                 } catch (Exception $e) {
                     echo "Error: " . $e->getMessage();
                 }
