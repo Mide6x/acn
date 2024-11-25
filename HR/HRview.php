@@ -3,8 +3,8 @@ session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
 
-include("addon/header.html");
-include("addon/sidebar.html");
+include("../includes/header.html");
+include("../includes/sidebar.html");
 
 $revenue = new Revenue($con);
 $pendingRequests = $revenue->getPendingRequests();
@@ -16,7 +16,7 @@ $pendingRequests = $revenue->getPendingRequests();
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Pending Staff Requests</h5>
+                        <h6 class="card-title" style="font-weight: 800; font-size: small;">ALL PENDING STAFF REQUESTS</h6>
                         <div class="table-responsive">
                             <table class="table table-bordered">
                                 <thead>
@@ -71,7 +71,7 @@ $pendingRequests = $revenue->getPendingRequests();
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Request Details</h5>
+                <h6 class="card-title" style="font-weight: 800; font-size: small;">ALL STAFF REQUESTS</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -102,4 +102,4 @@ $pendingRequests = $revenue->getPendingRequests();
 <script src="assets/js/hr.js">
     document.addEventListener('DOMContentLoaded', loadPendingRequests);
 </script>
-<?php include("addon/footer.html"); ?>
+<?php include("../includes/footer.html"); ?>

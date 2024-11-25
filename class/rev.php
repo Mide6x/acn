@@ -24,34 +24,72 @@ class Revenue
         return sprintf("REQ%d%04d", $year, $sequence);
     }
 
-    // Save draft request
-    public function saveDraftRequest($jdrequestid, $jdtitle, $novacpost, $deptunitcode, $createdby)
+    // Save draft request team lead
+    public function saveTeamLeadDraftRequest($data)
     {
         try {
-            // Validate available positions
-            $availablePositions = $this->getAvailablePositions($deptunitcode);
-            if ($novacpost > $availablePositions) {
-                throw new Exception("Requested positions exceed available positions");
+            $this->db->beginTransaction();
+
+            // Calculate total staff from station requests
+            $totalStaff = array_sum($data['staffPerStation']);
+            $subdeptunitcode = getCurrentUser('subdeptunitcode');
+
+            // Insert/Update main request
+            $query = "INSERT INTO staffrequest 
+                 (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, status, createdby, dandt) 
+                 VALUES (?, ?, ?, ?, ?, 'draft', ?, NOW())
+                 ON DUPLICATE KEY UPDATE 
+                 jdtitle = VALUES(jdtitle),
+                 novacpost = VALUES(novacpost),
+                 dandt = NOW()";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([
+                $data['jdrequestid'],
+                $data['jdtitle'],
+                $totalStaff,
+                $data['deptunitcode'],
+                $subdeptunitcode,
+                $data['createdby']
+            ]);
+
+            // Delete existing station requests for this jdrequestid
+            $deleteQuery = "DELETE FROM staffrequestperstation WHERE jdrequestid = ?";
+            $stmt = $this->db->prepare($deleteQuery);
+            $stmt->execute([$data['jdrequestid']]);
+
+            // Insert new station requests
+            foreach ($data['stations'] as $index => $station) {
+                if (empty($station)) continue;
+
+                $query = "INSERT INTO staffrequestperstation 
+                     (jdrequestid, station, employmenttype, staffperstation, status, createdby, dandt)
+                     VALUES (?, ?, ?, ?, 'draft', ?, NOW())";
+
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([
+                    $data['jdrequestid'],
+                    $station,
+                    $data['employmentTypes'][$index],
+                    $data['staffPerStation'][$index],
+                    $data['createdby']
+                ]);
             }
 
-            $sql = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby)
-                    VALUES (:jdrequestid, :jdtitle, :novacpost, :deptunitcode, 'draft', :createdby)
-                    ON DUPLICATE KEY UPDATE
-                    jdtitle = :jdtitle,
-                    novacpost = :novacpost";
-
-            $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
-                ':jdrequestid' => $jdrequestid,
-                ':jdtitle' => $jdtitle,
-                ':novacpost' => $novacpost,
-                ':deptunitcode' => $deptunitcode,
-                ':createdby' => $createdby
-            ]);
+            $this->db->commit();
+            return true;
         } catch (Exception $e) {
-            throw new Exception("Error saving draft: " . $e->getMessage());
+            $this->db->rollBack();
+            throw new Exception("Error saving team lead draft: " . $e->getMessage());
         }
     }
+
+    //save draft request
+    public function saveDraftRequest()
+    {
+        return $this->saveTeamLeadDraftRequest($_POST);
+    }
+
 
     // Save station request
     public function saveStationRequest($jdrequestid, $station, $employmenttype, $staffperstation, $createdby)
@@ -737,4 +775,599 @@ class Revenue
             throw new Exception("Error deleting station request: " . $e->getMessage());
         }
     }
+
+    public function getDeptUnitLeadInfo($staffid)
+    {
+        $query = "SELECT e.*, s.deptunitname
+                  FROM employeetbl e
+                  JOIN departmentunit s ON e.deptunitcode = s.deptunitcode
+                  WHERE e.staffid = ? AND e.position = 'DeptUnitLead' AND e.status = 'Active'";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$staffid]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    /* START TEAMLEAD FUNCTIONS */
+    public function getTeamLeadInfo($staffid)
+    {
+        // If user is admin, return all access
+        if (isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true) {
+            return [
+                'subdeptunit' => 'All Subunits (Admin View)',
+                'subdeptunitcode' => 'ALL',
+                'isAdmin' => true
+            ];
+        }
+
+        $query = "SELECT e.*, s.subdeptunit 
+                 FROM employeetbl e 
+                 JOIN subdeptunittbl s ON e.subdeptunitcode = s.subdeptunitcode 
+                 WHERE e.staffid = ? AND e.position = 'TeamLead' AND e.status = 'Active'";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$staffid]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$result) {
+            return [
+                'subdeptunit' => 'No Subunit Found',
+                'subdeptunitcode' => null,
+                'error' => 'Not a TeamLead or Invalid Staff ID'
+            ];
+        }
+
+        return $result;
+    }
+
+    public function getSubunitRequests($subdeptunitcode)
+    {
+        $query = "SELECT 
+                sr.jdrequestid, 
+                sr.jdtitle, 
+                sr.novacpost,
+                sr.status AS request_status, -- Explicitly fetch status from staffrequest
+                (SELECT SUM(staffperstation) 
+                 FROM staffrequestperstation 
+                 WHERE jdrequestid = sr.jdrequestid) as total_positions,
+                a.status AS approval_status,
+                a.approvallevel
+            FROM staffrequest sr
+            LEFT JOIN approvaltbl a ON sr.jdrequestid = a.jdrequestid -- Use LEFT JOIN for optional approvals
+            WHERE sr.subdeptunitcode = ?
+            AND (a.approvallevel IN ('TeamLead', 'DeptUnitLead', 'HOD') OR a.approvallevel IS NULL)
+            ORDER BY sr.dandt DESC";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$subdeptunitcode]);
+        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($requests)) {
+            return "<tr><td colspan='5' class='text-center'>No requests found</td></tr>";
+        }
+
+        $output = "<table class='table table-bordered'>
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Job Title</th>
+                                <th>Total Positions</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>";
+
+        foreach ($requests as $request) {
+            // Prioritize showing the request status; otherwise, fallback to approval status
+            $status = $request['request_status'] ?? $request['approval_status'] ?? 'Unknown';
+            $output .= "<tr>
+                            <td>{$request['jdrequestid']}</td>
+                            <td>{$request['jdtitle']}</td>
+                            <td>{$request['total_positions']}</td>
+                            <td>{$status}</td>
+                            <td>
+                                <button class='btn btn-sm btn-primary' 
+                                        onclick='viewRequest(\"{$request['jdrequestid']}\")'>
+                                    View
+                                </button>
+                            </td>
+                        </tr>";
+        }
+
+        $output .= "</tbody></table>";
+        return $output;
+    }
+
+
+    private function getApprovalStatus($request)
+    {
+        $status = '';
+        switch ($request['approval_status']) {
+            case 'draft':
+                $status = 'Draft';
+                break;
+            case 'pending':
+                $status = 'Pending ' . $request['approvallevel'] . ' Approval';
+                break;
+            case 'approved':
+                if ($request['approvallevel'] === 'HOD') {
+                    $status = 'Approved';
+                } else {
+                    $status = 'Pending ' . $this->getNextLevel($request['approvallevel']) . ' Approval';
+                }
+                break;
+            case 'declined':
+                $status = 'Declined by ' . $request['approvallevel'];
+                break;
+        }
+        return $status;
+    }
+
+    private function getNextLevel($currentLevel)
+    {
+        $levels = [
+            'TeamLead' => 'DeptUnitLead',
+            'DeptUnitLead' => 'HOD',
+            'HOD' => 'HR'
+        ];
+        return $levels[$currentLevel] ?? $currentLevel;
+    }
+
+    public function createSubunitRequest($jdtitle, $novacpost, $subdeptunitcode, $createdby)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Get department unit code from subunit
+            $query = "SELECT deptunitcode FROM subdeptunittbl WHERE subdeptunitcode = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$subdeptunitcode]);
+            $deptUnit = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$deptUnit) {
+                throw new Exception("Invalid subunit code");
+            }
+
+            // Generate request ID
+            $requestId = 'REQ' . date('Y') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
+
+            // Create staff request with subdeptunitcode
+            $sql = "INSERT INTO staffrequest 
+                    (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, status, createdby) 
+                    VALUES (?, ?, ?, ?, ?, 'draft', ?)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                $requestId,
+                $jdtitle,
+                $novacpost,
+                $deptUnit['deptunitcode'],
+                $subdeptunitcode,
+                $createdby
+            ]);
+
+            $this->db->commit();
+            return $requestId;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error creating request: " . $e->getMessage());
+        }
+    }
+
+    public function getSubunitAvailablePositions($subdeptunitcode)
+    {
+        try {
+            // Get subunit headcount allocation
+            $query = "SELECT subdeptnostaff 
+                 FROM subdeptunittbl 
+                 WHERE subdeptunitcode = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$subdeptunitcode]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$result) {
+                return 0;
+            }
+
+            $allocatedStaff = intval($result['subdeptnostaff']);
+
+            // Get current staff count for the subunit
+            $query = "SELECT COUNT(*) as current_count 
+                 FROM employeetbl 
+                 WHERE subdeptunitcode = ? 
+                 AND status = 'Active'";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$subdeptunitcode]);
+            $currentStaff = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $currentCount = intval($currentStaff['current_count']);
+
+            // Calculate available positions
+            $availablePositions = $allocatedStaff - $currentCount;
+
+            // Return 0 if negative (shouldn't happen in normal circumstances)
+            return max(0, $availablePositions);
+        } catch (Exception $e) {
+            error_log("Error in getSubunitAvailablePositions: " . $e->getMessage());
+            return 0;
+        }
+    }
+    public function getSubunitJobTitles($subdeptunitcode)
+    {
+        $query = "SELECT jdtitle FROM jobtitletbl WHERE subdeptunitcode = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$subdeptunitcode]);
+
+        $output = '';
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $output .= "<option value='{$row['jdtitle']}'>{$row['jdtitle']}</option>";
+        }
+        return $output;
+    }
+
+    public function createTeamLeadRequest($data)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Calculate total staff from station requests
+            $totalStaff = array_sum($data['staffPerStation']);
+
+            // Insert into staffrequest with draft status
+            $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, status, createdby) 
+                     VALUES (?, ?, ?, ?, ?, 'draft', ?)";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([
+                $data['jdrequestid'],
+                $data['jdtitle'],
+                $totalStaff, // Automatically calculated
+                $data['deptunitcode'],
+                $data['subdeptunitcode'],
+                $data['createdby']
+            ]);
+
+            // Insert station details
+            foreach ($data['stations'] as $index => $station) {
+                $query = "INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation, status, createdby)
+                         VALUES (?, ?, ?, ?, 'draft', ?)";
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([
+                    $data['jdrequestid'],
+                    $station,
+                    $data['employmentTypes'][$index],
+                    $data['staffPerStation'][$index],
+                    $data['createdby']
+                ]);
+            }
+
+            $this->db->commit();
+            return $data['jdrequestid'];
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    // Add new function to get draft requests for DeptUnitLead
+
+
+    public function getDeptUnitLeadDraftRequests($deptunitcode)
+    {
+        $query = "SELECT sr.*, e.staffname as requestor
+                  FROM staffrequest sr
+                  JOIN employeetbl e ON sr.createdby = e.staffid
+                  WHERE sr.deptunitcode = ? 
+                  AND sr.status = 'draft'
+                  ORDER BY sr.dandt DESC";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$deptunitcode]);
+        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($requests)) {
+            return "<tr><td colspan='6' class='text-center'>No draft requests found</td></tr>";
+        }
+
+        $output = "<table class='table table-bordered'>
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Job Title</th>
+                            <th>Positions</th>
+                            <th>Requestor</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>";
+
+        foreach ($requests as $request) {
+            $output .= "<tr>
+                        <td>{$request['jdrequestid']}</td>
+                        <td>{$request['jdtitle']}</td>
+                        <td>{$request['novacpost']}</td>
+                        <td>{$request['requestor']}</td>
+                        <td>Draft</td>
+                        <td>
+                            <button class='btn btn-sm btn-primary' 
+                                    onclick='viewRequest(\"{$request['jdrequestid']}\")'>
+                                View
+                            </button>
+                        </td>
+                    </tr>";
+        }
+
+        $output .= "</tbody></table>";
+        return $output;
+    }
+
+    public function saveDeptUnitLeadDraftRequest($data)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Calculate total staff from station requests
+            $totalStaff = array_sum($data['staffPerStation']);
+
+            // Insert/Update main request
+            $query = "INSERT INTO staffrequest 
+                     (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby, dandt) 
+                     VALUES (?, ?, ?, ?, 'draft', ?, NOW())
+                     ON DUPLICATE KEY UPDATE 
+                     jdtitle = VALUES(jdtitle),
+                     novacpost = VALUES(novacpost),
+                     dandt = NOW()";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([
+                $data['jdrequestid'],
+                $data['jdtitle'],
+                $totalStaff,
+                $data['deptunitcode'],
+                $data['createdby']
+            ]);
+
+            // Delete existing station requests
+            $deleteQuery = "DELETE FROM staffrequestperstation WHERE jdrequestid = ?";
+            $stmt = $this->db->prepare($deleteQuery);
+            $stmt->execute([$data['jdrequestid']]);
+
+            // Insert new station requests
+            foreach ($data['stations'] as $index => $station) {
+                if (empty($station)) continue;
+
+                $query = "INSERT INTO staffrequestperstation 
+                         (jdrequestid, station, employmenttype, staffperstation, status, createdby, dandt)
+                         VALUES (?, ?, ?, ?, 'draft', ?, NOW())";
+
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([
+                    $data['jdrequestid'],
+                    $station,
+                    $data['employmentTypes'][$index],
+                    $data['staffPerStation'][$index],
+                    $data['createdby']
+                ]);
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error saving DeptUnitLead draft: " . $e->getMessage());
+        }
+    }
+
+    public function getDeptUnitLeadRequests($deptunitcode)
+    {
+        try {
+            // Debug log
+            error_log("Fetching requests for deptunitcode: " . $deptunitcode);
+
+            $query = "SELECT sr.*, e.staffname as requestor
+                     FROM staffrequest sr
+                     JOIN employeetbl e ON sr.staffid = e.staffid
+                     WHERE sr.deptunitcode = ?
+                     ORDER BY sr.dandt DESC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$deptunitcode]);
+            $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Debug log
+            error_log("Found " . count($requests) . " requests");
+
+            if (empty($requests)) {
+                return "<div class='alert alert-info'>No requests found for department unit: " . htmlspecialchars($deptunitcode) . "</div>";
+            }
+
+            $output = "<table class='table table-bordered'>
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Job Title</th>
+                                <th>Positions</th>
+                                <th>Sub Unit</th>
+                                <th>Initiator</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>";
+
+            foreach ($requests as $request) {
+                $output .= "<tr>
+                            <td>{$request['jdrequestid']}</td>
+                            <td>{$request['jdtitle']}</td>
+                            <td>{$request['novacpost']}</td>
+                            <td>{$request['subdeptunitcode']}</td>
+                            <td>{$request['requestor']}</td>
+                            <td>{$request['status']}</td>
+                            <td>
+                                <button class='btn btn-sm btn-primary' 
+                                        onclick='viewDeptUnitLeadRequest(\"{$request['jdrequestid']}\")'>
+                                    View
+                                </button>
+                            </td>
+                        </tr>";
+            }
+
+            $output .= "</tbody></table>";
+            return $output;
+        } catch (Exception $e) {
+            return "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
+        }
+    }
+
+    public function getDeptUnitLeadRequestDetails($jdrequestid)
+    {
+        try {
+            // Get main request details with job description
+            $requestQuery = "SELECT r.*, d.deptunitname, e.staffname as requestor, 
+                         j.jdtitle, j.jddescription, j.eduqualification, 
+                         j.proqualification, j.workrelation, 
+                         j.jdcondition, j.agebracket, j.personspec, 
+                         j.fuctiontech, j.managerial, j.behavioural
+                         FROM staffrequest r
+                         JOIN departmentunit d ON r.deptunitcode = d.deptunitcode
+                         JOIN employeetbl e ON r.staffid = e.staffid
+                         LEFT JOIN jobtitletbl j ON r.jdtitle = j.jdtitle
+                         WHERE r.jdrequestid = ?";
+
+            $stmt = $this->db->prepare($requestQuery);
+            $stmt->execute([$jdrequestid]);
+            $request = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$request) {
+                return "<div class='alert alert-danger'>Request not found</div>";
+            }
+
+            // Get station details (without fetching status)
+            $stationQuery = "SELECT station, employmenttype, staffperstation
+                         FROM staffrequestperstation 
+                         WHERE jdrequestid = ?";
+            $stationStmt = $this->db->prepare($stationQuery);
+            $stationStmt->execute([$jdrequestid]);
+            $stations = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $output = "<div class='request-details'>";
+            $output .= "<h5><strong>Job Title:</strong> {$request['jdtitle']}</h5>";
+            $output .= "<p><strong>Request ID:</strong> {$request['jdrequestid']}</p>";
+            $output .= "<p><strong>Department Unit:</strong> {$request['deptunitname']}</p>";
+            $output .= "<p><strong>Status:</strong> {$request['status']}</p>";
+            $output .= "<p><strong>Requestor:</strong> {$request['requestor']}</p>";
+            $output .= "<p><strong>Date:</strong> " . date('Y-m-d', strtotime($request['dandt'])) . "</p>";
+
+            // Add station details
+            if (!empty($stations)) {
+                $output .= "<div class='stations-info mt-3'>";
+                $output .= "<h6>Station Details</h6>";
+                $output .= "<table class='table table-bordered'>";
+                $output .= "<thead><tr>";
+                $output .= "<th>Station</th>";
+                $output .= "<th>Employment Type</th>";
+                $output .= "<th>Staff Count</th>";
+                $output .= "</tr></thead><tbody>";
+
+                foreach ($stations as $station) {
+                    $output .= "<tr>";
+                    $output .= "<td>{$station['station']}</td>";
+                    $output .= "<td>{$station['employmenttype']}</td>";
+                    $output .= "<td>{$station['staffperstation']}</td>";
+                    $output .= "</tr>";
+                    // Add approval buttons if status is 'draft'
+                    if ($request['status'] === 'draft') {
+                        $output .= "<div class='approval-buttons mt-4 text-center'>";
+                        $output .= "<button class='btn btn-success me-2' onclick='approveDeptUnitLeadRequest(\"{$request['jdrequestid']}\")'>Approve</button>";
+                        $output .= "<button class='btn btn-danger' onclick='showDeclineModal(\"{$request['jdrequestid']}\")'>Decline</button>";
+                        $output .= "</div>";
+                    }
+                }
+
+                $output .= "</tbody></table></div>";
+            }
+
+            // Add additional details
+            $output .= "<div class='job-details mt-3'>";
+            $output .= "<h6><strong>Job Details</strong></h6>";
+            $output .= "<p><strong>Professional Qualification:</strong> {$request['proqualification']}</p>";
+            $output .= "<p><strong>Work Relation:</strong> {$request['workrelation']}</p>";
+            $output .= "<p><strong>Job Condition:</strong> {$request['jdcondition']}</p>";
+            $output .= "<p><strong>Age Bracket:</strong> {$request['agebracket']}</p>";
+            $output .= "<p><strong>Person Specification:</strong> {$request['personspec']}</p>";
+            $output .= "<p><strong>Functional/Technical Skills:</strong> {$request['fuctiontech']}</p>";
+            $output .= "<p><strong>Managerial Skills:</strong> {$request['managerial']}</p>";
+            $output .= "<p><strong>Behavioral Skills:</strong> {$request['behavioural']}</p>";
+            $output .= "</div>";
+
+
+            $output .= "</div>";
+            return $output;
+        } catch (Exception $e) {
+            return "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
+        }
+    }
+
+
+    public function updateDeptUnitLeadApproval($jdrequestid, $action, $reason = null)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            if ($action === 'approve') {
+                // Update staffrequest status
+                $updateRequest = "UPDATE staffrequest SET status = 'Unit Lead approved' WHERE jdrequestid = ?";
+                $stmt = $this->db->prepare($updateRequest);
+                $stmt->execute([$jdrequestid]);
+
+                // Update HOD approval status to pending
+                $updateApproval = "UPDATE approvaltbl SET status = 'pending' 
+                                 WHERE jdrequestid = ? AND approvallevel = 'HOD'";
+                $stmt = $this->db->prepare($updateApproval);
+                $stmt->execute([$jdrequestid]);
+            } else {
+                // Update staffrequest status and reason
+                $updateRequest = "UPDATE staffrequest SET status = 'declined', decline_reason = ? WHERE jdrequestid = ?";
+                $stmt = $this->db->prepare($updateRequest);
+                $stmt->execute([$reason, $jdrequestid]);
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+    /* END TEAMLEAD FUNCTIONS */
+
+    /* START DEPT UNIT LEAD FUNCTIONS */
+    public function getDeptUnitLeadAvailablePositions($deptunitcode)
+    {
+        try {
+            // Get the total number of employees in the department unit
+            $employeeQuery = "SELECT COUNT(*) as totalEmployees 
+                              FROM employeetbl e
+                              WHERE e.deptunitcode = ? 
+                              AND e.status = 'Active'";  // Only count active employees
+            $stmt = $this->db->prepare($employeeQuery);
+            $stmt->execute([$deptunitcode]);
+            $totalEmployees = $stmt->fetch(PDO::FETCH_ASSOC)['totalEmployees'] ?? 0;
+
+            // Get the required number of staff for the department unit
+            $requiredStaffQuery = "SELECT deptunitnostaff 
+                                   FROM departmentunit 
+                                   WHERE deptunitcode = ?";
+            $stmt = $this->db->prepare($requiredStaffQuery);
+            $stmt->execute([$deptunitcode]);
+            $requiredStaff = $stmt->fetch(PDO::FETCH_ASSOC)['deptunitnostaff'] ?? 0;
+
+            // Calculate available positions
+            $availablePositions = $requiredStaff - $totalEmployees;
+
+            return $availablePositions;
+        } catch (Exception $e) {
+            return "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
+        }
+    }
+    /* END DEPT UNIT LEAD FUNCTIONS */
 }

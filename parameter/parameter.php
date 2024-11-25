@@ -1,11 +1,10 @@
 <?php
-session_start();
 require_once('../include/config.php');
 
 $revenue = new Revenue($con);
-$createdby = $_SESSION['email'] ?? DEFAULT_CREATED_BY;
-$deptunitcode = $_SESSION['deptunitcode'] ?? DEFAULT_DEPT_UNIT_CODE;
-
+$createdby = getCurrentUser('email');
+$deptunitcode = getCurrentUser('deptunitcode');
+$response = ['success' => false, 'message' => ''];
 // Add error logging
 error_log("Request Method: " . $_SERVER['REQUEST_METHOD']);
 error_log("Action: " . ($_POST['action'] ?? $_GET['action'] ?? 'no action'));
@@ -123,6 +122,133 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo "Error: " . $e->getMessage();
                 }
                 break;
+
+            case 'createTeamLeadRequest':
+                try {
+                    $staffid = $_SESSION['staffid'];
+                    $teamLeadInfo = $revenue->getTeamLeadInfo($staffid);
+
+                    $requestData = [
+                        'jdrequestid' => $revenue->generateRequestId(),
+                        'jdtitle' => $_POST['jdtitle'],
+                        'novacpost' => $_POST['novacpost'],
+                        'deptunitcode' => $teamLeadInfo['deptunitcode'],
+                        'subdeptunitcode' => $teamLeadInfo['subdeptunitcode'],
+                        'createdby' => $staffid,
+                        'stations' => $_POST['stations'],
+                        'employmentTypes' => $_POST['employmentTypes'],
+                        'staffPerStation' => $_POST['staffPerStation']
+                    ];
+
+                    $revenue->createTeamLeadRequest($requestData);
+                    echo "Request created successfully!";
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'submitFinalRequest':
+                try {
+                    $jdrequestid = $_POST['jdrequestid'];
+
+                    // Update staffrequest status
+                    $query = "UPDATE staffrequest SET status = 'pending' WHERE jdrequestid = ?";
+                    $stmt = $con->prepare($query);
+                    $stmt->execute([$jdrequestid]);
+
+                    // Update staffrequestperstation status
+                    $query = "UPDATE staffrequestperstation SET status = 'pending' WHERE jdrequestid = ?";
+                    $stmt = $con->prepare($query);
+                    $stmt->execute([$jdrequestid]);
+
+                    // Update first approval level to pending
+                    $query = "UPDATE approvaltbl 
+                             SET status = 'pending' 
+                             WHERE jdrequestid = ? 
+                             AND approvallevel = 'DeptUnitLead'";
+                    $stmt = $con->prepare($query);
+                    $stmt->execute([$jdrequestid]);
+
+                    echo "Request submitted successfully!";
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'save_draft_request':
+                try {
+                    $data = [
+                        'jdrequestid' => $_POST['jdrequestid'],
+                        'jdtitle' => $_POST['jdtitle'],
+                        'stations' => json_decode($_POST['stations'], true),
+                        'employmentTypes' => json_decode($_POST['employmentTypes'], true),
+                        'staffPerStation' => json_decode($_POST['staffPerStation'], true),
+                        'createdby' => $createdby,
+                        'deptunitcode' => $deptunitcode
+                    ];
+
+                    $result = $revenue->saveTeamLeadDraftRequest($data);
+                    echo $result ? "Draft saved successfully" : "Error saving draft";
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'save_deptunitlead_draft':
+                try {
+                    $data = [
+                        'jdrequestid' => $_POST['jdrequestid'],
+                        'jdtitle' => $_POST['jdtitle'],
+                        'stations' => json_decode($_POST['stations'], true),
+                        'employmentTypes' => json_decode($_POST['employmentTypes'], true),
+                        'staffPerStation' => json_decode($_POST['staffPerStation'], true),
+                        'createdby' => $createdby,
+                        'deptunitcode' => $deptunitcode
+                    ];
+
+                    $result = $revenue->saveDeptUnitLeadDraftRequest($data);
+                    echo "Draft saved successfully";
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'deptunitlead_approve':
+                try {
+                    $jdrequestid = $_POST['jdrequestid'];
+
+                    // Update staffrequest status
+                    $updateQuery = "UPDATE staffrequest SET status = 'Unit Lead approved' WHERE jdrequestid = ?";
+                    $stmt = $con->prepare($updateQuery);
+                    $result = $stmt->execute([$jdrequestid]);
+
+                    // Insert into approvaltbl for HOD approval
+                    $insertQuery = "INSERT INTO approvaltbl (jdrequestid, approvallevel, status) 
+                                   VALUES (?, 'HOD', 'pending')";
+                    $stmt = $con->prepare($insertQuery);
+                    $stmt->execute([$jdrequestid]);
+
+                    echo $result ? 'success' : 'error';
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'deptunitlead_decline':
+                try {
+                    $jdrequestid = $_POST['jdrequestid'];
+                    $reason = $_POST['reason'];
+
+                    // Update staffrequest status and reason
+                    $updateQuery = "UPDATE staffrequest SET status = 'declined', decline_reason = ? WHERE jdrequestid = ?";
+                    $stmt = $con->prepare($updateQuery);
+                    $result = $stmt->execute([$reason, $jdrequestid]);
+
+                    echo $result ? 'success' : 'error';
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
         }
     } catch (Exception $e) {
         echo 'error: ' . $e->getMessage();
@@ -151,8 +277,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if ($request['status'] === 'draft') {
                             $output .= "<button onclick=\"editRequest('{$request['jdrequestid']}')\" class='btn btn-sm btn-warning'>Edit</button> ";
                             $output .= "<button onclick=\"submitRequest('{$request['jdrequestid']}')\" class='btn btn-sm btn-primary'>Submit</button> ";
+                        } else {
+                            $output .= "<button onclick=\"toggleStationDetails('{$request['jdrequestid']}')\" class='btn btn-sm btn-info'>View Details</button>";
                         }
-                        $output .= "<button onclick=\"toggleStationDetails('{$request['jdrequestid']}')\" class='btn btn-sm btn-info'>View Stations</button>";
                         $output .= "</td>";
                         $output .= "</tr>";
                     }
@@ -270,6 +397,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 } catch (Exception $e) {
                     echo json_encode(['error' => $e->getMessage()]);
+                }
+                break;
+
+            case 'get_request_full_details':
+                try {
+                    $jdrequestid = $_GET['jdrequestid'];
+
+                    // Get main request details
+                    $requestQuery = "SELECT r.*, d.deptunitname 
+                                    FROM staffrequest r
+                                    JOIN departmentunit d ON r.deptunitcode = d.deptunitcode
+                                    WHERE r.jdrequestid = ?";
+                    $stmt = $con->prepare($requestQuery);
+                    $stmt->execute([$jdrequestid]);
+                    $request = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    // Get station details
+                    $stationQuery = "SELECT s.*, st.stationname 
+                                    FROM staffrequestperstation s
+                                    JOIN stationtbl st ON s.station = st.stationcode
+                                    WHERE s.jdrequestid = ?";
+                    $stmt = $con->prepare($stationQuery);
+                    $stmt->execute([$jdrequestid]);
+                    $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    // Output HTML directly
+                    echo "<div class='request-info mb-4'>";
+                    echo "<h6 class='fw-bold'>Request Information</h6>";
+                    echo "<div class='row'>";
+                    echo "<div class='col-md-6'>";
+                    echo "<p><strong>Request ID:</strong> {$request['jdrequestid']}</p>";
+                    echo "<p><strong>Job Title:</strong> {$request['jdtitle']}</p>";
+                    echo "</div>";
+                    echo "<div class='col-md-6'>";
+                    echo "<p><strong>Total Positions:</strong> {$request['novacpost']}</p>";
+                    echo "<p><strong>Status:</strong> {$request['status']}</p>";
+                    echo "</div></div></div>";
+
+                    echo "<div class='station-info'>";
+                    echo "<h6 class='fw-bold'>Station Requests</h6>";
+                    echo "<div class='table-responsive'>";
+                    echo "<table class='table table-bordered'>";
+                    echo "<thead><tr>";
+                    echo "<th>Station</th>";
+                    echo "<th>Employment Type</th>";
+                    echo "<th>Staff Count</th>";
+                    echo "<th>Status</th>";
+                    echo "</tr></thead><tbody>";
+
+                    foreach ($stations as $station) {
+                        echo "<tr>";
+                        echo "<td>{$station['stationname']}</td>";
+                        echo "<td>{$station['employmenttype']}</td>";
+                        echo "<td>{$station['staffperstation']}</td>";
+                        echo "<td>{$station['status']}</td>";
+                        echo "</tr>";
+                    }
+
+                    echo "</tbody></table></div></div>";
+                } catch (Exception $e) {
+                    echo "<div class='alert alert-danger'>Error loading request details: {$e->getMessage()}</div>";
+                }
+                break;
+
+            case 'get_deptunitlead_request_details':
+                try {
+                    $jdrequestid = $_GET['jdrequestid'];
+                    echo $revenue->getDeptUnitLeadRequestDetails($jdrequestid);
+                } catch (Exception $e) {
+                    echo "<div class='alert alert-danger'>Error: {$e->getMessage()}</div>";
+                }
+                break;
+
+            case 'get_deptunitlead_requests':
+                try {
+                    echo $revenue->getDeptUnitLeadRequests($deptunitcode);
+                } catch (Exception $e) {
+                    echo "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
                 }
                 break;
         }

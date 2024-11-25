@@ -1,0 +1,60 @@
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/page_config.php'; ?>
+
+<link rel="stylesheet" href="../acnnew/assets/css/style.css">
+<!-- ======= Sidebar ======= -->
+<aside id="sidebar" class="sidebar">
+   <ul class="sidebar-nav" id="sidebar-nav">
+     <li class="nav-item">
+       <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['TEAM_LEAD']['view']; ?>">
+         <i class="bi bi-file-earmark-plus"></i>
+         <span>Create Staff Request (Team Lead)</span>
+       </a>
+     </li>
+     <li class="nav-item"></li>
+      <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['DEPT_UNIT_LEAD']['view']; ?>">
+        <i class="bi bi-file-earmark-plus"></i>
+        <span>Create Staff Request (Dept Unit Lead)</span>
+      </a>
+     </li>
+     <li class="nav-item">
+      <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['HOD']['view']; ?>">
+        <i class="bi bi-file-earmark-plus"></i>
+        <span>HOD View Requests</span>
+      </a>
+    </li>
+     <li class="nav-item">
+      <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['HR']['view']; ?>">
+        <i class="bi bi-list-check"></i>
+        <span>HR View All Staff Requests</span>
+      </a>
+    </li>
+     <li class="nav-item">
+        <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['HR']['dashboard']; ?>">
+         <i class="bi bi-speedometer2"></i>
+         <span>HR Dashboard</span>
+       </a>
+     </li>
+     <li class="nav-item">
+       <a class="nav-link collapsed" data-bs-target="#hr-settings-nav" data-bs-toggle="collapse" href="#">
+         <i class="bi bi-gear"></i><span>HR Settings</span><i class="bi bi-chevron-down ms-auto"></i>
+       </a>
+       <ul id="hr-settings-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
+         <li>
+           <a href="<?php echo $PAGE_URLS['SETTINGS']['departments']; ?>">
+             <i class="bi bi-circle"></i><span>Departments</span>
+           </a>
+         </li>
+         <li>
+           <a href="<?php echo $PAGE_URLS['SETTINGS']['stations']; ?>">
+             <i class="bi bi-circle"></i><span>Stations</span>
+           </a>
+         </li>
+         <li>
+           <a href="<?php echo $PAGE_URLS['SETTINGS']['job_titles']; ?>">
+             <i class="bi bi-circle"></i><span>Job Titles</span>
+           </a>
+         </li>
+       </ul>
+     </li>
+   </ul>
+</aside>

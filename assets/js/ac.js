@@ -1,10 +1,11 @@
+/*
 function initializeRequestDetails(jdrequestid) {
     fetch(`parameter/parameter.php?action=get_request_details&jdrequestid=${jdrequestid}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
                 alert('Error loading request: ' + data.error);
-                window.location.href = 'staffrequeststep1.php';
+                window.location.href = 'hod1.php';
             } else {
                 document.getElementById('jdrequestid').textContent = `Request ID: ${data.jdrequestid}`;
                 document.getElementById('availablevacant').textContent = `Staff Request Available for ${data.deptunitcode}: ${data.availablepositions}`;
@@ -22,7 +23,7 @@ function initializeRequestDetails(jdrequestid) {
         .catch(error => {
             console.error('Error:', error);
             alert('Error loading request details');
-            window.location.href = 'staffrequeststep1.php';
+            window.location.href = 'hod1.php';
         });
 }
 
@@ -191,7 +192,7 @@ function createstaffreqperstation() {
     }) || originalStations.length !== stationRequests.length;
 
     if (!hasChanges) {
-        window.location.href = 'staffrequeststep1.php';
+        window.location.href = 'hod1.php';
         return false;
     }
 
@@ -216,7 +217,7 @@ function createstaffreqperstation() {
     });
 
     if (newOrModifiedStations.length === 0) {
-        window.location.href = 'staffrequeststep1.php';
+        window.location.href = 'hod1.php';
         return false;
     }
 
@@ -251,13 +252,14 @@ function createstaffreqperstation() {
         throw new Error('Failed to update request');
     })
     .then(() => {
-        window.location.href = 'staffrequeststep1.php';
+        window.location.href = 'hod1.php';
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Error saving request: ' + error.message);
     });
 }
+
 // Add this function to load the station requests table
 function loadstaffreqperstation() {
     const jdrequestid = document.getElementById('jdrequestid').textContent.split(': ')[1];
@@ -299,13 +301,22 @@ function loadStaffRequests() {
 }
 
 function editRequest(jdrequestid) {
-    // Redirect to staffrequeststep2.php with the request ID
-    window.location.href = `staffrequeststep2.php?jdrequestid=${jdrequestid}`;
+    // Redirect to hod1.php with the request ID
+    window.location.href = `hod1.php?jdrequestid=${jdrequestid}`;
 }
 
 function toggleStationDetails(requestId) {
-    const stationsRow = document.getElementById(`stations-${requestId}`);
-    stationsRow.style.display = stationsRow.style.display === 'none' ? 'table-row' : 'none';
+    fetch(`parameter/parameter.php?action=get_request_full_details&jdrequestid=${requestId}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('requestDetailsModal').querySelector('.modal-body').innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('requestDetailsModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading request details');
+        });
 }
 
 function submitstaffrequest() {
@@ -355,7 +366,7 @@ function submitstaffrequest() {
         stationRequests = [];
         updateStationRequestsTable();
         loadStaffRequests();
-        window.location.href = 'staffrequeststep1.php'; // Redirect to staffrequeststep1.php
+        window.location.href = 'hod1.php'; // Redirect to hod1.php
     })
     .catch(error => {
         console.error('Error:', error);
@@ -397,7 +408,7 @@ function initializeNewRequestDetails() {
         .then(data => {
             if (data.error) {
                 alert('Error loading new request details: ' + data.error);
-                window.location.href = 'staffrequeststep1.php';
+                window.location.href = 'hod1.php';
             } else {
                 document.getElementById('jdrequestid').textContent = `Request ID: ${data.jdrequestid}`;
                 document.getElementById('availablevacant').textContent = `Staff Request Available for ${data.deptunitcode}: ${data.availablepositions}`;
@@ -412,7 +423,40 @@ function initializeNewRequestDetails() {
         .catch(error => {
             console.error('Error:', error);
             alert('Error loading new request details');
-            window.location.href = 'staffrequeststep1.php';
+            window.location.href = 'hod1.php';
         });
 }
 
+function submitTeamLeadRequest() {
+    const jdtitle = document.getElementById('jdtitle').value;
+    const novacpost = document.getElementById('novacpost').value;
+
+    if (!jdtitle || !novacpost) {
+        alert('Please fill all required fields');
+        return false;
+    }
+
+    const requestData = new FormData();
+    requestData.append('action', 'create_teamlead_request');
+    requestData.append('jdtitle', jdtitle);
+    requestData.append('novacpost', novacpost);
+
+    fetch('parameter/parameter.php', {
+        method: 'POST',
+        body: requestData
+    })
+    .then(response => response.text())
+    .then(data => {
+        if (data === 'success') {
+            alert('Staff request submitted successfully');
+            window.location.href = 'TeamLead.php';
+        } else {
+            throw new Error('Failed to create request');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error submitting request: ' + error.message);
+    });
+}
+*/

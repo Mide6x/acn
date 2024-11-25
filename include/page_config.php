@@ -1,0 +1,26 @@
+<?php
+define('BASE_URL', '/acnnew');
+
+$PAGE_URLS = [
+    'TEAM_LEAD' => [
+        'view' => BASE_URL . '/TL/TeamLead.php',
+        'create' => BASE_URL . '/TL/create.php'
+    ],
+    'DEPT_UNIT_LEAD' => [
+        'view' => BASE_URL . '/DUL/DeptUnitLead.php',
+        'create' => BASE_URL . '/DUL/create_request.php'
+    ],
+    'HOD' => [
+        'view' => BASE_URL . '/HOD/hod1.php',
+        'create' => BASE_URL . '/HOD/hod2.php'
+    ],
+    'HR' => [
+        'view' => BASE_URL . '/HR/HRview.php',
+        'dashboard' => BASE_URL . '/HR/HRdash.php'
+    ],
+    'SETTINGS' => [
+        'departments' => BASE_URL . '/departments.php',
+        'stations' => BASE_URL . '/station.php',
+        'job_titles' => BASE_URL . '/jobtitles.php'
+    ]
+];

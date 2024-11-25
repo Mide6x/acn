@@ -19,11 +19,39 @@ CREATE TABLE departments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     departmentname VARCHAR(100) NOT NULL,
     departmentcode VARCHAR(10) NOT NULL UNIQUE,
+    deptnostaff INT NOT NULL DEFAULT 0,
+    deptwaiver INT NOT NULL DEFAULT 0,
+    depttotal INT GENERATED ALWAYS AS (deptnostaff + deptwaiver) STORED,
     status ENUM('Active', 'Inactive') DEFAULT 'Active',
     createdby VARCHAR(100),
     dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+CREATE TABLE departmentunit (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    deptcode VARCHAR(10),
+    deptunitname VARCHAR(100) NOT NULL,
+    deptunitcode VARCHAR(10) NOT NULL UNIQUE,
+    deptunitnostaff INT NOT NULL DEFAULT 0,
+    status ENUM('Active', 'Inactive') DEFAULT 'Active',
+    createdby VARCHAR(100),
+    dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (deptcode) REFERENCES departments(departmentcode)
+) ENGINE=InnoDB;
+
+CREATE TABLE subdeptunittbl (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    deptunitcode VARCHAR(10),
+    subdeptunit VARCHAR(100) NOT NULL,
+    subdeptunitcode VARCHAR(10) NOT NULL UNIQUE,
+    subdeptnostaff INT NOT NULL DEFAULT 0,
+    status ENUM('Active', 'Inactive') DEFAULT 'Active',
+    createdby VARCHAR(100),
+    dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (deptunitcode) REFERENCES departmentunit(deptunitcode)
+) ENGINE=InnoDB;
+
+-- Second-level tables (depend on first-level)
 CREATE TABLE stationtbl (
     id INT AUTO_INCREMENT PRIMARY KEY,
     stationname VARCHAR(100) NOT NULL,
@@ -44,41 +72,7 @@ CREATE TABLE stafftype (
     dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- Second-level tables (depend on first-level)
-CREATE TABLE departmenttbl (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    businesscode VARCHAR(10),
-    deptcode VARCHAR(10) NOT NULL UNIQUE,
-    status ENUM('Active', 'Inactive') DEFAULT 'Active',
-    createdby VARCHAR(100),
-    dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (businesscode) REFERENCES businessunittbl(businesscode)
-) ENGINE=InnoDB;
-
 -- Third-level tables (depend on second-level)
-CREATE TABLE departmentunit (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    deptcode VARCHAR(10),
-    deptunitname VARCHAR(100) NOT NULL,
-    deptunitcode VARCHAR(10) NOT NULL UNIQUE,
-    status ENUM('Active', 'Inactive') DEFAULT 'Active',
-    createdby VARCHAR(100),
-    dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (deptcode) REFERENCES departmenttbl(deptcode)
-) ENGINE=InnoDB;
-
--- Fourth-level tables (depend on third-level)
-CREATE TABLE staffheadcount (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    deptunitcode VARCHAR(10),
-    shcnostaff INT NOT NULL,
-    shcwaiver VARCHAR(50),
-    shctotal INT NOT NULL,
-    createdby VARCHAR(100),
-    dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (deptunitcode) REFERENCES departmentunit(deptunitcode)
-) ENGINE=InnoDB;
-
 CREATE TABLE positiontbl (
     id INT AUTO_INCREMENT PRIMARY KEY,
     deptunitcode VARCHAR(10),
@@ -110,15 +104,21 @@ CREATE TABLE jobtitletbl (
     FOREIGN KEY (deptunitcode) REFERENCES departmentunit(deptunitcode)
 ) ENGINE=InnoDB;
 
+-- Create Sub Department Unit Table
 CREATE TABLE employeetbl (
     id INT AUTO_INCREMENT PRIMARY KEY,
     deptunitcode VARCHAR(10),
+    subdeptunitcode VARCHAR(10),
     staffname VARCHAR(100) NOT NULL,
     staffid VARCHAR(20) NOT NULL UNIQUE,
+    position VARCHAR(50),
     status ENUM('Active', 'Inactive') DEFAULT 'Active',
     createdby VARCHAR(100),
     dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (deptunitcode) REFERENCES departmentunit(deptunitcode)
+    FOREIGN KEY (deptunitcode) REFERENCES departmentunit(deptunitcode),
+    FOREIGN KEY (subdeptunitcode) REFERENCES subdeptunittbl(subdeptunitcode),
+    jdtitle VARCHAR(100),
+    FOREIGN KEY (jdtitle) REFERENCES jobtitletbl(jdtitle)
 ) ENGINE=InnoDB;
 
 -- Fifth-level tables (depend on fourth-level)
@@ -138,7 +138,7 @@ CREATE TABLE staffrequest (
     jdtitle VARCHAR(100) NOT NULL,
     novacpost INT NOT NULL,
     deptunitcode VARCHAR(10),
-    status ENUM('pending', 'processed', 'draft') DEFAULT 'draft',
+    status ENUM('draft', 'pending', 'processed') DEFAULT 'draft',
     dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     createdby VARCHAR(100),
     FOREIGN KEY (deptunitcode) REFERENCES departmentunit(deptunitcode),
@@ -162,16 +162,14 @@ CREATE TABLE staffrequestperstation (
 ) ENGINE=InnoDB;
 
 -- First-level inserts (no dependencies)
-INSERT INTO businessunittbl (businessunit, businesscode, createdby) VALUES
-('Operations', 'OPS', 'adewole.o@acn.aero'),
-('Commercial', 'COM', 'adewole.o@acn.aero'),
-('Finance', 'FIN', 'adewole.o@acn.aero');
+INSERT INTO businessunittbl (businessunit, businesscode, status, createdby) VALUES
+('Information Technology', 'ICT', 'Active', 'adewole.o@acn.aero'),
+('Commercial', 'COM', 'Active', 'adewole.o@acn.aero'),
+('Operations', 'OPS', 'Active', 'adewole.o@acn.aero');
 
-INSERT INTO departments (departmentname, departmentcode, createdby) VALUES
-('Flight Operations', 'FLT', 'adewole.o@acn.aero'),
-('Ground Operations', 'GND', 'adewole.o@acn.aero'),
-('Marketing', 'MKT', 'adewole.o@acn.aero');
-
+INSERT INTO departments (departmentname, departmentcode, deptnostaff, deptwaiver, status, createdby) VALUES
+('Information Technology', 'ICT', 100, 10, 'Active', 'adewole.o@acn.aero'),
+('Commercial', 'COM', 150, 15, 'Active', 'adewole.o@acn.aero');
 
 INSERT INTO stationtbl (stationname, stationcode, stationtype, operationtype, createdby) VALUES
 ('Lagos', 'LOS', 'Domestic', 'Fixed', 'adewole.o@acn.aero'),
@@ -185,47 +183,56 @@ INSERT INTO stafftype (stafftype, stprefix, createdby) VALUES
 ('Temporary', 'TMP', 'adewole.o@acn.aero');
 
 -- Second-level inserts
-INSERT INTO departmenttbl (businesscode, deptcode, createdby) VALUES
-('OPS', 'FLT', 'adewole.o@acn.aero'),
-('OPS', 'GND', 'adewole.o@acn.aero'),
-('COM', 'MKT', 'adewole.o@acn.aero'),
-('OPS', 'ICT', 'adewole.o@acn.aero');
+INSERT INTO departmentunit (deptcode, deptunitname, deptunitcode, deptunitnostaff, status, createdby) VALUES
+-- ICT Department Units (no subunits)
+('ICT', 'Development', 'DEV', 50, 'Active', 'adewole.o@acn.aero'),
+('ICT', 'IT Support', 'ITS', 40, 'Active', 'adewole.o@acn.aero'),
+-- Commercial Department Units (with subunits)
+('COM', 'Sales', 'SLS', 60, 'Active', 'adewole.o@acn.aero'),
+('COM', 'Marketing', 'MKT', 70, 'Active', 'adewole.o@acn.aero');
 
 -- Third-level inserts
-INSERT INTO departmentunit (deptcode, deptunitname, deptunitcode, createdby) VALUES
-('FLT', 'Pilot Operations', 'PLT', 'adewole.o@acn.aero'),
-('GND', 'Ramp Operations', 'RMP', 'adewole.o@acn.aero'),
-('MKT', 'Digital Marketing', 'DGM', 'adewole.o@acn.aero'),
-('ICT', 'Information Technology', 'ICT', 'adewole.o@acn.aero');
-
--- Fourth-level inserts
--- Note: shctotal is shcwaiver + shcnostaff
-INSERT INTO staffheadcount (deptunitcode, shcnostaff, shcwaiver, shctotal, createdby) VALUES 
-('PLT', 50, '0', 50, 'adewole.o@acn.aero'),
-('RMP', 50, '0', 50, 'adewole.o@acn.aero'),
-('DGM', 50, '0', 50, 'adewole.o@acn.aero'),
-('ICT', 50, '0', 50, 'adewole.o@acn.aero');
-
 INSERT INTO positiontbl (deptunitcode, poname, createdby) VALUES
-('PLT', 'Captain', 'adewole.o@acn.aero'),
-('RMP', 'Ramp Supervisor', 'adewole.o@acn.aero'),
-('DGM', 'Digital Marketing Manager', 'adewole.o@acn.aero');
+-- ICT Department positions
+('DEV', 'Senior Developer', 'adewole.o@acn.aero'),
+('DEV', 'Software Engineer', 'adewole.o@acn.aero'),
+('ITS', 'IT Support Manager', 'adewole.o@acn.aero'),
+('ITS', 'Support Engineer', 'adewole.o@acn.aero'),
+
+-- Commercial Department positions
+('SLS', 'Sales Team Lead', 'adewole.o@acn.aero'),
+('SLS', 'Sales Officer', 'adewole.o@acn.aero'),
+('MKT', 'Marketing Manager', 'adewole.o@acn.aero'),
+('MKT', 'Digital Marketing Manager', 'adewole.o@acn.aero');
 
 INSERT INTO jobtitletbl (deptunitcode, jdtitle, jddescription, eduqualification, jdposition, createdby) VALUES
-('ICT', 'Senior Developer', 'Lead pilot position with extensive experience', 'Bachelors Degree', 'Senior Management', 'adewole.o@acn.aero'),
-('ICT', 'Software Engineer', 'Oversee all ramp operations', 'Bachelors Degree', 'Middle Management', 'adewole.o@acn.aero'),
-('ICT', 'IT Support Officer', 'Handle digital marketing campaigns', 'Bachelors Degree', 'Officer', 'adewole.o@acn.aero');
+-- ICT Department job titles
+('DEV', 'Senior Developer', 'Lead development position', 'Bachelors Degree', 'Senior Management', 'adewole.o@acn.aero'),
+('DEV', 'Software Engineer', 'Software development role', 'Bachelors Degree', 'Middle Management', 'adewole.o@acn.aero'),
+('ITS', 'IT Support Manager', 'IT support leadership', 'Bachelors Degree', 'Middle Management', 'adewole.o@acn.aero'),
+('ITS', 'IT Support Officer', 'IT support role', 'Bachelors Degree', 'Officer', 'adewole.o@acn.aero'),
+('DEV', 'Senior Software Engineer', 'Senior development position', 'Bachelors Degree', 'Senior Management', 'adewole.o@acn.aero'),
+('ITS', 'Systems Administrator', 'IT systems administration', 'Bachelors Degree', 'Middle Management', 'adewole.o@acn.aero'),
+('MKT', 'Digital Marketing Specialist', 'Digital marketing role', 'Bachelors Degree', 'Officer', 'adewole.o@acn.aero'),
+
+-- Commercial Department job titles
+('SLS', 'Sales Team Lead', 'Sales team leadership', 'Bachelors Degree', 'TeamLead', 'adewole.o@acn.aero'),
+('SLS', 'Sales Officer', 'Sales role', 'Bachelors Degree', 'Officer', 'adewole.o@acn.aero'),
+('MKT', 'Marketing Manager', 'Marketing leadership', 'Bachelors Degree', 'Middle Management', 'adewole.o@acn.aero'),
+('MKT', 'Digital Marketing Lead', 'Digital marketing leadership', 'Bachelors Degree', 'TeamLead', 'adewole.o@acn.aero');
 
 -- Fifth-level inserts
 INSERT INTO reportingline (rponame, linemanager, createdby) VALUES
-('Captain', 'Chief Pilot', 'adewole.o@acn.aero'),
-('Ramp Supervisor', 'Ground Operations Manager', 'adewole.o@acn.aero'),
-('Digital Marketing Manager', 'Marketing Director', 'adewole.o@acn.aero');
+('Senior Developer', 'IT Director', 'adewole.o@acn.aero'),
+('IT Support Manager', 'IT Director', 'adewole.o@acn.aero'),
+('Sales Team Lead', 'Commercial Director', 'adewole.o@acn.aero'),
+('Digital Marketing Manager', 'Marketing Manager', 'adewole.o@acn.aero');
 
 INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby) VALUES
-('REQ20240001', 'Senior Captain', 2, 'PLT', 'pending', 'adewole.o@acn.aero'),
-('REQ20240002', 'Ramp Operations Manager', 3, 'RMP', 'pending', 'adewole.o@acn.aero'),
-('REQ20240003', 'Digital Marketing Specialist', 1, 'DGM', 'pending', 'adewole.o@acn.aero');
+('REQ20240001', 'Senior Software Engineer', 2, 'DEV', 'draft', 'adewole.o@acn.aero'),
+('REQ20240002', 'Systems Administrator', 3, 'ITS', 'draft', 'adewole.o@acn.aero'),
+('REQ20240003', 'Digital Marketing Specialist', 1, 'MKT', 'draft', 'adewole.o@acn.aero');
+
 
 -- Sixth-level inserts
 INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation, status, createdby) VALUES
@@ -235,11 +242,148 @@ INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffp
 ('REQ20240002', 'KAN', 'Contract', 1, 'pending', 'adewole.o@acn.aero'),
 ('REQ20240003', 'LOS', 'Permanent', 1, 'pending', 'adewole.o@acn.aero');
 
--- Insert employees
-INSERT INTO employeetbl (deptunitcode, staffname, staffid, status, createdby) VALUES
-('PLT', 'John Smith', 'PL001', 'Active', 'adewole.o@acn.aero'),
-('PLT', 'Sarah Johnson', 'PL002', 'Active', 'adewole.o@acn.aero'),
-('RMP', 'Michael Brown', 'RM001', 'Active', 'adewole.o@acn.aero'),
-('RMP', 'Jessica Williams', 'RM002', 'Active', 'adewole.o@acn.aero'),
-('DGM', 'David Wilson', 'DM001', 'Active', 'adewole.o@acn.aero'),
-('DGM', 'Emily Davis', 'DM002', 'Active', 'adewole.o@acn.aero');
+-- First, add all required sub-department units
+INSERT INTO subdeptunittbl (deptunitcode, subdeptunit, subdeptunitcode, subdeptnostaff, status, createdby) VALUES
+-- Commercial Subunits only
+('SLS', 'Corporate Sales', 'CSLS', 30, 'Active', 'adewole.o@acn.aero'),
+('SLS', 'Retail Sales', 'RSLS', 25, 'Active', 'adewole.o@acn.aero'),
+('MKT', 'Digital Marketing', 'DMKT', 35, 'Active', 'adewole.o@acn.aero'),
+('MKT', 'Brand Marketing', 'BMKT', 30, 'Active', 'adewole.o@acn.aero');
+
+-- Add triggers to enforce headcount constraints
+DELIMITER //
+
+CREATE TRIGGER check_deptunit_headcount
+BEFORE INSERT ON departmentunit
+FOR EACH ROW
+BEGIN
+    DECLARE dept_total INT;
+    SELECT depttotal INTO dept_total
+    FROM departments 
+    WHERE departmentcode = NEW.deptcode;
+    
+    IF NEW.deptunitnostaff > dept_total THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Department unit headcount cannot exceed department total';
+    END IF;
+END//
+
+CREATE TRIGGER check_subdept_headcount
+BEFORE INSERT ON subdeptunittbl
+FOR EACH ROW
+BEGIN
+    DECLARE unit_total INT;
+    SELECT deptunitnostaff INTO unit_total
+    FROM departmentunit 
+    WHERE deptunitcode = NEW.deptunitcode;
+    
+    IF NEW.subdeptnostaff > unit_total THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Subunit headcount cannot exceed department unit total';
+    END IF;
+END//
+
+DELIMITER ;
+
+-- First ensure we have all the job titles in jobtitletbl
+INSERT INTO jobtitletbl (deptunitcode, jdtitle, jddescription, eduqualification, jdposition, createdby) VALUES
+('DEV', 'IT Director', 'IT Department Head', 'Masters Degree', 'HOD', 'adewole.o@acn.aero'),
+('SLS', 'Commercial Director', 'Commercial Department Head', 'Masters Degree', 'HOD', 'adewole.o@acn.aero');
+
+-- Then insert employees with correct department unit codes
+INSERT INTO employeetbl (deptunitcode, subdeptunitcode, staffname, staffid, position, jdtitle, status, createdby) VALUES
+-- Department Heads (HOD) - must use existing department unit codes
+('DEV', NULL, 'John Doe', 'ICT001', 'HOD', 'IT Director', 'Active', 'adewole.o@acn.aero'),
+('SLS', NULL, 'Jane Smith', 'COM001', 'HOD', 'Commercial Director', 'Active', 'adewole.o@acn.aero'),
+
+-- Department Unit Leads
+('DEV', NULL, 'Bob Wilson', 'DEV001', 'DeptUnitLead', 'Senior Developer', 'Active', 'adewole.o@acn.aero'),
+('ITS', NULL, 'Alice Brown', 'ITS001', 'DeptUnitLead', 'IT Support Manager', 'Active', 'adewole.o@acn.aero'),
+
+-- Team Leads (for Commercial subunits)
+('SLS', 'CSLS', 'Mike Johnson', 'CSLS001', 'TeamLead', 'Sales Team Lead', 'Active', 'adewole.o@acn.aero'),
+('MKT', 'DMKT', 'Sarah Davis', 'DMKT001', 'TeamLead', 'Digital Marketing Lead', 'Active', 'adewole.o@acn.aero');
+
+
+-- First add the HR and Executive departments
+INSERT INTO departments (departmentname, departmentcode, deptnostaff, deptwaiver, status, createdby) VALUES
+('Human Resources', 'HRD', 50, 5, 'Active', 'adewole.o@acn.aero'),
+('Executive Management', 'EXE', 10, 0, 'Active', 'adewole.o@acn.aero');
+
+-- Then add their department units
+INSERT INTO departmentunit (deptcode, deptunitname, deptunitcode, deptunitnostaff, status, createdby) VALUES
+('HRD', 'HR Operations', 'HRD', 30, 'Active', 'adewole.o@acn.aero'),
+('EXE', 'Executive Office', 'EXE', 10, 'Active', 'adewole.o@acn.aero');
+
+-- Add job titles for HR and Executive positions
+INSERT INTO jobtitletbl (deptunitcode, jdtitle, jddescription, eduqualification, jdposition, createdby) VALUES
+('HRD', 'Head of HR', 'HR Department Head', 'Masters Degree', 'HOD', 'adewole.o@acn.aero'),
+('HRD', 'HR Manager', 'HR Operations Manager', 'Masters Degree', 'DeptUnitLead', 'adewole.o@acn.aero'),
+('EXE', 'Chief Financial Officer', 'Financial Operations Head', 'Masters Degree', 'CFO', 'adewole.o@acn.aero'),
+('EXE', 'Chief Executive Officer', 'Company Head', 'Masters Degree', 'CEO', 'adewole.o@acn.aero');
+
+-- Add executive level employees
+INSERT INTO employeetbl (deptunitcode, subdeptunitcode, staffname, staffid, position, jdtitle, status, createdby) VALUES
+-- HR Department
+('HRD', NULL, 'Sarah Wilson', 'HR001', 'HOD', 'Head of HR', 'Active', 'adewole.o@acn.aero'),
+('HRD', NULL, 'James Brown', 'HR002', 'DeptUnitLead', 'HR Manager', 'Active', 'adewole.o@acn.aero'),
+
+-- Executive Management
+('EXE', NULL, 'Michael Chen', 'CFO001', 'CFO', 'Chief Financial Officer', 'Active', 'adewole.o@acn.aero'),
+('EXE', NULL, 'Elizabeth Taylor', 'CEO001', 'CEO', 'Chief Executive Officer', 'Active', 'adewole.o@acn.aero');
+
+-- Create approval table
+CREATE TABLE approvaltbl (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    jdrequestid VARCHAR(20),
+    jdtitle VARCHAR(100),
+    approverstaffid VARCHAR(20),
+    approvallevel ENUM('TeamLead', 'DeptUnitLead', 'HOD', 'HR', 'HeadOfHR', 'CFO', 'CEO'),
+    status ENUM('draft', 'pending', 'approved', 'declined') DEFAULT 'draft',
+    comments TEXT,
+    createdby VARCHAR(100),
+    dandt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (jdrequestid) REFERENCES staffrequest(jdrequestid),
+    FOREIGN KEY (jdtitle) REFERENCES jobtitletbl(jdtitle),
+    FOREIGN KEY (approverstaffid) REFERENCES employeetbl(staffid)
+) ENGINE=InnoDB;
+
+-- Create trigger to populate approval levels when staff request is created
+DELIMITER //
+
+CREATE TRIGGER create_approval_levels
+AFTER INSERT ON staffrequest
+FOR EACH ROW
+BEGIN
+    DECLARE deptheadid VARCHAR(20);
+    DECLARE deptunitleadid VARCHAR(20);
+    
+    -- Get relevant approvers based on department
+    SELECT staffid INTO deptheadid
+    FROM employeetbl
+    WHERE deptunitcode = NEW.deptunitcode AND position = 'HOD';
+    
+    SELECT staffid INTO deptunitleadid
+    FROM employeetbl
+    WHERE deptunitcode = NEW.deptunitcode AND position = 'DeptUnitLead';
+
+    -- Insert approval levels
+    IF deptunitleadid IS NOT NULL THEN
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, deptunitleadid, 'DeptUnitLead', 'pending', NEW.createdby);
+    END IF;
+
+    -- HOD approval
+    INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+    VALUES (NEW.jdrequestid, NEW.jdtitle, deptheadid, 'HOD', 'draft', NEW.createdby);
+
+    -- HR approvals
+    INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+    VALUES 
+    (NEW.jdrequestid, NEW.jdtitle, 'HR002', 'HR', 'draft', NEW.createdby),
+    (NEW.jdrequestid, NEW.jdtitle, 'HR001', 'HeadOfHR', 'draft', NEW.createdby),
+    (NEW.jdrequestid, NEW.jdtitle, 'CFO001', 'CFO', 'draft', NEW.createdby),
+    (NEW.jdrequestid, NEW.jdtitle, 'CEO001', 'CEO', 'draft', NEW.createdby);
+END//
+
+DELIMITER ;

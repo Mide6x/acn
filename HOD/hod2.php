@@ -5,13 +5,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
 
 // Include header, sidebar, and footer
-include("addon/header.html");
-include("addon/sidebar.html");
-
-$revenue = new Revenue($con);
-
-
-
+include("../includes/header.html");
+include("../includes/sidebar.html");
+include("../includes/footer.html");
 ?>
 <main id="main" class="main">
 
@@ -116,6 +112,6 @@ $revenue = new Revenue($con);
     });
 </script>
 <?php
-include("addon/footer.html");
+include("../includes/footer.html");
 ?>
 <script src="assets\js\ac.js"></script>

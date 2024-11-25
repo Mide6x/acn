@@ -3,10 +3,11 @@ session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
 
-include("addon/header.html");
-include("addon/sidebar.html");
+include("../includes/header.html");
+include("../includes/sidebar.html");
 
 $revenue = new Revenue($con);
+$pendingRequests = $revenue->getPendingRequests();
 ?>
 
 <main id="main" class="main">
@@ -15,7 +16,7 @@ $revenue = new Revenue($con);
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">HR Dashboard</h5>
+                        <h6 class="card-title" style="font-weight: 800; font-size: small;">HR DASHBOARD</h6>
                         <!-- Content goes here -->
                     </div>
                 </div>
@@ -23,5 +24,4 @@ $revenue = new Revenue($con);
         </div>
     </section>
 </main>
-
-<?php include("addon/footer.html"); ?>
+<?php include("../includes/footer.html"); ?>

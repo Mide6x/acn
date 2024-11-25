@@ -1,8 +1,7 @@
 <?php
 // Include header, sidebar, and footer
-include("addon/header.html");
-include("addon/sidebar.html");
-
+include("../acnnew/includes/header.html");
+include("../acnnew/includes/sidebar.html");
 ?>
 <main id="main" class="main">
 
@@ -77,6 +76,5 @@ include("addon/sidebar.html");
       </section>
 
 </main><!-- End #main -->
-<?php
-include("addon/footer.html");
-?>
+
+<?php include("../acnnew/includes/footer.html"); ?>

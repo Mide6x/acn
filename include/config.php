@@ -1,19 +1,22 @@
 <?php
-set_time_limit(0);
-ini_set('memory_limit', '-1');
-ini_set('max_execution_time', 100);
-$servername = "localhost";
+session_start();
+require_once 'user_config.php';
+
+// Database configuration
+$host = "localhost";
 $username = "root";
 $password = "";
-$dbname = "hrdb";
-
-require_once 'constants.php';
+$database = "hrdb";
 
 try {
-	$con = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
+	$con = new PDO("mysql:host=$host;dbname=$database", $username, $password);
 	$con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-	die($e->getMessage());
+	echo "Connection failed: " . $e->getMessage();
+	exit;
 }
+
+// Initialize user session with hardcoded values
+initializeUserSession();
 
 include_once 'classes.php';

@@ -3,8 +3,8 @@ session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
 
-include("addon/header.html");
-include("addon/sidebar.html");
+include("../acnnew/includes/header.html");
+include("../acnnew/includes/sidebar.html");
 
 $revenue = new Revenue($con);
 ?>
@@ -24,4 +24,4 @@ $revenue = new Revenue($con);
     </section>
 </main>
 
-<?php include("addon/footer.html"); ?>
+<?php include("../acnnew/includes/footer.html"); ?>
