@@ -167,7 +167,7 @@ class Subunit
 
     public function getSubunitRequests($subdeptunitcode)
     {
-        $query = "SELECT 
+        $query = "SELECT DISTINCT
                 sr.jdrequestid, 
                 sr.jdtitle, 
                 sr.novacpost,
@@ -180,7 +180,7 @@ class Subunit
             FROM staffrequest sr
             LEFT JOIN approvaltbl a ON sr.jdrequestid = a.jdrequestid
             WHERE sr.subdeptunitcode = ?
-            AND (a.approvallevel IN ('TeamLead', 'DeptUnitLead', 'HOD') OR a.approvallevel IS NULL)
+            GROUP BY sr.jdrequestid
             ORDER BY sr.dandt DESC";
 
         try {
@@ -205,7 +205,6 @@ class Subunit
                         <tbody>";
 
             foreach ($requests as $request) {
-                // Determine status display
                 $status = $request['request_status'];
                 $statusClass = match ($status) {
                     'draft' => 'text-secondary',
@@ -233,6 +232,122 @@ class Subunit
         } catch (Exception $e) {
             error_log("Error in getSubunitRequests: " . $e->getMessage());
             return "<div class='alert alert-danger'>Error fetching requests</div>";
+        }
+    }
+
+    public function getRequestDetails($jdrequestid)
+    {
+        try {
+            // Get main request details with job title information
+            $requestQuery = "SELECT 
+                    sr.jdrequestid,
+                    sr.jdtitle,
+                    sr.status,
+                    sr.dandt,
+                    sr.createdby,
+                    j.jddescription,
+                    j.eduqualification,
+                    j.proqualification,
+                    j.workrelation,
+                    j.jdcondition,
+                    j.agebracket,
+                    j.personspec,
+                    j.fuctiontech,
+                    j.managerial,
+                    j.behavioural,
+                    e.staffname as requestor
+                FROM staffrequest sr
+                LEFT JOIN jobtitletbl j ON sr.jdtitle = j.jdtitle
+                LEFT JOIN employeetbl e ON sr.createdby = e.staffid
+                WHERE sr.jdrequestid = ?";
+
+            $stmt = $this->db->prepare($requestQuery);
+            $stmt->execute([$jdrequestid]);
+            $request = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$request) {
+                return "<div class='alert alert-danger'>Request not found</div>";
+            }
+
+            // Get station details
+            $stationQuery = "SELECT s.*, st.stationname 
+                            FROM staffrequestperstation s
+                            JOIN stationtbl st ON s.station = st.stationcode
+                            WHERE s.jdrequestid = ?";
+            $stationStmt = $this->db->prepare($stationQuery);
+            $stationStmt->execute([$jdrequestid]);
+            $stations = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $output = "<div class='modal-header'>
+                        <h5 class='modal-title'>Job Details - {$request['jdtitle']}</h5>
+                        <button type='button' class='btn-close' data-bs-dismiss='modal'></button>
+                      </div>
+                      <div class='modal-body'>";
+
+            // Basic Request Info
+            $output .= "<div class='request-info mb-4'>";
+            $output .= "<h6 class='text-primary'>Request Information</h6>";
+            $output .= "<p><strong>Request ID:</strong> {$request['jdrequestid']}</p>";
+            $output .= "<p><strong>Status:</strong> " . ucfirst($request['status']) . "</p>";
+            $output .= "<p><strong>Requested By:</strong> {$request['requestor']}</p>";
+            $output .= "<p><strong>Date:</strong> " . date('Y-m-d', strtotime($request['dandt'])) . "</p>";
+            $output .= "</div>";
+
+            // Job Description Details
+            $output .= "<div class='job-details mb-4'>";
+            $output .= "<h6 class='text-primary'>Job Description</h6>";
+            $output .= "<p><strong>Description:</strong> {$request['jddescription']}</p>";
+            $output .= "<p><strong>Educational Qualification:</strong> {$request['eduqualification']}</p>";
+            $output .= "<p><strong>Professional Qualification:</strong> {$request['proqualification']}</p>";
+            $output .= "<p><strong>Work Relations:</strong> {$request['workrelation']}</p>";
+            $output .= "<p><strong>Job Conditions:</strong> {$request['jdcondition']}</p>";
+            $output .= "<p><strong>Age Bracket:</strong> {$request['agebracket']}</p>";
+            $output .= "</div>";
+
+            // Additional Requirements
+            $output .= "<div class='requirements mb-4'>";
+            $output .= "<h6 class='text-primary'>Requirements</h6>";
+            $output .= "<p><strong>Person Specification:</strong> {$request['personspec']}</p>";
+            $output .= "<p><strong>Functional/Technical Skills:</strong> {$request['fuctiontech']}</p>";
+            $output .= "<p><strong>Managerial Requirements:</strong> {$request['managerial']}</p>";
+            $output .= "<p><strong>Behavioral Competencies:</strong> {$request['behavioural']}</p>";
+            $output .= "</div>";
+
+            // Station Details
+            if (!empty($stations)) {
+                $output .= "<div class='stations-info'>";
+                $output .= "<h6 class='text-primary'>Station Requirements</h6>";
+                $output .= "<table class='table table-bordered table-striped'>";
+                $output .= "<thead><tr><th>Station</th><th>Employment Type</th><th>Staff Count</th><th>Status</th></tr></thead><tbody>";
+
+                foreach ($stations as $station) {
+                    $statusClass = match ($station['status']) {
+                        'pending' => 'text-warning',
+                        'approved' => 'text-success',
+                        'declined' => 'text-danger',
+                        default => ''
+                    };
+
+                    $output .= "<tr>";
+                    $output .= "<td>{$station['stationname']}</td>";
+                    $output .= "<td>{$station['employmenttype']}</td>";
+                    $output .= "<td>{$station['staffperstation']}</td>";
+                    $output .= "<td class='{$statusClass}'>" . ucfirst($station['status']) . "</td>";
+                    $output .= "</tr>";
+                }
+
+                $output .= "</tbody></table></div>";
+            }
+
+            $output .= "</div>"; // close modal-body
+            $output .= "<div class='modal-footer'>
+                        <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                       </div>";
+
+            return $output;
+        } catch (Exception $e) {
+            error_log("Error in getRequestDetails: " . $e->getMessage());
+            return "<div class='modal-body'><div class='alert alert-danger'>Error fetching request details</div></div>";
         }
     }
 }

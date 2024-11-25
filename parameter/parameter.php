@@ -173,94 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 break;
 
-            case 'save_deptunitlead_draft':
-                try {
-                    $data = [
-                        'jdrequestid' => $_POST['jdrequestid'],
-                        'jdtitle' => $_POST['jdtitle'],
-                        'stations' => json_decode($_POST['stations'], true),
-                        'employmentTypes' => json_decode($_POST['employmentTypes'], true),
-                        'staffPerStation' => json_decode($_POST['staffPerStation'], true),
-                        'createdby' => $createdby,
-                        'deptunitcode' => $deptunitcode
-                    ];
 
-                    $result = $revenue->saveDeptUnitLeadDraftRequest($data);
-                    echo "Draft saved successfully";
-                } catch (Exception $e) {
-                    echo "Error: " . $e->getMessage();
-                }
-                break;
-
-            case 'deptunitlead_approve':
-                try {
-                    $jdrequestid = $_POST['jdrequestid'];
-
-                    // Update staffrequest status
-                    $updateQuery = "UPDATE staffrequest SET status = 'Unit Lead approved' WHERE jdrequestid = ?";
-                    $stmt = $con->prepare($updateQuery);
-                    $result = $stmt->execute([$jdrequestid]);
-
-                    // Insert into approvaltbl for HOD approval
-                    $insertQuery = "INSERT INTO approvaltbl (jdrequestid, approvallevel, status) 
-                                   VALUES (?, 'HOD', 'pending')";
-                    $stmt = $con->prepare($insertQuery);
-                    $stmt->execute([$jdrequestid]);
-
-                    echo $result ? 'success' : 'error';
-                } catch (Exception $e) {
-                    echo "Error: " . $e->getMessage();
-                }
-                break;
-
-            case 'deptunitlead_decline':
-                try {
-                    $jdrequestid = $_POST['jdrequestid'];
-                    $reason = $_POST['reason'];
-
-                    // Update staffrequest status and reason
-                    $updateQuery = "UPDATE staffrequest SET status = 'declined', decline_reason = ? WHERE jdrequestid = ?";
-                    $stmt = $con->prepare($updateQuery);
-                    $result = $stmt->execute([$reason, $jdrequestid]);
-
-                    echo $result ? 'success' : 'error';
-                } catch (Exception $e) {
-                    echo "Error: " . $e->getMessage();
-                }
-                break;
-
-            case 'approve_station':
-                try {
-                    $jdrequestid = $_POST['jdrequestid'];
-                    $station = $_POST['station'];
-
-                    // Update station status
-                    $updateStation = "UPDATE staffrequestperstation 
-                                     SET status = 'approved' 
-                                     WHERE jdrequestid = ? AND station = ?";
-                    $stmt = $con->prepare($updateStation);
-                    $stmt->execute([$jdrequestid, $station]);
-
-                    // Check if all stations are processed
-                    $checkStatus = "SELECT COUNT(*) as total, 
-                                   SUM(CASE WHEN status IN ('approved', 'declined') THEN 1 ELSE 0 END) as processed 
-                                   FROM staffrequestperstation WHERE jdrequestid = ?";
-                    $stmt = $con->prepare($checkStatus);
-                    $stmt->execute([$jdrequestid]);
-                    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                    // If all stations are processed, update main request status
-                    if ($result['total'] == $result['processed']) {
-                        $updateRequest = "UPDATE staffrequest SET status = 'pending' WHERE jdrequestid = ?";
-                        $stmt = $con->prepare($updateRequest);
-                        $stmt->execute([$jdrequestid]);
-                    }
-
-                    echo 'success';
-                } catch (Exception $e) {
-                    echo "Error: " . $e->getMessage();
-                }
-                break;
 
             case 'save_station':
                 try {
@@ -485,23 +398,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo "</tbody></table></div></div>";
                 } catch (Exception $e) {
                     echo "<div class='alert alert-danger'>Error loading request details: {$e->getMessage()}</div>";
-                }
-                break;
-
-            case 'get_deptunitlead_request_details':
-                try {
-                    $jdrequestid = $_GET['jdrequestid'];
-                    echo $revenue->getDeptUnitLeadRequestDetails($jdrequestid);
-                } catch (Exception $e) {
-                    echo "<div class='alert alert-danger'>Error: {$e->getMessage()}</div>";
-                }
-                break;
-
-            case 'get_deptunitlead_requests':
-                try {
-                    echo $revenue->getDeptUnitLeadRequests($deptunitcode);
-                } catch (Exception $e) {
-                    echo "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
                 }
                 break;
         }

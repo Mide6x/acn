@@ -15,7 +15,6 @@ $teamLeadInfo = $subunit->getTeamLeadInfo($staffid);
         <div class="row mb-4">
             <div class="col-12">
                 <a href="create_request.php" class="btn btn-primary"
-                    onclick="window.location.href='create_request.php'; return false;"
                     style="background-color: #fc7f14; border: #fc7f14; float: right;"
                     onmouseover="this.style.backgroundColor='#000000';"
                     onmouseout="this.style.backgroundColor='#fc7f14';">
@@ -40,4 +39,16 @@ $teamLeadInfo = $subunit->getTeamLeadInfo($staffid);
         </div>
     </section>
 </main>
+
+<!-- Bootstrap Modal -->
+<div class="modal" id="requestDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
 <?php include("../includes/footer.html"); ?>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="subunit.js"></script>

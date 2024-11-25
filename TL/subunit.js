@@ -51,7 +51,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function viewSubunitRequest(requestId) {
-    // You can implement the view functionality here
-    // For example, redirect to a view page:
-    window.location.href = `view_request.php?id=${requestId}`;
+    fetch(`get_request_details.php?id=${requestId}`)
+        .then(response => response.text())
+        .then(html => {
+            document.querySelector('#requestDetailsModal .modal-content').innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('requestDetailsModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading request details');
+        });
 }

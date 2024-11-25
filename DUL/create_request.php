@@ -6,11 +6,11 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
 include("../includes/header.html");
 include("../includes/sidebar.html");
 
-$revenue = new Revenue($con);
+$deptunit = new DeptUnit($con);
 $staffid = $_SESSION['staffid'];
-$deptUnitLeadInfo = $revenue->getDeptUnitLeadInfo($staffid);
-$availablePositions = $revenue->getDeptUnitLeadAvailablePositions($deptUnitLeadInfo['deptunitcode']);
-$jdrequestid = $revenue->generateRequestId();
+$deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
+$availablePositions = $deptunit->getDeptUnitLeadAvailablePositions($deptUnitLeadInfo['deptunitcode']);
+$jdrequestid = $deptunit->generateRequestId();
 $deptunitcode = $deptUnitLeadInfo['deptunitcode'];
 
 // Redirect if not authorized
@@ -46,7 +46,7 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
                                     <label class="form-label">Job Title</label>
                                     <select class="form-control" id="jdtitle" name="jdtitle" style="border-radius: 8px" required>
                                         <option value="">Select Job Title</option>
-                                        <?php echo $revenue->getJobTitles(); ?>
+                                        <?php echo $deptunit->getJobTitles(); ?>
                                     </select>
                                 </div>
                             </div>
@@ -62,14 +62,14 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
                                         <label class="form-label">Station</label>
                                         <select class="form-control" id="station" name="station" style="border-radius: 8px" required>
                                             <option value="">Select Station</option>
-                                            <?php echo $revenue->getStations(); ?>
+                                            <?php echo $deptunit->getStations(); ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-4">
                                         <label class="form-label">Employment Type</label>
                                         <select class="form-control" id="employmenttype" name="employmenttype" style="border-radius: 8px" required>
                                             <option value="">Select Type</option>
-                                            <?php echo $revenue->getStaffTypes(); ?>
+                                            <?php echo $deptunit->getStaffTypes(); ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-4">

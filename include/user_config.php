@@ -11,11 +11,11 @@
 
 // Current user configuration
 define('CURRENT_USER', [
-    'staffid' => 'CSLS001',
+    'staffid' => 'SLS001',
     'email' => '',
-    'position' => 'TeamLead',
+    'position' => 'DeptUnitLead',
     'deptunitcode' => 'SLS',
-    'subdeptunitcode' => 'CSLS',
+    'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
 
