@@ -1,13 +1,13 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/TL/subunit.php';
 
 include("../includes/header.html");
 include("../includes/sidebar.html");
 
-$revenue = new Revenue($con);
+$subunit = new Subunit($con);
 $staffid = getCurrentUser('staffid');
-$teamLeadInfo = $revenue->getTeamLeadInfo($staffid);
+$teamLeadInfo = $subunit->getTeamLeadInfo($staffid);
 ?>
 
 <main id="main" class="main">
@@ -32,7 +32,7 @@ $teamLeadInfo = $revenue->getTeamLeadInfo($staffid);
                 <div id="staffRequestsTable">
                     <?php
                     if ($teamLeadInfo['subdeptunitcode']) {
-                        echo $revenue->getSubunitRequests($teamLeadInfo['subdeptunitcode']);
+                        echo $subunit->getSubunitRequests($teamLeadInfo['subdeptunitcode']);
                     }
                     ?>
                 </div>

@@ -6,8 +6,6 @@ $subunit = new Subunit($con);
 $createdby = getCurrentUser('email');
 $subdeptunitcode = getCurrentUser('subdeptunitcode');
 
-$response = ['success' => false, 'message' => ''];
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if (isset($_POST['action']) && $_POST['action'] === 'createSubunitRequest') {
@@ -18,7 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stations = json_decode($_POST['stations'], true);
 
             if (!is_array($stations)) {
-                throw new Exception('Invalid stations data');
+                echo "Error: Invalid stations data";
+                exit;
             }
 
             // Calculate total novacpost from all stations
@@ -42,14 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
 
-            $response['success'] = true;
-            $response['message'] = 'Request created successfully';
-            $response['jdrequestid'] = $jdrequestid;
+            echo "success";
+            exit;
         }
     } catch (Exception $e) {
-        $response['message'] = $e->getMessage();
-    } finally {
-        echo json_encode($response);
+        echo "Error: " . $e->getMessage();
         exit;
     }
 }

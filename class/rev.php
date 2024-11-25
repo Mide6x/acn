@@ -805,65 +805,6 @@ class Revenue
         return $result;
     }
 
-    public function getSubunitRequests($subdeptunitcode)
-    {
-        $query = "SELECT 
-                sr.jdrequestid, 
-                sr.jdtitle, 
-                sr.novacpost,
-                sr.status AS request_status, -- Explicitly fetch status from staffrequest
-                (SELECT SUM(staffperstation) 
-                 FROM staffrequestperstation 
-                 WHERE jdrequestid = sr.jdrequestid) as total_positions,
-                a.status AS approval_status,
-                a.approvallevel
-            FROM staffrequest sr
-            LEFT JOIN approvaltbl a ON sr.jdrequestid = a.jdrequestid -- Use LEFT JOIN for optional approvals
-            WHERE sr.subdeptunitcode = ?
-            AND (a.approvallevel IN ('TeamLead', 'DeptUnitLead', 'HOD') OR a.approvallevel IS NULL)
-            ORDER BY sr.dandt DESC";
-
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$subdeptunitcode]);
-        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if (empty($requests)) {
-            return "<tr><td colspan='5' class='text-center'>No requests found</td></tr>";
-        }
-
-        $output = "<table class='table table-bordered'>
-                        <thead>
-                            <tr>
-                                <th>Request ID</th>
-                                <th>Job Title</th>
-                                <th>Total Positions</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>";
-
-        foreach ($requests as $request) {
-            // Prioritize showing the request status; otherwise, fallback to approval status
-            $status = $request['request_status'] ?? $request['approval_status'] ?? 'Unknown';
-            $output .= "<tr>
-                            <td>{$request['jdrequestid']}</td>
-                            <td>{$request['jdtitle']}</td>
-                            <td>{$request['total_positions']}</td>
-                            <td>{$status}</td>
-                            <td>
-                                <button class='btn btn-sm btn-primary' 
-                                        onclick='viewRequest(\"{$request['jdrequestid']}\")'>
-                                    View
-                                </button>
-                            </td>
-                        </tr>";
-        }
-
-        $output .= "</tbody></table>";
-        return $output;
-    }
-
 
     private function getApprovalStatus($request)
     {

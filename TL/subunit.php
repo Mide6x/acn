@@ -7,6 +7,8 @@ class Subunit
     {
         $this->db = $con;
     }
+
+
     // Station
     public function getStations()
     {
@@ -39,12 +41,36 @@ class Subunit
         return 'REQ' . date('Y') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
     }
     // Get team lead info
+    /* START TEAMLEAD FUNCTIONS */
     public function getTeamLeadInfo($staffid)
     {
-        $query = "SELECT * FROM employeetbl WHERE staffid = ?";
+        // If user is admin, return all access
+        if (isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true) {
+            return [
+                'subdeptunit' => 'All Subunits (Admin View)',
+                'subdeptunitcode' => 'ALL',
+                'isAdmin' => true
+            ];
+        }
+
+        $query = "SELECT e.*, s.subdeptunit 
+                 FROM employeetbl e 
+                 JOIN subdeptunittbl s ON e.subdeptunitcode = s.subdeptunitcode 
+                 WHERE e.staffid = ? AND e.position = 'TeamLead' AND e.status = 'Active'";
+
         $stmt = $this->db->prepare($query);
         $stmt->execute([$staffid]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$result) {
+            return [
+                'subdeptunit' => 'No Subunit Found',
+                'subdeptunitcode' => null,
+                'error' => 'Not a TeamLead or Invalid Staff ID'
+            ];
+        }
+
+        return $result;
     }
 
     // Create subunit request
@@ -137,5 +163,76 @@ class Subunit
             $output .= "<option value='{$row['jdtitle']}'>{$row['jdtitle']}</option>";
         }
         return $output;
+    }
+
+    public function getSubunitRequests($subdeptunitcode)
+    {
+        $query = "SELECT 
+                sr.jdrequestid, 
+                sr.jdtitle, 
+                sr.novacpost,
+                sr.status AS request_status,
+                (SELECT SUM(staffperstation) 
+                 FROM staffrequestperstation 
+                 WHERE jdrequestid = sr.jdrequestid) as total_positions,
+                a.status AS approval_status,
+                a.approvallevel
+            FROM staffrequest sr
+            LEFT JOIN approvaltbl a ON sr.jdrequestid = a.jdrequestid
+            WHERE sr.subdeptunitcode = ?
+            AND (a.approvallevel IN ('TeamLead', 'DeptUnitLead', 'HOD') OR a.approvallevel IS NULL)
+            ORDER BY sr.dandt DESC";
+
+        try {
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$subdeptunitcode]);
+            $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($requests)) {
+                return "<div class='alert alert-info'>No requests found for this subunit</div>";
+            }
+
+            $output = "<table class='table table-bordered table-striped'>
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Job Title</th>
+                                <th>Total Positions</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>";
+
+            foreach ($requests as $request) {
+                // Determine status display
+                $status = $request['request_status'];
+                $statusClass = match ($status) {
+                    'draft' => 'text-secondary',
+                    'pending' => 'text-warning',
+                    'processed' => 'text-success',
+                    default => 'text-secondary'
+                };
+
+                $output .= "<tr>
+                            <td>{$request['jdrequestid']}</td>
+                            <td>{$request['jdtitle']}</td>
+                            <td>{$request['total_positions']}</td>
+                            <td><span class='{$statusClass}'>" . ucfirst($status) . "</span></td>
+                            <td>
+                                <button class='btn btn-sm btn-primary' 
+                                        onclick='viewSubunitRequest(\"{$request['jdrequestid']}\")'>
+                                    View
+                                </button>
+                            </td>
+                        </tr>";
+            }
+
+            $output .= "</tbody></table>";
+            return $output;
+        } catch (Exception $e) {
+            error_log("Error in getSubunitRequests: " . $e->getMessage());
+            return "<div class='alert alert-danger'>Error fetching requests</div>";
+        }
     }
 }
