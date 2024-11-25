@@ -180,11 +180,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data = [
                         'jdrequestid' => $_POST['jdrequestid'],
                         'jdtitle' => $_POST['jdtitle'],
-                        'stations' => json_decode($_POST['stations'], true),
-                        'employmentTypes' => json_decode($_POST['employmentTypes'], true),
-                        'staffPerStation' => json_decode($_POST['staffPerStation'], true),
+                        'stations' => $_POST['stations'],
+                        'employmentTypes' => $_POST['employmentTypes'],
+                        'staffPerStation' => $_POST['staffPerStation'],
                         'createdby' => $createdby,
-                        'deptunitcode' => $deptunitcode
+                        'deptunitcode' => $deptunitcode,
+                        'subdeptunitcode' => $_SESSION['subdeptunitcode'],
+                        'staffid' => $_SESSION['staffid']
                     ];
 
                     $result = $revenue->saveTeamLeadDraftRequest($data);
@@ -245,6 +247,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $result = $stmt->execute([$reason, $jdrequestid]);
 
                     echo $result ? 'success' : 'error';
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
+
+            case 'approve_station':
+                try {
+                    $jdrequestid = $_POST['jdrequestid'];
+                    $station = $_POST['station'];
+
+                    // Update station status
+                    $updateStation = "UPDATE staffrequestperstation 
+                                     SET status = 'approved' 
+                                     WHERE jdrequestid = ? AND station = ?";
+                    $stmt = $con->prepare($updateStation);
+                    $stmt->execute([$jdrequestid, $station]);
+
+                    // Check if all stations are processed
+                    $checkStatus = "SELECT COUNT(*) as total, 
+                                   SUM(CASE WHEN status IN ('approved', 'declined') THEN 1 ELSE 0 END) as processed 
+                                   FROM staffrequestperstation WHERE jdrequestid = ?";
+                    $stmt = $con->prepare($checkStatus);
+                    $stmt->execute([$jdrequestid]);
+                    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    // If all stations are processed, update main request status
+                    if ($result['total'] == $result['processed']) {
+                        $updateRequest = "UPDATE staffrequest SET status = 'pending' WHERE jdrequestid = ?";
+                        $stmt = $con->prepare($updateRequest);
+                        $stmt->execute([$jdrequestid]);
+                    }
+
+                    echo 'success';
                 } catch (Exception $e) {
                     echo "Error: " . $e->getMessage();
                 }

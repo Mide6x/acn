@@ -30,14 +30,19 @@ class Revenue
         try {
             $this->db->beginTransaction();
 
+            // Convert staffPerStation to array if it's a string
+            if (is_string($data['staffPerStation'])) {
+                $data['staffPerStation'] = explode(',', $data['staffPerStation']);
+            }
+
             // Calculate total staff from station requests
-            $totalStaff = array_sum($data['staffPerStation']);
+            $totalStaff = array_sum(array_map('intval', $data['staffPerStation']));
             $subdeptunitcode = getCurrentUser('subdeptunitcode');
 
             // Insert/Update main request
             $query = "INSERT INTO staffrequest 
-                 (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, status, createdby, dandt) 
-                 VALUES (?, ?, ?, ?, ?, 'draft', ?, NOW())
+                 (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, status, createdby, dandt, staffid) 
+                 VALUES (?, ?, ?, ?, ?, 'draft', ?, NOW(), ?)
                  ON DUPLICATE KEY UPDATE 
                  jdtitle = VALUES(jdtitle),
                  novacpost = VALUES(novacpost),
@@ -50,7 +55,8 @@ class Revenue
                 $totalStaff,
                 $data['deptunitcode'],
                 $subdeptunitcode,
-                $data['createdby']
+                $data['createdby'],
+                $data['staffid']
             ]);
 
             // Delete existing station requests for this jdrequestid
@@ -63,8 +69,8 @@ class Revenue
                 if (empty($station)) continue;
 
                 $query = "INSERT INTO staffrequestperstation 
-                     (jdrequestid, station, employmenttype, staffperstation, status, createdby, dandt)
-                     VALUES (?, ?, ?, ?, 'draft', ?, NOW())";
+                     (jdrequestid, station, employmenttype, staffperstation, status, createdby, dandt, staffid)
+                     VALUES (?, ?, ?, ?, 'draft', ?, NOW(), ?)";
 
                 $stmt = $this->db->prepare($query);
                 $stmt->execute([
@@ -72,7 +78,8 @@ class Revenue
                     $station,
                     $data['employmentTypes'][$index],
                     $data['staffPerStation'][$index],
-                    $data['createdby']
+                    $data['createdby'],
+                    $data['staffid']
                 ]);
             }
 
@@ -1012,17 +1019,19 @@ class Revenue
             // Calculate total staff from station requests
             $totalStaff = array_sum($data['staffPerStation']);
 
-            // Insert into staffrequest with draft status
-            $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, status, createdby) 
-                     VALUES (?, ?, ?, ?, ?, 'draft', ?)";
+            // Insert into staffrequest with draft status and staffid
+            $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, 
+                     subdeptunitcode, status, createdby, staffid) 
+                     VALUES (?, ?, ?, ?, ?, 'draft', ?, ?)";
             $stmt = $this->db->prepare($query);
             $stmt->execute([
                 $data['jdrequestid'],
                 $data['jdtitle'],
-                $totalStaff, // Automatically calculated
+                $totalStaff,
                 $data['deptunitcode'],
                 $data['subdeptunitcode'],
-                $data['createdby']
+                $data['createdby'],
+                $data['staffid']  // Add staffid here
             ]);
 
             // Insert station details
@@ -1221,7 +1230,7 @@ class Revenue
     public function getDeptUnitLeadRequestDetails($jdrequestid)
     {
         try {
-            // Get main request details with job description
+            // Get main request details
             $requestQuery = "SELECT r.*, d.deptunitname, e.staffname as requestor, 
                          j.jdtitle, j.jddescription, j.eduqualification, 
                          j.proqualification, j.workrelation, 
@@ -1241,14 +1250,13 @@ class Revenue
                 return "<div class='alert alert-danger'>Request not found</div>";
             }
 
-            // Get station details (without fetching status)
-            $stationQuery = "SELECT station, employmenttype, staffperstation
-                         FROM staffrequestperstation 
-                         WHERE jdrequestid = ?";
+            // Get station details
+            $stationQuery = "SELECT * FROM staffrequestperstation WHERE jdrequestid = ?";
             $stationStmt = $this->db->prepare($stationQuery);
             $stationStmt->execute([$jdrequestid]);
             $stations = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
 
+            // Build the output HTML
             $output = "<div class='request-details'>";
             $output .= "<h5><strong>Job Title:</strong> {$request['jdtitle']}</h5>";
             $output .= "<p><strong>Request ID:</strong> {$request['jdrequestid']}</p>";
@@ -1257,34 +1265,30 @@ class Revenue
             $output .= "<p><strong>Requestor:</strong> {$request['requestor']}</p>";
             $output .= "<p><strong>Date:</strong> " . date('Y-m-d', strtotime($request['dandt'])) . "</p>";
 
-            // Add station details
-            if (!empty($stations)) {
-                $output .= "<div class='stations-info mt-3'>";
-                $output .= "<h6>Station Details</h6>";
-                $output .= "<table class='table table-bordered'>";
-                $output .= "<thead><tr>";
-                $output .= "<th>Station</th>";
-                $output .= "<th>Employment Type</th>";
-                $output .= "<th>Staff Count</th>";
-                $output .= "</tr></thead><tbody>";
+            // Add station details with approve/decline buttons
+            $output .= "<div class='stations-info mt-4'>";
+            $output .= "<h6>Station Requests</h6>";
+            $output .= "<table class='table table-bordered'>";
+            $output .= "<thead><tr><th>Station</th><th>Employment Type</th><th>Staff Count</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
 
-                foreach ($stations as $station) {
-                    $output .= "<tr>";
-                    $output .= "<td>{$station['station']}</td>";
-                    $output .= "<td>{$station['employmenttype']}</td>";
-                    $output .= "<td>{$station['staffperstation']}</td>";
-                    $output .= "</tr>";
-                    // Add approval buttons if status is 'draft'
-                    if ($request['status'] === 'draft') {
-                        $output .= "<div class='approval-buttons mt-4 text-center'>";
-                        $output .= "<button class='btn btn-success me-2' onclick='approveDeptUnitLeadRequest(\"{$request['jdrequestid']}\")'>Approve</button>";
-                        $output .= "<button class='btn btn-danger' onclick='showDeclineModal(\"{$request['jdrequestid']}\")'>Decline</button>";
-                        $output .= "</div>";
-                    }
+            foreach ($stations as $station) {
+                $output .= "<tr>";
+                $output .= "<td>{$station['station']}</td>";
+                $output .= "<td>{$station['employmenttype']}</td>";
+                $output .= "<td>{$station['staffperstation']}</td>";
+                $output .= "<td>{$station['status']}</td>";
+                if ($station['status'] === 'pending') {
+                    $output .= "<td>
+                        <button class='btn btn-sm btn-success me-2' onclick='approveStation(\"{$request['jdrequestid']}\", \"{$station['station']}\")'>Approve</button>
+                        <button class='btn btn-sm btn-danger' onclick='declineStation(\"{$request['jdrequestid']}\", \"{$station['station']}\")'>Decline</button>
+                    </td>";
+                } else {
+                    $output .= "<td>Already processed</td>";
                 }
-
-                $output .= "</tbody></table></div>";
+                $output .= "</tr>";
             }
+
+            $output .= "</tbody></table></div>";
 
             // Add additional details
             $output .= "<div class='job-details mt-3'>";

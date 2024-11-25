@@ -11,11 +11,11 @@
 
 // Current user configuration
 define('CURRENT_USER', [
-    'staffid' => 'SLS001',  // Mike Johnson - Digital Marketing Team Lead
+    'staffid' => 'CSLS001',  // Mike Johnson - Digital Marketing Team Lead
     'email' => '',
-    'position' => 'DeptUnitLead',
+    'position' => 'TeamLead',
     'deptunitcode' => 'SLS',
-    'subdeptunitcode' => '',
+    'subdeptunitcode' => 'CSLS',
     'isAdmin' => false
 ]);
 
