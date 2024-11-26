@@ -12,7 +12,7 @@
 // Current user configuration
 define('CURRENT_USER', [
     'staffid' => 'SLS001',
-    'email' => '',
+    'email' => 'samuel.a@acn.aero',
     'position' => 'DeptUnitLead',
     'deptunitcode' => 'SLS',
     'subdeptunitcode' => '',

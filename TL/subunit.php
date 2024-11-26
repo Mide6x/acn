@@ -74,7 +74,7 @@ class Subunit
     }
 
     // Create subunit request
-    public function createSubunitRequest($jdtitle, $novacpost, $subdeptunitcode, $createdby)
+    public function createSubunitRequest($jdtitle, $novacpost, $subdeptunitcode, $createdby, $staffid)
     {
         try {
             $this->db->beginTransaction();
@@ -92,10 +92,10 @@ class Subunit
             // Generate request ID
             $requestId = 'REQ' . date('Y') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
-            // Create staff request with subdeptunitcode
+            // Create staff request with staffid
             $sql = "INSERT INTO staffrequest 
-                    (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, status, createdby) 
-                    VALUES (?, ?, ?, ?, ?, 'draft', ?)";
+                    (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, staffid, status, createdby) 
+                    VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 $requestId,
@@ -103,6 +103,7 @@ class Subunit
                 $novacpost,
                 $deptUnit['deptunitcode'],
                 $subdeptunitcode,
+                $staffid,
                 $createdby
             ]);
 

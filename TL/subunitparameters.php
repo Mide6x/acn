@@ -5,6 +5,7 @@ require_once('subunit.php');
 $subunit = new Subunit($con);
 $createdby = getCurrentUser('email');
 $subdeptunitcode = getCurrentUser('subdeptunitcode');
+$staffid = getCurrentUser('staffid');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -23,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Calculate total novacpost from all stations
             $novacpost = array_sum(array_column($stations, 'staffperstation'));
 
-            // Create the main request
-            $jdrequestid = $subunit->createSubunitRequest($jdtitle, $novacpost, $subdeptunitcode, $createdby);
+            // Create the main request with staffid
+            $jdrequestid = $subunit->createSubunitRequest($jdtitle, $novacpost, $subdeptunitcode, $createdby, $staffid);
 
             // Create entries for each station
             foreach ($stations as $station) {

@@ -340,20 +340,26 @@ class DeptUnit
                             </tr></thead><tbody>";
 
                 foreach ($stations as $station) {
+                    // Debug log to see actual status
+                    error_log("Station status: " . $station['status']);
+
                     $actionButtons = '';
-                    if ($station['status'] === 'pending') {
+                    // Check for all possible initial statuses that should show approve/decline buttons
+                    if (in_array(strtolower($station['status']), ['pending', 'draft', 'new', ''])) {
                         $actionButtons = "
-                            <button class='btn btn-success btn-sm me-2' 
-                                    onclick='approveDeptUnitLeadStation(\"{$request['jdrequestid']}\", \"{$station['station']}\")'>
+                            <button class='btn btn-success btn-sm me-2 btn-approve-station' 
+                                    data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'
+                                    data-station='" . htmlspecialchars($station['station']) . "'>
                                 Approve
                             </button>
-                            <button class='btn btn-danger btn-sm' 
-                                    onclick='showDeclineStationModal(\"{$request['jdrequestid']}\", \"{$station['station']}\")'>
+                            <button class='btn btn-danger btn-sm btn-decline-station' 
+                                    data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'
+                                    data-station='" . htmlspecialchars($station['station']) . "'>
                                 Decline
                             </button>";
                     } else {
-                        $actionButtons = "<span class='badge " .
-                            ($station['status'] === 'approved' ? 'bg-success' : 'bg-danger') . "'>" .
+                        $badgeClass = (strtolower($station['status']) === 'deptunit lead approved') ? 'bg-success' : 'bg-danger';
+                        $actionButtons = "<span class='badge {$badgeClass}'>" .
                             ucfirst($station['status']) . "</span>";
                     }
 
@@ -488,26 +494,48 @@ class DeptUnit
 
             // Update the station request status
             $query = "UPDATE staffrequestperstation 
-                     SET status = 'approved' 
+                     SET status = 'DeptUnit Lead Approved' 
                      WHERE jdrequestid = ? AND station = ?";
             $stmt = $this->db->prepare($query);
             $stmt->execute([$jdrequestid, $station]);
 
-            // Check if all stations are approved
-            $checkQuery = "SELECT COUNT(*) as total, 
-                             SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved
-                      FROM staffrequestperstation 
-                      WHERE jdrequestid = ?";
+            // Check if all stations are approved by DeptUnit Lead
+            $checkQuery = "SELECT 
+                            COUNT(*) as total,
+                            SUM(CASE WHEN srps.status = 'DeptUnit Lead Approved' THEN 1 ELSE 0 END) as approved,
+                            MAX(sr.jdtitle) as jdtitle
+                          FROM staffrequestperstation srps
+                          JOIN staffrequest sr ON sr.jdrequestid = srps.jdrequestid 
+                          WHERE srps.jdrequestid = ?";
             $stmt = $this->db->prepare($checkQuery);
             $stmt->execute([$jdrequestid]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            // If all stations are approved, update main request status
+            // If all stations are approved
             if ($result['total'] == $result['approved']) {
+                // Update main request status
                 $updateRequest = "UPDATE staffrequest 
-                                SET status = 'processed' 
+                                SET status = 'DeptUnit Lead Approved' 
                                 WHERE jdrequestid = ?";
                 $stmt = $this->db->prepare($updateRequest);
+                $stmt->execute([$jdrequestid]);
+
+                // Update DeptUnitLead approval status
+                $updateApproval = "UPDATE approvaltbl 
+                                 SET status = 'approved',
+                                     dandt = NOW()
+                                 WHERE jdrequestid = ? 
+                                 AND approvallevel = 'DeptUnitLead'";
+                $stmt = $this->db->prepare($updateApproval);
+                $stmt->execute([$jdrequestid]);
+
+                // Set HOD approval to pending
+                $updateHODApproval = "UPDATE approvaltbl 
+                                    SET status = 'pending',
+                                        dandt = NOW()
+                                    WHERE jdrequestid = ? 
+                                    AND approvallevel = 'HOD'";
+                $stmt = $this->db->prepare($updateHODApproval);
                 $stmt->execute([$jdrequestid]);
             }
 
@@ -515,6 +543,7 @@ class DeptUnit
             return true;
         } catch (Exception $e) {
             $this->db->rollBack();
+            error_log("Error in approveDeptUnitLeadStation: " . $e->getMessage());
             throw $e;
         }
     }
