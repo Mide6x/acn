@@ -143,8 +143,20 @@ class Subunit
 
             $currentCount = intval($currentStaff['current_count']);
 
+            // Get count of staff requests with 'DeptUnit Lead Approved' status
+            $query = "SELECT COUNT(DISTINCT sr.jdrequestid) as approved_count
+                      FROM staffrequest sr
+                      JOIN staffrequestperstation srs ON sr.jdrequestid = srs.jdrequestid
+                      WHERE sr.subdeptunitcode = ? 
+                      AND srs.status = 'DeptUnit Lead Approved'";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$subdeptunitcode]);
+            $approvedRequests = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $approvedCount = intval($approvedRequests['approved_count']);
+
             // Calculate available positions
-            $availablePositions = $allocatedStaff - $currentCount;
+            $availablePositions = $allocatedStaff - $currentCount - $approvedCount;
 
             // Return 0 if negative (shouldn't happen in normal circumstances)
             return max(0, $availablePositions);

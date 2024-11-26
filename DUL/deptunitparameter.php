@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'decline_deptunitlead_station':
             try {
-                $result = $deptunit->declineDeptUnitLeadStation(
+                $result = $deptunit->declineDeptUnitLeadRequest(
                     $_POST['jdrequestid'],
                     $_POST['station'],
                     $_POST['reason']

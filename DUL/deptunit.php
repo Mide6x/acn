@@ -304,6 +304,8 @@ class DeptUnit
             $stationStmt->execute([$jdrequestid]);
             $stations = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
 
+
+
             // Build the output HTML
             $output = "<div class='request-details'>";
 
@@ -340,12 +342,8 @@ class DeptUnit
                             </tr></thead><tbody>";
 
                 foreach ($stations as $station) {
-                    // Debug log to see actual status
-                    error_log("Station status: " . $station['status']);
-
                     $actionButtons = '';
-                    // Check for all possible initial statuses that should show approve/decline buttons
-                    if (in_array(strtolower($station['status']), ['pending', 'draft', 'new', ''])) {
+                    if (in_array(strtolower($station['status']), ['pending', 'draft', 'new', '']) || $station['status'] === NULL) {
                         $actionButtons = "
                             <button class='btn btn-success btn-sm me-2 btn-approve-station' 
                                     data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'
@@ -353,14 +351,22 @@ class DeptUnit
                                 Approve
                             </button>
                             <button class='btn btn-danger btn-sm btn-decline-station' 
-                                    data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'
-                                    data-station='" . htmlspecialchars($station['station']) . "'>
-                                Decline
-                            </button>";
+           data-bs-toggle='modal' 
+           data-bs-target='#declineModal'
+           data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'
+           data-station='" . htmlspecialchars($station['station']) . "'>
+       Decline
+   </button>";
                     } else {
-                        $badgeClass = (strtolower($station['status']) === 'deptunit lead approved') ? 'bg-success' : 'bg-danger';
-                        $actionButtons = "<span class='badge {$badgeClass}'>" .
-                            ucfirst($station['status']) . "</span>";
+                        $badgeClass = ($station['status'] === 'DeptUnit Lead Approved') ? 'bg-success' : 'bg-danger';
+                        $actionButtons = "<span class='badge {$badgeClass}' style='color: white;'>" .
+                            htmlspecialchars($station['status']) . "</span>";
+
+                        // Show reason if declined
+                        if ($station['status'] === 'DeptUnit Lead Declined' && !empty($station['reason'])) {
+                            $actionButtons .= "<br><small class='text-danger mt-1 d-block'>" .
+                                htmlspecialchars($station['reason']) . "</small>";
+                        }
                     }
 
                     $output .= "<tr>
@@ -430,23 +436,49 @@ class DeptUnit
         try {
             $this->db->beginTransaction();
 
-            if ($action === 'approve') {
-                // Update staffrequest status
-                $updateRequest = "UPDATE staffrequest SET status = 'Unit Lead approved' WHERE jdrequestid = ?";
-                $stmt = $this->db->prepare($updateRequest);
-                $stmt->execute([$jdrequestid]);
+            // Check if all stations are declined
+            $checkStationsQuery = "SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'DeptUnit Lead Declined' THEN 1 ELSE 0 END) as declined
+            FROM staffrequestperstation 
+            WHERE jdrequestid = ?";
 
-                // Update HOD approval status to pending
-                $updateApproval = "UPDATE approvaltbl SET status = 'pending' 
-                              WHERE jdrequestid = ? AND approvallevel = 'HOD'";
-                $stmt = $this->db->prepare($updateApproval);
+            $stmt = $this->db->prepare($checkStationsQuery);
+            $stmt->execute([$jdrequestid]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $allStationsDeclined = ($result['total'] > 0 && $result['total'] == $result['declined']);
+
+            // Update DeptUnitLead approval status
+            $deptUnitLeadStatus = $allStationsDeclined ? 'declined' : 'approved';
+            $updateDeptUnitLead = "UPDATE approvaltbl 
+                                  SET status = ?, 
+                                      dandt = NOW()
+                                  WHERE jdrequestid = ? 
+                                  AND approvallevel = 'DeptUnitLead'";
+            $stmt = $this->db->prepare($updateDeptUnitLead);
+            $stmt->execute([$deptUnitLeadStatus, $jdrequestid]);
+
+            // Update HOD approval status based on DeptUnitLead decision
+            if (!$allStationsDeclined) {
+                // If not all declined, set HOD to pending
+                $updateHOD = "UPDATE approvaltbl 
+                             SET status = 'pending',
+                                 dandt = NOW()
+                             WHERE jdrequestid = ? 
+                             AND approvallevel = 'HOD'";
+                $stmt = $this->db->prepare($updateHOD);
                 $stmt->execute([$jdrequestid]);
-            } else {
-                // Update staffrequest status and reason
-                $updateRequest = "UPDATE staffrequest SET status = 'declined', decline_reason = ? WHERE jdrequestid = ?";
-                $stmt = $this->db->prepare($updateRequest);
-                $stmt->execute([$reason, $jdrequestid]);
             }
+
+            // Update main request status
+            $mainStatus = $allStationsDeclined ? 'DeptUnit Lead Declined' : 'DeptUnit Lead Approved';
+            $updateRequest = "UPDATE staffrequest 
+                             SET status = ?,
+                                 decline_reason = ?
+                             WHERE jdrequestid = ?";
+            $stmt = $this->db->prepare($updateRequest);
+            $stmt->execute([$mainStatus, $allStationsDeclined ? $reason : null, $jdrequestid]);
 
             $this->db->commit();
             return true;
@@ -548,23 +580,87 @@ class DeptUnit
         }
     }
 
-    public function declineDeptUnitLeadStation($jdrequestid, $station, $reason)
+
+    public function declineDeptUnitLeadRequest($jdrequestid, $station, $reason)
     {
         try {
             $this->db->beginTransaction();
 
-            // Update the station request status and reason
-            $query = "UPDATE staffrequestperstation 
-                     SET status = 'declined', 
-                         reason = ? 
-                     WHERE jdrequestid = ? AND station = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$reason, $jdrequestid, $station]);
+            error_log("Starting decline process with values - JD Request: '$jdrequestid', Station: '$station'");
+
+            // First, get all stations for this request to debug
+            $allStations = "SELECT station, status FROM staffrequestperstation 
+                           WHERE jdrequestid = ?";
+            $stmt = $this->db->prepare($allStations);
+            $stmt->execute([$jdrequestid]);
+            $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("All stations for this request: " . json_encode($stations));
+
+            // Check specific station
+            $checkStation = "SELECT station, status FROM staffrequestperstation 
+                            WHERE jdrequestid = ? AND station = ?";
+            $stmt = $this->db->prepare($checkStation);
+            $stmt->execute([$jdrequestid, $station]);
+            $currentStatus = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            error_log("Check station query parameters - JD Request: '$jdrequestid', Station: '$station'");
+            error_log("Current station status result: " . json_encode($currentStatus));
+
+            if (!$currentStatus) {
+                throw new Exception("Station not found for this request. JD Request: $jdrequestid, Station: $station");
+            }
+
+            echo "Found station. Current status: {$currentStatus['status']}\n";
+
+            // Update the station status and reason
+            $updateStation = "UPDATE staffrequestperstation 
+                             SET status = 'DeptUnit Lead Declined',
+                                 reason = ?,
+                                 dandt = NOW()
+                             WHERE jdrequestid = ? 
+                             AND station = ?";
+            $stmt = $this->db->prepare($updateStation);
+            $updateResult = $stmt->execute([$reason, $jdrequestid, $station]);
+
+            echo "Update result: " . ($updateResult ? "Success" : "Failed") . "\n";
+            echo "Rows affected: " . $stmt->rowCount() . "\n";
+
+            // Check for any approved stations
+            $checkApproved = "SELECT COUNT(*) as approved_count 
+                             FROM staffrequestperstation 
+                             WHERE jdrequestid = ? 
+                             AND status = 'DeptUnit Lead Approved'";
+            $stmt = $this->db->prepare($checkApproved);
+            $stmt->execute([$jdrequestid]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($result['approved_count'] > 0) {
+                echo "Found {$result['approved_count']} approved stations\n";
+
+                // Update main request status
+                $updateRequest = "UPDATE staffrequest 
+                                SET status = 'DeptUnit Lead Approved' 
+                                WHERE jdrequestid = ?";
+                $stmt = $this->db->prepare($updateRequest);
+                $stmt->execute([$jdrequestid]);
+
+                // Update approval table
+                $updateApproval = "UPDATE approvaltbl 
+                                 SET status = 'approved',
+                                     comments = CONCAT('Partially approved. Station ', ?, ' declined: ', ?),
+                                     dandt = NOW()
+                                 WHERE jdrequestid = ? 
+                                 AND approvallevel = 'DeptUnitLead'";
+                $stmt = $this->db->prepare($updateApproval);
+                $stmt->execute([$station, $reason, $jdrequestid]);
+            }
 
             $this->db->commit();
+            echo "Transaction completed successfully\n";
             return true;
         } catch (Exception $e) {
             $this->db->rollBack();
+            error_log("Error in declineDeptUnitLeadRequest: " . $e->getMessage());
             throw $e;
         }
     }

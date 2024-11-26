@@ -32,7 +32,10 @@ window.showDeclineModal = function(jdrequestid) {
 
 window.declineDeptUnitLeadRequest = function() {
     const jdrequestid = document.getElementById('decline_jdrequestid').value;
+    const station = document.getElementById('decline_station').value;
     const reason = document.getElementById('decline_reason').value.trim();
+
+    console.log('Declining request:', jdrequestid, station, reason); // Debug log
 
     if (!reason) {
         alert('Please provide a reason for declining');
@@ -43,21 +46,24 @@ window.declineDeptUnitLeadRequest = function() {
         url: 'deptunitparameter.php',
         type: 'POST',
         data: {
-            action: 'deptunitlead_decline',
+            action: 'decline_deptunitlead_station',
             jdrequestid: jdrequestid,
+            station: station,
             reason: reason
         },
         success: function(response) {
+            console.log('Decline response:', response); // Debug log
             if (response.includes('success')) {
                 alert('Request declined successfully');
-                bootstrap.Modal.getInstance(document.getElementById('declineModal')).hide();
-                $('#requestDetailsModal').modal('hide');
-                loadStaffRequests();
+                $('#declineModal').modal('hide');
+                // Refresh the request details
+                viewDeptUnitLeadRequest(jdrequestid);
             } else {
                 alert('Error: ' + response);
             }
         },
         error: function(xhr, status, error) {
+            console.error('Error declining request:', error);
             alert('Error declining request: ' + error);
         }
     });
@@ -119,6 +125,8 @@ function declineDeptUnitLeadStation() {
     const station = $('#decline_station').val();
     const reason = $('#decline_reason').val().trim();
 
+    console.log('Submitting decline:', { jdrequestid, station, reason }); // Debug log
+
     if (!reason) {
         alert('Please provide a reason for declining');
         return;
@@ -129,26 +137,28 @@ function declineDeptUnitLeadStation() {
         type: 'POST',
         data: {
             action: 'decline_deptunitlead_station',
-            jdrequestid: jdrequestid,
-            station: station,
-            reason: reason
+            jdrequestid,
+            station,
+            reason
         },
         success: function(response) {
+            console.log('Response:', response);
             if (response.includes('success')) {
-                alert('Station request declined successfully');
-                $('#declineStationModal').modal('hide');
-                viewDeptUnitLeadRequest(jdrequestid); // Refresh the modal
+                alert('Request declined successfully');
+                $('#declineModal').modal('hide');
+                viewDeptUnitLeadRequest(jdrequestid);
             } else {
                 alert('Error: ' + response);
             }
         },
         error: function(xhr, status, error) {
-            alert('Error declining station request: ' + error);
+            console.error('Error:', error);
+            alert('Error declining request: ' + error);
         }
     });
 }
 
-// Keep the document ready handler for initialization
+// Document ready handler
 $(document).ready(function() {
     console.log('DeptUnitLead JS loaded');
 
@@ -165,6 +175,43 @@ $(document).ready(function() {
         const jdrequestid = $(this).data('requestid');
         const station = $(this).data('station');
         approveDeptUnitLeadStation(jdrequestid, station);
+    });
+
+    // Single click handler for decline buttons
+    $(document).on('click', '.btn-decline-station', function(e) {
+        e.preventDefault();
+        const jdrequestid = $(this).data('requestid');
+        const station = $(this).data('station');
+        
+        console.log('Decline button clicked:', { jdrequestid, station });
+        
+        // Set the values in modal before showing it
+        $('#decline_jdrequestid').val(jdrequestid);
+        $('#decline_station').val(station);
+        $('#decline_reason').val('');
+        
+        // Show the modal
+        $('#declineModal').modal('show');
+    });
+
+    // Listen for modal opening
+    $('#declineModal').on('show.bs.modal', function (event) {
+        const button = $(event.relatedTarget); // Button that triggered the modal
+        const requestId = button.data('requestid');
+        const station = button.data('station');
+        
+        console.log('Modal opening with values:', { requestId, station });
+        
+        // Set values in hidden fields
+        $(this).find('#decline_jdrequestid').val(requestId);
+        $(this).find('#decline_station').val(station);
+        $(this).find('#decline_reason').val('');
+        
+        // Debug check
+        console.log('Values set in modal:', {
+            jdrequestid: $('#decline_jdrequestid').val(),
+            station: $('#decline_station').val()
+        });
     });
 });
 
@@ -238,3 +285,22 @@ function approveDeptUnitLeadStation(jdrequestid, station) {
         });
     }
 }
+
+// Update these functions
+function showDeclineModal(jdrequestid, station) {
+    console.log('Showing decline modal for:', jdrequestid, station); // Debug log
+    
+    // Store the values in hidden fields
+    document.getElementById('decline_jdrequestid').value = jdrequestid;
+    document.getElementById('decline_station').value = station;
+    
+    // Clear any previous reason
+    document.getElementById('decline_reason').value = '';
+    
+    // Show the decline modal
+    $('#declineModal').modal('show');
+}
+console.log('Values set in modal:', {
+    jdrequestid: $('#decline_jdrequestid').val(),
+    station: $('#decline_station').val()
+});

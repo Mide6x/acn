@@ -1,15 +1,6 @@
 <?php
 // Current user configuration
-// define('CURRENT_USER', [
-//     'staffid' => 'DMKT001',  // Mike Johnson - Digital Marketing Team Lead
-//     'email' => 'mike.j@acn.aero',
-//     'position' => 'TeamLead',
-//     'deptunitcode' => 'MKT',
-//     'subdeptunitcode' => 'DMKT',
-//     'isAdmin' => false
-// ]);
 
-// Current user configuration
 define('CURRENT_USER', [
     'staffid' => 'SLS001',
     'email' => 'samuel.a@acn.aero',
@@ -18,7 +9,16 @@ define('CURRENT_USER', [
     'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
-
+/*
+define('CURRENT_USER', [
+    'staffid' => 'CSLS001',
+    'email' => 'mike.j@acn.aero',
+    'position' => 'TeamLead',
+    'deptunitcode' => 'SLS',
+    'subdeptunitcode' => 'CSLS',
+    'isAdmin' => false
+]);
+*/
 // Function to get current user info
 function getCurrentUser($key = null)
 {

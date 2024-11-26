@@ -32,14 +32,14 @@ $deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
                 <h6 class="card-title" style="font-weight: 800; font-size: small;">
                     MY DEPARTMENT UNIT STAFF REQUESTS (<?php echo htmlspecialchars($deptUnitLeadInfo['deptunitname']); ?>)
                 </h6>
-                <div id="staffRequestsTable">
-                    <?php
-                    if ($deptUnitLeadInfo['deptunitcode']) {
-                        echo $deptunit->getDeptUnitLeadRequests($deptUnitLeadInfo['deptunitcode']);
-                    }
-                    ?>
-                </div>
+                <div id="staffRequestsTable"></div>
+                <?php
+                if ($deptUnitLeadInfo['deptunitcode']) {
+                    echo $deptunit->getDeptUnitLeadRequests($deptUnitLeadInfo['deptunitcode']);
+                }
+                ?>
             </div>
+        </div>
         </div>
     </section>
 </main>
@@ -62,12 +62,12 @@ $deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
     </div>
 </div>
 
-<!-- Decline Station Modal -->
-<div class="modal fade" id="declineStationModal" tabindex="-1">
+<!-- Decline Modal -->
+<div class="modal fade" id="declineModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Decline Station Request</h5>
+                <h5 class="modal-title">Decline Request</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
