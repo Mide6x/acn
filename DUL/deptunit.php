@@ -216,15 +216,25 @@ class DeptUnit
     public function getDeptUnitLeadRequests($deptunitcode)
     {
         try {
-            $query = "SELECT sr.*, e.staffname as requestor, su.subdeptunit
-                     FROM staffrequest sr
-                     LEFT JOIN employeetbl e ON sr.staffid = e.staffid
-                     LEFT JOIN subdeptunittbl su ON sr.subdeptunitcode = su.subdeptunitcode
-                     WHERE sr.deptunitcode = ? 
-                     ORDER BY sr.dandt DESC";
+            $query = "SELECT 
+                        sr.jdrequestid,
+                        sr.jdtitle,
+                        sr.novacpost,
+                        sr.dandt as request_date,
+                        sr.subdeptunitcode,
+                        sr.status,
+                        e.staffname as requestor,
+                        (SELECT GROUP_CONCAT(station) 
+                         FROM staffrequestperstation 
+                         WHERE jdrequestid = sr.jdrequestid) as stations
+                    FROM staffrequest sr
+                    LEFT JOIN employeetbl e ON sr.staffid = e.staffid
+                    WHERE sr.deptunitcode = ? 
+                    AND sr.staffid != ?  -- Exclude DeptUnitLead's own requests
+                    ORDER BY sr.dandt DESC";
 
             $stmt = $this->db->prepare($query);
-            $stmt->execute([$deptunitcode]);
+            $stmt->execute([$deptunitcode, $_SESSION['staffid']]);
             $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             if (empty($requests)) {
@@ -237,7 +247,7 @@ class DeptUnit
                              <th>Request ID</th>
                              <th>Job Title</th>
                              <th>Positions</th>
-                             <th>Sub Unit</th>
+                             <th>Stations</th>
                              <th>Initiator</th>
                              <th>Status</th>
                              <th>Actions</th>
@@ -246,20 +256,19 @@ class DeptUnit
                      <tbody>";
 
             foreach ($requests as $request) {
-                $subunit = $request['subdeptunit'] ? htmlspecialchars($request['subdeptunit']) : 'Main Unit';
-                $requestor = $request['requestor'] ? htmlspecialchars($request['requestor']) : 'N/A';
+                $statusClass = $this->getStatusClass($request['status']);
 
                 $output .= "<tr>
                          <td>" . htmlspecialchars($request['jdrequestid']) . "</td>
                          <td>" . htmlspecialchars($request['jdtitle']) . "</td>
                          <td>" . htmlspecialchars($request['novacpost']) . "</td>
-                         <td>{$subunit}</td>
-                         <td>{$requestor}</td>
-                         <td>" . htmlspecialchars($request['status']) . "</td>
+                         <td>" . htmlspecialchars($request['stations'] ?? 'N/A') . "</td>
+                         <td>" . htmlspecialchars($request['requestor'] ?? 'N/A') . "</td>
+                         <td><span class='badge {$statusClass}'>" . htmlspecialchars($request['status']) . "</span></td>
                          <td>
                              <button class='btn btn-sm btn-primary btn-view-request' 
                                      data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'>
-                                 View
+                                 View Details
                              </button>
                          </td>
                      </tr>";
@@ -272,6 +281,8 @@ class DeptUnit
             return "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
         }
     }
+
+
 
     public function getDeptUnitLeadRequestDetails($jdrequestid)
     {
@@ -305,7 +316,6 @@ class DeptUnit
             $stations = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-
             // Build the output HTML
             $output = "<div class='request-details'>";
 
@@ -321,7 +331,7 @@ class DeptUnit
             $output .= "</div>";
             $output .= "<div class='col-md-6'>";
             $output .= "<p><strong>Status:</strong> " . htmlspecialchars($request['status']) . "</p>";
-            $output .= "<p><strong>Requestor:</strong> " . htmlspecialchars($request['requestor'] ?? 'N/A') . "</p>";
+            $output .= "<p><strong>Initiator:</strong> " . htmlspecialchars($request['requestor'] ?? 'N/A') . "</p>";
             $output .= "<p><strong>Date:</strong> " . date('Y-m-d', strtotime($request['dandt'])) . "</p>";
             $output .= "</div>";
             $output .= "</div>";
@@ -519,6 +529,65 @@ class DeptUnit
     }
     /* END DEPT UNIT LEAD FUNCTIONS */
 
+
+    private function updateRequestAndApprovalStatus($jdrequestid, $declinedStation = null, $reason = null)
+    {
+        // Check all stations status
+        $checkQuery = "SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'DeptUnit Lead Approved' THEN 1 ELSE 0 END) as approved
+        FROM staffrequestperstation 
+        WHERE jdrequestid = ?";
+
+        $stmt = $this->db->prepare($checkQuery);
+        $stmt->execute([$jdrequestid]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        // If there's at least one approved station, the whole request is approved
+        $hasApprovedStations = ($result['approved'] > 0);
+
+        // Update main request status
+        if ($hasApprovedStations) {
+            $updateRequest = "UPDATE staffrequest 
+                             SET status = 'DeptUnit Lead Approved'
+                             WHERE jdrequestid = ?";
+            $stmt = $this->db->prepare($updateRequest);
+            $stmt->execute([$jdrequestid]);
+        } else {
+            $updateRequest = "UPDATE staffrequest 
+                             SET status = 'DeptUnit Lead Declined',
+                                 decline_reason = ?
+                             WHERE jdrequestid = ?";
+            $stmt = $this->db->prepare($updateRequest);
+            $stmt->execute([$reason, $jdrequestid]);
+        }
+        // Update DeptUnitLead approval status
+        $deptUnitLeadStatus = $hasApprovedStations ? 'approved' : 'declined';
+        $updateDeptUnitLead = "UPDATE approvaltbl 
+                              SET status = ?,
+                                  comments = ?,
+                                  dandt = NOW()
+                              WHERE jdrequestid = ? 
+                              AND approvallevel = 'DeptUnitLead'";
+
+        $comments = null;
+        if ($declinedStation && $hasApprovedStations) {
+            $comments = "Partially approved. Station $declinedStation declined: $reason";
+        }
+
+        $stmt = $this->db->prepare($updateDeptUnitLead);
+        $stmt->execute([$deptUnitLeadStatus, $comments, $jdrequestid]);
+        // If approved, update next level (HOD) to pending
+        if ($hasApprovedStations) {
+            $updateNextLevel = "UPDATE approvaltbl 
+                              SET status = 'pending',
+                                  dandt = NOW()
+                              WHERE jdrequestid = ? 
+                              AND approvallevel = 'HOD'";
+            $stmt = $this->db->prepare($updateNextLevel);
+            $stmt->execute([$jdrequestid]);
+        }
+    }
+
     public function approveDeptUnitLeadStation($jdrequestid, $station)
     {
         try {
@@ -526,50 +595,14 @@ class DeptUnit
 
             // Update the station request status
             $query = "UPDATE staffrequestperstation 
-                     SET status = 'DeptUnit Lead Approved' 
+                     SET status = 'DeptUnit Lead Approved',
+                         dandt = NOW()
                      WHERE jdrequestid = ? AND station = ?";
             $stmt = $this->db->prepare($query);
             $stmt->execute([$jdrequestid, $station]);
 
-            // Check if all stations are approved by DeptUnit Lead
-            $checkQuery = "SELECT 
-                            COUNT(*) as total,
-                            SUM(CASE WHEN srps.status = 'DeptUnit Lead Approved' THEN 1 ELSE 0 END) as approved,
-                            MAX(sr.jdtitle) as jdtitle
-                          FROM staffrequestperstation srps
-                          JOIN staffrequest sr ON sr.jdrequestid = srps.jdrequestid 
-                          WHERE srps.jdrequestid = ?";
-            $stmt = $this->db->prepare($checkQuery);
-            $stmt->execute([$jdrequestid]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            // If all stations are approved
-            if ($result['total'] == $result['approved']) {
-                // Update main request status
-                $updateRequest = "UPDATE staffrequest 
-                                SET status = 'DeptUnit Lead Approved' 
-                                WHERE jdrequestid = ?";
-                $stmt = $this->db->prepare($updateRequest);
-                $stmt->execute([$jdrequestid]);
-
-                // Update DeptUnitLead approval status
-                $updateApproval = "UPDATE approvaltbl 
-                                 SET status = 'approved',
-                                     dandt = NOW()
-                                 WHERE jdrequestid = ? 
-                                 AND approvallevel = 'DeptUnitLead'";
-                $stmt = $this->db->prepare($updateApproval);
-                $stmt->execute([$jdrequestid]);
-
-                // Set HOD approval to pending
-                $updateHODApproval = "UPDATE approvaltbl 
-                                    SET status = 'pending',
-                                        dandt = NOW()
-                                    WHERE jdrequestid = ? 
-                                    AND approvallevel = 'HOD'";
-                $stmt = $this->db->prepare($updateHODApproval);
-                $stmt->execute([$jdrequestid]);
-            }
+            // Update main request and approval statuses
+            $this->updateRequestAndApprovalStatus($jdrequestid);
 
             $this->db->commit();
             return true;
@@ -580,37 +613,10 @@ class DeptUnit
         }
     }
 
-
     public function declineDeptUnitLeadRequest($jdrequestid, $station, $reason)
     {
         try {
             $this->db->beginTransaction();
-
-            error_log("Starting decline process with values - JD Request: '$jdrequestid', Station: '$station'");
-
-            // First, get all stations for this request to debug
-            $allStations = "SELECT station, status FROM staffrequestperstation 
-                           WHERE jdrequestid = ?";
-            $stmt = $this->db->prepare($allStations);
-            $stmt->execute([$jdrequestid]);
-            $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            error_log("All stations for this request: " . json_encode($stations));
-
-            // Check specific station
-            $checkStation = "SELECT station, status FROM staffrequestperstation 
-                            WHERE jdrequestid = ? AND station = ?";
-            $stmt = $this->db->prepare($checkStation);
-            $stmt->execute([$jdrequestid, $station]);
-            $currentStatus = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            error_log("Check station query parameters - JD Request: '$jdrequestid', Station: '$station'");
-            error_log("Current station status result: " . json_encode($currentStatus));
-
-            if (!$currentStatus) {
-                throw new Exception("Station not found for this request. JD Request: $jdrequestid, Station: $station");
-            }
-
-            echo "Found station. Current status: {$currentStatus['status']}\n";
 
             // Update the station status and reason
             $updateStation = "UPDATE staffrequestperstation 
@@ -620,48 +626,436 @@ class DeptUnit
                              WHERE jdrequestid = ? 
                              AND station = ?";
             $stmt = $this->db->prepare($updateStation);
-            $updateResult = $stmt->execute([$reason, $jdrequestid, $station]);
+            $stmt->execute([$reason, $jdrequestid, $station]);
 
-            echo "Update result: " . ($updateResult ? "Success" : "Failed") . "\n";
-            echo "Rows affected: " . $stmt->rowCount() . "\n";
-
-            // Check for any approved stations
-            $checkApproved = "SELECT COUNT(*) as approved_count 
-                             FROM staffrequestperstation 
-                             WHERE jdrequestid = ? 
-                             AND status = 'DeptUnit Lead Approved'";
-            $stmt = $this->db->prepare($checkApproved);
-            $stmt->execute([$jdrequestid]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($result['approved_count'] > 0) {
-                echo "Found {$result['approved_count']} approved stations\n";
-
-                // Update main request status
-                $updateRequest = "UPDATE staffrequest 
-                                SET status = 'DeptUnit Lead Approved' 
-                                WHERE jdrequestid = ?";
-                $stmt = $this->db->prepare($updateRequest);
-                $stmt->execute([$jdrequestid]);
-
-                // Update approval table
-                $updateApproval = "UPDATE approvaltbl 
-                                 SET status = 'approved',
-                                     comments = CONCAT('Partially approved. Station ', ?, ' declined: ', ?),
-                                     dandt = NOW()
-                                 WHERE jdrequestid = ? 
-                                 AND approvallevel = 'DeptUnitLead'";
-                $stmt = $this->db->prepare($updateApproval);
-                $stmt->execute([$station, $reason, $jdrequestid]);
-            }
+            // Update main request and approval statuses
+            $this->updateRequestAndApprovalStatus($jdrequestid, $station, $reason);
 
             $this->db->commit();
-            echo "Transaction completed successfully\n";
             return true;
         } catch (Exception $e) {
             $this->db->rollBack();
             error_log("Error in declineDeptUnitLeadRequest: " . $e->getMessage());
             throw $e;
         }
+    }
+
+    public function createStaffRequest($formData)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Delete any existing draft without jdrequestid
+            $deleteDraft = "DELETE FROM staffrequest 
+                           WHERE jdrequestid = '' 
+                           AND createdby = ? 
+                           AND status = 'draft'";
+            $stmt = $this->db->prepare($deleteDraft);
+            $stmt->execute([$_SESSION['staffid']]);
+
+            // Generate new request ID if not provided
+            if (empty($formData['jdrequestid'])) {
+                $formData['jdrequestid'] = $this->generateRequestId();
+            }
+
+            // Set default values
+            $formData['createdby'] = $_SESSION['staffid'] ?? '';
+            $formData['staffid'] = $_SESSION['staffid'] ?? '';
+
+            // Insert main request
+            $insertRequest = "INSERT INTO staffrequest (
+                jdrequestid, jdtitle, novacpost, deptunitcode, 
+                status, createdby, subdeptunitcode, staffid
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+            $stmt = $this->db->prepare($insertRequest);
+            $stmt->execute([
+                $formData['jdrequestid'],
+                $formData['jdtitle'],
+                $formData['novacpost'],
+                $formData['deptunitcode'],
+                $formData['status'],
+                $formData['staffid'], // Using staffid instead of username
+                $formData['subdeptunitcode'],
+                $formData['staffid']
+            ]);
+
+            // Insert station requests
+            if (!empty($formData['stations'])) {
+                foreach ($formData['stations'] as $station) {
+                    $insertStation = "INSERT INTO staffrequestperstation (
+                        jdrequestid, station, employmenttype, 
+                        staffperstation, status, createdby
+                    ) VALUES (?, ?, ?, ?, ?, ?)";
+
+                    $stmt = $this->db->prepare($insertStation);
+                    $result = $stmt->execute([
+                        $formData['jdrequestid'],
+                        $station['station'],
+                        $station['employmenttype'],
+                        $station['staffperstation'],
+                        $formData['status'],
+                        $formData['staffid']
+                    ]);
+
+                    if (!$result) {
+                        throw new Exception("Failed to insert station request: " . print_r($stmt->errorInfo(), true));
+                    }
+                }
+            }
+
+            // If it's a draft, create approval workflow
+            if ($formData['status'] === 'draft') {
+                // For DeptUnitLead, first level is HOD (pending) and their own level is auto-approved
+
+                // Insert DeptUnitLead approval as approved
+                $insertDeptUnitLead = "INSERT INTO approvaltbl (
+                    jdrequestid, jdtitle, approverstaffid, 
+                    approvallevel, status, createdby, dandt
+                ) VALUES (?, ?, ?, 'DeptUnitLead', 'approved', ?, NOW())";
+
+                $stmt = $this->db->prepare($insertDeptUnitLead);
+                $stmt->execute([
+                    $formData['jdrequestid'],
+                    $formData['jdtitle'],
+                    $formData['staffid'],
+                    $formData['staffid']
+                ]);
+
+                // Insert HOD approval as pending
+                $insertHOD = "INSERT INTO approvaltbl (
+                    jdrequestid, jdtitle, approverstaffid, 
+                    approvallevel, status, createdby, dandt
+                ) VALUES (?, ?, ?, 'HOD', 'pending', ?, NOW())";
+
+                $stmt = $this->db->prepare($insertHOD);
+                $stmt->execute([
+                    $formData['jdrequestid'],
+                    $formData['jdtitle'],
+                    $this->getHODApprover($formData['deptunitcode']),
+                    $formData['staffid']
+                ]);
+
+                // Insert other approval levels as draft
+                $approvalLevels = ['HR', 'HeadOfHR', 'CFO', 'CEO'];
+                foreach ($approvalLevels as $level) {
+                    $insertApproval = "INSERT INTO approvaltbl (
+                        jdrequestid, jdtitle, approverstaffid, 
+                        approvallevel, status, createdby, dandt
+                    ) VALUES (?, ?, ?, ?, 'draft', ?, NOW())";
+
+                    $stmt = $this->db->prepare($insertApproval);
+                    $stmt->execute([
+                        $formData['jdrequestid'],
+                        $formData['jdtitle'],
+                        $this->getApproverByLevel($level),
+                        $level,
+                        $formData['staffid']
+                    ]);
+                }
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error in createStaffRequest: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // Helper function to get HOD approver
+    private function getHODApprover($deptunitcode)
+    {
+        $query = "SELECT staffid FROM employeetbl 
+                  WHERE position = 'HOD' 
+                  AND deptunitcode = ? 
+                  AND status = 'Active' 
+                  LIMIT 1";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$deptunitcode]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $result ? $result['staffid'] : null;
+    }
+
+    // Helper function to get approver by level
+    private function getApproverByLevel($level)
+    {
+        $query = "SELECT staffid FROM employeetbl 
+                  WHERE position = ? 
+                  AND status = 'Active' 
+                  LIMIT 1";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$level]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $result ? $result['staffid'] : null;
+    }
+
+    public function getMyStaffRequests($staffid)
+    {
+        try {
+            $query = "SELECT 
+                        sr.jdrequestid,
+                        sr.jdtitle,
+                        sr.novacpost,
+                        sr.dandt as request_date,
+                        CASE 
+                            WHEN sr.status = 'draft' THEN 'Draft'
+                            ELSE COALESCE(
+                                (SELECT status 
+                                 FROM approvaltbl 
+                                 WHERE jdrequestid = sr.jdrequestid 
+                                 AND status != 'draft'
+                                 ORDER BY dandt DESC 
+                                 LIMIT 1),
+                                'Pending'
+                            )
+                        END as current_status,
+                        (SELECT approvallevel 
+                         FROM approvaltbl 
+                         WHERE jdrequestid = sr.jdrequestid 
+                         AND status = 'pending'
+                         LIMIT 1) as current_level
+                    FROM staffrequest sr
+                    WHERE sr.staffid = ?
+                    ORDER BY sr.dandt DESC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$staffid]);
+
+            $output = '<div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Job Title</th>
+                                    <th>Vacant Positions</th>
+                                    <th>Request Date</th>
+                                    <th>Status</th>
+                                    <th>Current Level</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
+
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $statusClass = $this->getStatusClass($row['current_status']);
+
+                $output .= '<tr>
+                            <td>' . htmlspecialchars($row['jdrequestid']) . '</td>
+                            <td>' . htmlspecialchars($row['jdtitle']) . '</td>
+                            <td>' . htmlspecialchars($row['novacpost']) . '</td>
+                            <td>' . date('Y-m-d', strtotime($row['request_date'])) . '</td>
+                            <td><span class="badge ' . $statusClass . '">' .
+                    htmlspecialchars($row['current_status']) . '</span></td>
+                            <td>' . htmlspecialchars($row['current_level'] ?? 'N/A') . '</td>
+                            <td>
+                                <button type="button" class="btn btn-primary btn-sm" 
+                                        onclick="viewRequestDetails(\'' . $row['jdrequestid'] . '\')">
+                                    View Details
+                                </button>
+                                ' . ($row['current_status'] === 'Draft' ? '' : '') . '
+                            </td>
+                        </tr>';
+            }
+
+            $output .= '</tbody></table></div>';
+            return $output;
+        } catch (Exception $e) {
+            error_log("Error in getMyStaffRequests: " . $e->getMessage());
+            return '<div class="alert alert-danger">Error loading requests</div>';
+        }
+    }
+
+    private function getStatusClass($status)
+    {
+        switch (strtolower($status)) {
+            case 'approved':
+                return 'bg-success';
+            case 'pending':
+                return 'bg-warning';
+            case 'declined':
+                return 'bg-danger';
+            default:
+                return 'bg-secondary';
+        }
+    }
+
+    public function getRequestDetails($requestId)
+    {
+        $query = "SELECT 
+                    sr.jdrequestid,
+                    sr.jdtitle,
+                    sr.status,
+                    sr.dandt,
+                    sr.createdby,
+                    sr.novacpost,
+                    j.jddescription,
+                    j.eduqualification,
+                    j.proqualification,
+                    j.workrelation,
+                    j.jdcondition,
+                    j.agebracket,
+                    j.personspec,
+                    j.fuctiontech,
+                    j.managerial,
+                    j.behavioural,
+                    e.staffname as requestor,
+                    COALESCE(
+                        (SELECT approvallevel 
+                         FROM approvaltbl 
+                         WHERE jdrequestid = sr.jdrequestid 
+                         AND status = 'pending'
+                         ORDER BY id ASC 
+                         LIMIT 1),
+                        'Completed'
+                    ) as current_level
+                FROM staffrequest sr
+                LEFT JOIN jobtitletbl j ON sr.jdtitle = j.jdtitle
+                LEFT JOIN employeetbl e ON sr.staffid = e.staffid
+                WHERE sr.jdrequestid = ?";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$requestId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getStationDetails($requestId)
+    {
+        $query = "SELECT * FROM staffrequestperstation WHERE jdrequestid = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$requestId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getApprovalWorkflow($requestId)
+    {
+        $query = "SELECT approvallevel, status, dandt, comments 
+                  FROM approvaltbl 
+                  WHERE jdrequestid = ?
+                  ORDER BY id ASC";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$requestId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function updateStaffRequest($data)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Update main request
+            $updateRequest = "UPDATE staffrequest 
+                             SET jdtitle = ?, novacpost = ?
+                             WHERE jdrequestid = ?";
+            $stmt = $this->db->prepare($updateRequest);
+            $stmt->execute([$data['jdtitle'], $data['novacpost'], $data['jdrequestid']]);
+
+            // Delete existing stations
+            $deleteStations = "DELETE FROM staffrequestperstation WHERE jdrequestid = ?";
+            $stmt = $this->db->prepare($deleteStations);
+            $stmt->execute([$data['jdrequestid']]);
+
+            // Insert updated stations
+            foreach ($data['stations'] as $station) {
+                $insertStation = "INSERT INTO staffrequestperstation (
+                    jdrequestid, station, employmenttype, 
+                    staffperstation, status, createdby
+                ) VALUES (?, ?, ?, ?, ?, ?)";
+
+                $stmt = $this->db->prepare($insertStation);
+                $stmt->execute([
+                    $data['jdrequestid'],
+                    $station['station'],
+                    $station['employmenttype'],
+                    $station['staffperstation'],
+                    $data['status'],
+                    $_SESSION['staffid']
+                ]);
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error in updateStaffRequest: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getEditRequestData($requestId, $staffId)
+    {
+        try {
+            // Get request details
+            $query = "SELECT sr.*, e.staffname as requestor
+                     FROM staffrequest sr
+                     LEFT JOIN employeetbl e ON sr.staffid = e.staffid
+                     WHERE sr.jdrequestid = ?";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$requestId]);
+            $requestDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Get station details with full information
+            $stationQuery = "SELECT srps.*, s.stationname
+                            FROM staffrequestperstation srps
+                            LEFT JOIN stationtbl s ON srps.station = s.stationcode
+                            WHERE srps.jdrequestid = ?";
+
+            $stmt = $this->db->prepare($stationQuery);
+            $stmt->execute([$requestId]);
+            $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Check if request exists and belongs to current user
+            if (!$requestDetails || $requestDetails['createdby'] !== $staffId) {
+                throw new Exception("Request not found or unauthorized access.");
+            }
+
+            // Check if request is still in draft status
+            if ($requestDetails['status'] !== 'draft') {
+                throw new Exception("Only draft requests can be edited.");
+            }
+
+            return [
+                'details' => $requestDetails,
+                'stations' => $stations
+            ];
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+
+    public function getStationsWithSelected($selectedValue)
+    {
+        $options = '';
+        $query = "SELECT stationcode, stationname FROM stationtbl WHERE status = 'Active' ORDER BY stationname";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $selected = ($row['stationcode'] === $selectedValue) ? 'selected' : '';
+            $options .= "<option value='" . htmlspecialchars($row['stationcode']) . "' {$selected}>" .
+                htmlspecialchars($row['stationname']) . "</option>";
+        }
+        return $options;
+    }
+
+    public function getStaffTypesWithSelected($selectedValue)
+    {
+        $options = '';
+        $query = "SELECT employmenttypecode, employmenttype FROM employmenttypetbl WHERE status = 'Active' ORDER BY employmenttype";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $selected = ($row['employmenttypecode'] === $selectedValue) ? 'selected' : '';
+            $options .= "<option value='" . htmlspecialchars($row['employmenttypecode']) . "' {$selected}>" .
+                htmlspecialchars($row['employmenttype']) . "</option>";
+        }
+        return $options;
     }
 }

@@ -17,8 +17,8 @@ define('CURRENT_USER', [
     'deptunitcode' => 'SLS',
     'subdeptunitcode' => 'CSLS',
     'isAdmin' => false
-]);
-*/
+]);*/
+
 // Function to get current user info
 function getCurrentUser($key = null)
 {

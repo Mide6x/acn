@@ -189,7 +189,8 @@ class Subunit
                  FROM staffrequestperstation 
                  WHERE jdrequestid = sr.jdrequestid) as total_positions,
                 a.status AS approval_status,
-                a.approvallevel
+                a.approvallevel,
+                CASE WHEN a.status = 'approved' THEN a.comments ELSE NULL END AS comments
             FROM staffrequest sr
             LEFT JOIN approvaltbl a ON sr.jdrequestid = a.jdrequestid
             WHERE sr.subdeptunitcode = ?
@@ -212,6 +213,7 @@ class Subunit
                                 <th>Job Title</th>
                                 <th>Total Positions</th>
                                 <th>Status</th>
+                                <th>Comments</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -231,6 +233,7 @@ class Subunit
                             <td>{$request['jdtitle']}</td>
                             <td>{$request['total_positions']}</td>
                             <td><span class='{$statusClass}'>" . ucfirst($status) . "</span></td>
+                            <td>{$request['comments']}</td>
                             <td>
                                 <button class='btn btn-sm btn-primary' 
                                         onclick='viewSubunitRequest(\"{$request['jdrequestid']}\")'>
@@ -271,7 +274,7 @@ class Subunit
                     e.staffname as requestor
                 FROM staffrequest sr
                 LEFT JOIN jobtitletbl j ON sr.jdtitle = j.jdtitle
-                LEFT JOIN employeetbl e ON sr.createdby = e.staffid
+                LEFT JOIN employeetbl e ON sr.staffid = e.staffid
                 WHERE sr.jdrequestid = ?";
 
             $stmt = $this->db->prepare($requestQuery);
@@ -331,7 +334,7 @@ class Subunit
                 $output .= "<div class='stations-info'>";
                 $output .= "<h6 class='text-primary'>Station Requirements</h6>";
                 $output .= "<table class='table table-bordered table-striped'>";
-                $output .= "<thead><tr><th>Station</th><th>Employment Type</th><th>Staff Count</th><th>Status</th></tr></thead><tbody>";
+                $output .= "<thead><tr><th>Station</th><th>Employment Type</th><th>Staff Count</th><th>Status</th><th>Reason for Decline</th></tr></thead><tbody>";
 
                 foreach ($stations as $station) {
                     $statusClass = match ($station['status']) {
@@ -346,6 +349,7 @@ class Subunit
                     $output .= "<td>{$station['employmenttype']}</td>";
                     $output .= "<td>{$station['staffperstation']}</td>";
                     $output .= "<td class='{$statusClass}'>" . ucfirst($station['status']) . "</td>";
+                    $output .= "<td>{$station['reason']}</td>";
                     $output .= "</tr>";
                 }
 

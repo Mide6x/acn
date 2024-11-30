@@ -18,6 +18,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 echo $deptunit->getDeptUnitLeadRequestDetails($_GET['jdrequestid']);
             }
             break;
+
+        case 'get_new_station_request_html':
+            try {
+                // Get stations and employment types
+                $stations = $deptunit->getStations();
+                $employmentTypes = $deptunit->getStaffTypes();
+
+                $html = '
+                <div class="station-request">
+                    <div class="row mb-3">
+                        <div class="col-sm-4">
+                            <label class="form-label">Station</label>
+                            <select class="form-control" name="station" style="border-radius: 8px" 
+                                    required onchange="validateStationSelection(this)">
+                                <option value="">Select Station</option>
+                                ' . $stations . '
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label">Employment Type</label>
+                            <select class="form-control" name="employmenttype" style="border-radius: 8px" required>
+                                <option value="">Select Type</option>
+                                ' . $employmentTypes . '
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label">Staff Per Station</label>
+                            <input type="number" class="form-control staffperstation" 
+                                   name="staffperstation" style="border-radius: 8px" 
+                                   required min="1">
+                        </div>
+                        <div class="col-sm-12 mt-2">
+                            <button type="button" class="btn btn-danger btn-sm" 
+                                    onclick="removeStationRequest(this)">
+                                Remove Station
+                            </button>
+                        </div>
+                    </div>
+                </div>';
+
+                echo $html;
+            } catch (Exception $e) {
+                echo 'error: ' . $e->getMessage();
+            }
+            break;
     }
     exit;
 }
@@ -47,6 +92,278 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo $result ? 'success' : 'error';
             } catch (Exception $e) {
                 echo 'error: ' . $e->getMessage();
+            }
+            break;
+
+        case 'save_draft_deptunitlead':
+            try {
+                $formData = $_POST['formData'];
+                $formData['status'] = 'draft';
+                $result = $deptunit->createStaffRequest($formData);
+                echo $result ? 'success' : 'error';
+            } catch (Exception $e) {
+                echo 'error: ' . $e->getMessage();
+            }
+            break;
+
+        case 'submit_deptunitlead_request':
+            try {
+                $formData = $_POST['formData'];
+                $formData['status'] = 'pending';
+                $result = $deptunit->createStaffRequest($formData);
+                echo $result ? 'success' : 'error';
+            } catch (Exception $e) {
+                echo 'error: ' . $e->getMessage();
+            }
+            break;
+
+        case 'get_request_details':
+            try {
+                $requestId = $_POST['requestId'];
+
+                // Get request details with approval status
+                $query = "SELECT 
+                            sr.*,
+                            jt.jobdescription,
+                            jt.jobresponsibilities,
+                            jt.jobrequirements,
+                            hod.status as hod_status,
+                            hod.dandt as hod_date,
+                            hod.comments as hod_comments,
+                            COALESCE(
+                                (SELECT approvallevel 
+                                 FROM approvaltbl 
+                                 WHERE jdrequestid = sr.jdrequestid 
+                                 AND status = 'pending'
+                                 ORDER BY id ASC 
+                                 LIMIT 1),
+                                'Completed'
+                            ) as current_level
+                        FROM staffrequest sr
+                        LEFT JOIN jobtitletbl jt ON sr.jdtitle = jt.jobtitle
+                        LEFT JOIN approvaltbl hod ON sr.jdrequestid = hod.jdrequestid 
+                            AND hod.approvallevel = 'HOD'
+                        WHERE sr.jdrequestid = ?";
+
+                // Use the DeptUnit class method to get request details
+                $requestDetails = $deptunit->getRequestDetails($requestId);
+
+                // Get station details using DeptUnit class method
+                $stations = $deptunit->getStationDetails($requestId);
+
+                // Get approval workflow using DeptUnit class method
+                $approvals = $deptunit->getApprovalWorkflow($requestId);
+
+                $output = "
+                <input type='hidden' id='requestStatus' value='{$requestDetails['status']}'>
+                <div class='row mb-3'>
+                    <div class='col-md-6'>
+                        <h6>Request Details</h6>
+                        <p><strong>Request ID:</strong> {$requestDetails['jdrequestid']}</p>
+                        <p><strong>Job Title:</strong> {$requestDetails['jdtitle']}</p>
+                        <p><strong>Total Positions:</strong> {$requestDetails['novacpost']}</p>
+                        <p><strong>Status:</strong> {$requestDetails['status']}</p>
+                        <p><strong>Current Level:</strong> {$requestDetails['current_level']}</p>
+                        <p><strong>Requested By:</strong> {$requestDetails['requestor']}</p>
+                        <p><strong>Request Date:</strong> " . date('Y-m-d', strtotime($requestDetails['dandt'])) . "</p>
+                    </div>
+                    <div class='col-md-6'>
+                        <h6>Job Details</h6>
+                        <p><strong>Description:</strong> {$requestDetails['jddescription']}</p>
+                        <p><strong>Educational Qualification:</strong> {$requestDetails['eduqualification']}</p>
+                        <p><strong>Professional Qualification:</strong> {$requestDetails['proqualification']}</p>
+                        <p><strong>Work Relation:</strong> {$requestDetails['workrelation']}</p>
+                        <p><strong>Job Condition:</strong> {$requestDetails['jdcondition']}</p>
+                    </div>
+                </div>
+
+                <div class='row mb-3'>
+                    <div class='col-md-12'>
+                        <h6>Additional Requirements</h6>
+                        <div class='row'>
+                            <div class='col-md-6'>
+                                <p><strong>Age Bracket:</strong> {$requestDetails['agebracket']}</p>
+                                <p><strong>Person Specification:</strong> {$requestDetails['personspec']}</p>
+                                <p><strong>Technical Skills:</strong> {$requestDetails['fuctiontech']}</p>
+                            </div>
+                            <div class='col-md-6'>
+                                <p><strong>Managerial Skills:</strong> {$requestDetails['managerial']}</p>
+                                <p><strong>Behavioral Skills:</strong> {$requestDetails['behavioural']}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class='row mb-3'>
+                    <div class='col-12'>
+                        <h6>Approval Workflow</h6>
+                        <div class='approval-timeline'>
+                            <div class='timeline-wrapper'>";
+
+                $approvalStages = ['HOD', 'HR', 'HeadOfHR', 'CFO', 'CEO'];
+                $currentLevel = '';
+                $approvalStatuses = [];
+
+                // Get current approval level and statuses
+                foreach ($approvals as $approval) {
+                    $approvalStatuses[$approval['approvallevel']] = [
+                        'status' => $approval['status'],
+                        'date' => $approval['dandt'],
+                        'comments' => $approval['comments']
+                    ];
+                    if ($approval['status'] == 'pending') {
+                        $currentLevel = $approval['approvallevel'];
+                    }
+                }
+
+                foreach ($approvalStages as $index => $stage) {
+                    $status = isset($approvalStatuses[$stage]) ? $approvalStatuses[$stage]['status'] : 'draft';
+                    $date = isset($approvalStatuses[$stage]['date']) ?
+                        date('Y-m-d', strtotime($approvalStatuses[$stage]['date'])) : '-';
+                    $comments = isset($approvalStatuses[$stage]['comments']) ?
+                        $approvalStatuses[$stage]['comments'] : '-';
+
+                    $stageClass = '';
+                    if ($status == 'approved') {
+                        $stageClass = 'completed';
+                    } elseif ($status == 'pending') {
+                        $stageClass = 'current';
+                    }
+
+                    $output .= "<div class='timeline-item {$stageClass}'>
+                            <div class='timeline-dot' data-bs-toggle='tooltip' 
+                                 title='Status: " . ucfirst($status) . "&#013;Date: {$date}&#013;Comments: {$comments}'>
+                            </div>
+                            <div class='timeline-label'>{$stage}</div>
+                          </div>";
+
+                    if ($index < count($approvalStages) - 1) {
+                        $output .= "<div class='timeline-line " . ($status == 'approved' ? 'completed' : '') . "'></div>";
+                    }
+                }
+
+                $output .= "</div></div></div>";
+
+                // Station Details
+                $output .= "
+                <div class='row'>
+                    <div class='col-12'>
+                        <h6>Station Details</h6>
+                        <table class='table table-bordered'>
+                            <thead>
+                                <tr>
+                                    <th>Station</th>
+                                    <th>Employment Type</th>
+                                    <th>Staff Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>";
+
+                foreach ($stations as $station) {
+                    $output .= "<tr>
+                        <td>{$station['station']}</td>
+                        <td>{$station['employmenttype']}</td>
+                        <td>{$station['staffperstation']}</td>
+                    </tr>";
+                }
+
+                $output .= "</tbody></table></div></div>";
+
+                echo $output;
+            } catch (Exception $e) {
+                echo "<div class='alert alert-danger'>Error loading request details: " . $e->getMessage() . "</div>";
+            }
+            break;
+
+        case 'update_request':
+            try {
+                $requestData = [
+                    'jdrequestid' => $_POST['jdrequestid'],
+                    'jdtitle' => $_POST['jdtitle'],
+                    'novacpost' => $_POST['novacpost'],
+                    'stations' => $_POST['stations'],
+                    'status' => 'draft'
+                ];
+
+                if ($deptunit->updateStaffRequest($requestData)) {
+                    echo 'success';
+                } else {
+                    echo 'Failed to update request';
+                }
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
+
+        case 'get_station_options':
+            $index = $_POST['index'];
+            $output = '<div class="row mb-2 station-row">
+                <div class="col-sm-4">
+                    <label class="form-label">Station</label>
+                    <select class="form-control" name="stations[' . $index . '][station]" style="border-radius: 8px" required>
+                        <option value="">Select Station</option>
+                        ' . $deptunit->getStations() . '
+                    </select>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label">Employment Type</label>
+                    <select class="form-control" name="stations[' . $index . '][employmenttype]" style="border-radius: 8px" required>
+                        <option value="">Select Type</option>
+                        ' . $deptunit->getStaffTypes() . '
+                    </select>
+                </div>
+                <div class="col-sm-3">
+                    <label class="form-label">Staff Per Station</label>
+                    <input type="number" class="form-control staffperstation" 
+                           name="stations[' . $index . '][staffperstation]"
+                           style="border-radius: 8px" required min="1">
+                </div>
+                <div class="col-sm-1">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-danger btn-sm remove-station">×</button>
+                </div>
+            </div>';
+            echo $output;
+            break;
+
+        case 'get_edit_station_rows':
+            try {
+                $requestId = $_POST['requestId'];
+                $stations = $deptunit->getStationDetails($requestId);
+                $output = '';
+
+                foreach ($stations as $index => $station) {
+                    $output .= '<div class="row mb-2 station-row">
+                        <div class="col-sm-4">
+                            <label class="form-label">Station</label>
+                            <select class="form-control" name="stations[' . $index . '][station]" style="border-radius: 8px" required>
+                                <option value="">Select Station</option>
+                                ' . $deptunit->getStationsWithSelected($station['station']) . '
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label">Employment Type</label>
+                            <select class="form-control" name="stations[' . $index . '][employmenttype]" style="border-radius: 8px" required>
+                                <option value="">Select Type</option>
+                                ' . $deptunit->getStaffTypesWithSelected($station['employmenttype']) . '
+                            </select>
+                        </div>
+                        <div class="col-sm-3">
+                            <label class="form-label">Staff Per Station</label>
+                            <input type="number" class="form-control staffperstation" 
+                                   name="stations[' . $index . '][staffperstation]"
+                                   value="' . htmlspecialchars($station['staffperstation']) . '"
+                                   style="border-radius: 8px" required min="1">
+                        </div>
+                        <div class="col-sm-1">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn btn-danger btn-sm remove-station">×</button>
+                        </div>
+                    </div>';
+                }
+                echo $output;
+            } catch (Exception $e) {
+                echo "Error loading stations: " . $e->getMessage();
             }
             break;
     }

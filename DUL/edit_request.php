@@ -1,0 +1,74 @@
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/DUL/deptunit.php';
+
+include("../includes/header.html");
+include("../includes/sidebar.html");
+
+// Check if user is logged in and is a DeptUnitLead
+if (!isset($_SESSION['staffid']) || $_SESSION['position'] !== 'DeptUnitLead') {
+    header('Location: ../login.php');
+    exit();
+}
+
+$deptunit = new DeptUnit($con);
+$requestId = $_GET['id'] ?? '';
+
+try {
+    $requestData = $deptunit->getEditRequestData($requestId, $_SESSION['staffid']);
+    $requestDetails = $requestData['details'];
+    $stations = $requestData['stations'];
+} catch (Exception $e) {
+    $_SESSION['error'] = $e->getMessage();
+    header('Location: DeptUnitLead.php');
+    exit();
+}
+?>
+
+<main id="main" class="main">
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Edit Staff Request</h5>
+
+                <form id="editRequestForm" method="POST">
+                    <input type="hidden" name="jdrequestid" value="<?php echo htmlspecialchars($requestId); ?>">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Job Title</label>
+                            <input type="text" class="form-control" name="jdtitle"
+                                value="<?php echo htmlspecialchars($requestDetails['jdtitle']); ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Number of Vacant Positions</label>
+                            <input type="number" class="form-control" name="novacpost"
+                                value="<?php echo htmlspecialchars($requestDetails['novacpost']); ?>" required>
+                        </div>
+                    </div>
+
+                    <!-- Station Details -->
+                    <div class="mb-3">
+                        <h6>Station Details</h6>
+                        <div id="stationContainer">
+                            <!-- Station rows will be loaded here -->
+                        </div>
+                        <button type="button" class="btn btn-secondary mt-2" id="addStation">
+                            <i class="bi bi-plus"></i> Add Station
+                        </button>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" onclick="window.location.href='DeptUnitLead.php'">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<?php include("../includes/footer.html"); ?>
+<script src="../assets/js/jquery.min.js"></script>
+<script src="../assets/js/bootstrap.bundle.min.js"></script>
+<script src="deptunitlead.js"></script>

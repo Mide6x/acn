@@ -1,7 +1,6 @@
 <?php
-session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/DUL/deptunit.php';
 
 include("../includes/header.html");
 include("../includes/sidebar.html");
@@ -27,9 +26,15 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
                 <div class="card">
                     <div class="card-body">
                         <div class="row mb-3">
+                            <input type="hidden" id="createdby" value="<?php echo $_SESSION['staffid']; ?>">
+                            <input type="hidden" id="deptunitcode" value="<?php echo $deptUnitLeadInfo['deptunitcode']; ?>">
+                            <input type="hidden" id="subdeptunitcode" value="<?php echo $deptUnitLeadInfo['subdeptunitcode']; ?>">
                             <div class="col-sm-6">
                                 <h6 class="card-title" style="font-weight: 800; font-size: small;">STAFF REQUEST DETAILS</h6>
                             </div>
+
+
+
                             <div class="col-sm-6 text-end">
                                 <span id="jdrequestid" style="font-size: small; font-weight: 700;">
                                     <?php echo $jdrequestid; ?>
@@ -42,7 +47,7 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
 
                         <form id="staffRequestForm">
                             <div class="row mb-3">
-                                <div class="col-sm-6">
+                                <div class="col-sm-6 form-group">
                                     <label class="form-label">Job Title</label>
                                     <select class="form-control" id="jdtitle" name="jdtitle" style="border-radius: 8px" required>
                                         <option value="">Select Job Title</option>
@@ -82,8 +87,8 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
                         </div>
 
                         <div class="row mb-3">
-                            <button type="button" class="btn btn-secondary" onclick="addStationRequest()" style="display: block; margin: 0 auto;">
-                                + Add
+                            <button type="button" class="btn btn-secondary mt-2" onclick="addStationRequestDeptUnitLead()">
+                                <i class="bi bi-plus"></i> Add Station
                             </button>
                         </div>
 
@@ -91,12 +96,14 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
                         </div>
                         <div class="row">
                             <div class="col-sm-10">
-                                <button type="button" class="btn btn-primary"
-                                    onclick="return submitTeamLeadRequest()"
-                                    style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
-                                    onmouseover="this.style.backgroundColor='#000000';"
-                                    onmouseout="this.style.backgroundColor='#fc7f14';">Save as Draft
-                                </button>
+                                <div class="form-group mt-3">
+                                    <button type="button" class="btn btn-primary" onclick="saveAsDraftDeptUnitLead()">
+                                        Save as Draft
+                                    </button>
+                                    <button type="button" class="btn btn-primary" onclick="submitDeptUnitLead()">
+                                        Submit Request
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -106,5 +113,7 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
     </section>
 </main>
 
+
 <?php include("../includes/footer.html"); ?>
 <script src="../assets/js/ac.js"></script>
+<script src="deptunitlead.js"></script>

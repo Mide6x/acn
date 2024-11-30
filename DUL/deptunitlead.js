@@ -304,3 +304,395 @@ console.log('Values set in modal:', {
     jdrequestid: $('#decline_jdrequestid').val(),
     station: $('#decline_station').val()
 });
+
+function addStationRequestDeptUnitLead() {
+    $.ajax({
+        url: 'deptunitparameter.php',
+        type: 'GET',
+        data: {
+            action: 'get_new_station_request_html'
+        },
+        success: function(response) {
+            if (!response.includes('error')) {
+                $('#stationRequests').append(response);
+            } else {
+                alert('Error: ' + response);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+            alert('Error adding new station request');
+        }
+    });
+}
+
+function removeStationRequest(button) {
+    $(button).closest('.station-request').remove();
+}
+
+function validateStationSelection(selectElement) {
+    const selectedValue = $(selectElement).val();
+    let isDuplicate = false;
+
+    $('.station-request select[name="station"]').each(function() {
+        if (this !== selectElement && $(this).val() === selectedValue && selectedValue !== '') {
+            isDuplicate = true;
+            return false;
+        }
+    });
+
+    if (isDuplicate) {
+        alert('This station has already been selected. Please choose a different station.');
+        $(selectElement).val('');
+    }
+}
+
+function validateStationSelection(selectElement) {
+    const selectedValue = $(selectElement).val();
+    let isDuplicate = false;
+
+    $('.station-request select[name="station"]').each(function() {
+        if (this !== selectElement && $(this).val() === selectedValue) {
+            isDuplicate = true;
+            return false;
+        }
+    });
+
+    if (isDuplicate) {
+        alert('This station has already been selected. Please choose a different station.');
+        $(selectElement).val('');
+    }
+}
+
+function removeStationRequest(button) {
+    $(button).closest('.station-request').remove();
+    updateAvailableStations();
+}
+
+function updateAvailableStations() {
+    const selectedStations = [];
+    $('.station-request select[name="station"]').each(function() {
+        const value = $(this).val();
+        if (value) selectedStations.push(value);
+    });
+
+    // Update all station selects
+    $('.station-request select[name="station"]').each(function() {
+        const currentValue = $(this).val();
+        const originalOptions = $('#station').clone();
+        
+        // Remove selected stations except current selection
+        originalOptions.find('option').each(function() {
+            if (selectedStations.includes($(this).val()) && 
+                $(this).val() !== currentValue && 
+                $(this).val() !== '') {
+                $(this).remove();
+            }
+        });
+
+        // Keep current selection
+        $(this).html(originalOptions.html());
+        $(this).val(currentValue);
+    });
+}
+
+// Modify collectFormData to gather all station requests
+function collectFormData() {
+    const stations = [];
+    $('.station-request').each(function() {
+        stations.push({
+            station: $(this).find('select[name="station"]').val(),
+            employmenttype: $(this).find('select[name="employmenttype"]').val(),
+            staffperstation: $(this).find('input[name="staffperstation"]').val()
+        });
+    });
+
+    return {
+        jdrequestid: $('#jdrequestid').val(),
+        jdtitle: $('#jdtitle').val(),
+        novacpost: $('#novacpost').val(),
+        deptunitcode: $('#deptunitcode').val(),
+        subdeptunitcode: $('#subdeptunitcode').val(),
+        stations: stations
+    };
+}
+
+
+//save draft
+function saveAsDraftDeptUnitLead() {
+    if (!validateForm()) return false;
+     // Calculate total vacant posts
+    let totalVacantPosts = 0;
+    $('.staffperstation').each(function() {
+        totalVacantPosts += parseInt($(this).val()) || 0;
+    });
+     const formData = {
+        jdrequestid: $('#jdrequestid').val(),
+        jdtitle: $('#jdtitle').val(),
+        novacpost: totalVacantPosts,
+        deptunitcode: $('#deptunitcode').val(),
+        subdeptunitcode: $('#subdeptunitcode').val() || null, // Optional
+        createdby: $('#createdby').val(),
+        status: 'draft',
+        stations: []
+    };
+     // Collect all station requests
+    $('.station-request').each(function() {
+        formData.stations.push({
+            station: $(this).find('select[name="station"]').val(),
+            employmenttype: $(this).find('select[name="employmenttype"]').val(),
+            staffperstation: $(this).find('input[name="staffperstation"]').val()
+        });
+    });
+     $.ajax({
+        url: 'deptunitparameter.php',
+        type: 'POST',
+        data: {
+            action: 'save_draft_deptunitlead',
+            formData: formData
+        },
+        success: function(response) {
+            if (response === 'success') {
+                alert('Request saved as draft successfully');
+                window.location.href = 'DeptUnitLead.php';
+            } else {
+                alert('Error: ' + response);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+            alert('Error saving draft');
+        }
+    });
+    return false;
+ 
+}
+ 
+ function submitDeptUnitLead() {
+    if (!validateForm()) return false;
+     const formData = {
+        jdrequestid: $('#jdrequestid').val(),
+        jdtitle: $('#jdtitle').val(),
+        novacpost: $('#novacpost').val(),
+        deptunitcode: $('#deptunitcode').val(),
+        subdeptunitcode: $('#subdeptunitcode').val(),
+        stations: []
+    };
+     // Collect all station requests
+    $('.station-request').each(function() {
+        formData.stations.push({
+            station: $(this).find('select[name="station"]').val(),
+            employmenttype: $(this).find('select[name="employmenttype"]').val(),
+            staffperstation: $(this).find('input[name="staffperstation"]').val()
+        });
+    });
+     $.ajax({
+        url: 'deptunitparameter.php',
+        type: 'POST',
+        data: {
+            action: 'submit_deptunitlead_request',
+            formData: formData
+        },
+        success: function(response) {
+            if (response === 'success') {
+                alert('Request submitted successfully');
+                window.location.href = 'DeptUnitLead.php';
+            } else {
+                alert('Error: ' + response);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+            alert('Error submitting request');
+        }
+    });
+    return false;
+}
+
+function calculateTotalVacantPosts() {
+    let total = 0;
+    $('.staffperstation').each(function() {
+        const value = parseInt($(this).val()) || 0;
+        total += value;
+    });
+    $('#novacpost').val(total);
+ 
+ // Add event listener to update total when staff per station changes
+ (document).on('input', '.staffperstation', function() {
+    calculateTotalVacantPosts();
+ });
+}
+ // Modify submitDeptUnitLead to include the calculation
+ function submitDeptUnitLead() {
+    // Calculate total vacant posts before validation
+    calculateTotalVacantPosts();
+    
+    if (!validateForm()) return false;
+     const formData = {
+        jdrequestid: $('#jdrequestid').val(),
+        jdtitle: $('#jdtitle').val(),
+        novacpost: $('#novacpost').val(), // This will now have the calculated total
+        deptunitcode: $('#deptunitcode').val(),
+        subdeptunitcode: $('#subdeptunitcode').val(),
+        stations: []
+    };
+    }
+ 
+    function validateForm() {
+        //Calculate total vacant posts
+       let totalVacantPosts = 0;
+       $('.staffperstation').each(function() {
+           totalVacantPosts += parseInt($(this).val()) || 0;
+       });
+       $('#novacpost').val(totalVacantPosts);
+        // Validate JD Title
+       if (!$('#jdtitle').val()) {
+           alert('Please enter JD Title');
+           return false;
+       }
+        // Validate stations
+       let isValid = true;
+       if ($('.station-request').length === 0) {
+           alert('Please add at least one station');
+           return false;
+       }
+        $('.station-request').each(function() {
+           const station = $(this).find('select[name="station"]').val();
+           const empType = $(this).find('select[name="employmenttype"]').val();
+           const staffCount = $(this).find('input[name="staffperstation"]').val();
+            if (!station || !empType || !staffCount) {
+               alert('Please fill all station details');
+               isValid = false;
+               return false;
+           }
+       });
+        return isValid;
+    }
+
+
+    //Tab Switching
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all tab buttons
+        const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // Remove active class from all tabs
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    document.querySelector(t.dataset.bsTarget).classList.remove('show', 'active');
+                });
+
+                // Add active class to clicked tab
+                this.classList.add('active');
+                document.querySelector(this.dataset.bsTarget).classList.add('show', 'active');
+            });
+        });
+    });
+
+    function viewRequestDetails(requestId) {
+        $.ajax({
+            url: 'deptunitparameter.php',
+            type: 'POST',
+            data: {
+                action: 'get_request_details',
+                requestId: requestId
+            },
+            success: function(response) {
+                $('#requestDetailsContent').html(response);
+                $('#requestDetailsModal').modal('show');
+                
+                // Show edit button only for draft requests
+                const status = $('#requestStatus').val();
+                if (status === 'draft') {
+                    $('#editRequestBtn').show();
+                    $('#editRequestBtn').attr('onclick', `editRequest('${requestId}')`);
+                } else {
+                    $('#editRequestBtn').hide();
+                }
+            }
+        });
+    }
+    
+    function editRequest(requestId) {
+        window.location.href = `edit_request.php?id=${requestId}`;
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                html: true
+            });
+        });
+    });
+    
+
+    $(document).ready(function() {
+        // Load initial station rows
+        loadStationRows();
+    
+        // Add new station
+        $('#addStation').click(function() {
+            addNewStation();
+        });
+    
+        // Remove station
+        $(document).on('click', '.remove-station', function() {
+            if ($('.station-row').length > 1) {
+                $(this).closest('.station-row').remove();
+            } else {
+                alert('At least one station is required.');
+            }
+        });
+    
+        // Form submission
+        $('#editRequestForm').submit(function(e) {
+            e.preventDefault();
+            $.ajax({
+                url: 'deptunitparameter.php',
+                type: 'POST',
+                data: $(this).serialize() + '&action=update_request',
+                success: function(response) {
+                    if (response.includes('success')) {
+                        alert('Request updated successfully');
+                        window.location.href = 'DeptUnitLead.php';
+                    } else {
+                        alert('Error: ' + response);
+                    }
+                },
+                error: function() {
+                    alert('Error updating request');
+                }
+            });
+        });
+    });
+    
+    function loadStationRows() {
+        $.ajax({
+            url: 'deptunitparameter.php',
+            type: 'POST',
+            data: {
+                action: 'get_edit_station_rows',
+                requestId: $('input[name="jdrequestid"]').val()
+            },
+            success: function(response) {
+                $('#stationContainer').html(response);
+            }
+        });
+    }
+    
+    function addNewStation() {
+        $.ajax({
+            url: 'deptunitparameter.php',
+            type: 'POST',
+            data: {
+                action: 'get_station_options',
+                index: $('.station-row').length
+            },
+            success: function(response) {
+                $('#stationContainer').append(response);
+            }
+        });
+    }

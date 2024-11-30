@@ -30,33 +30,66 @@ $deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
         <div class="card mt-4">
             <div class="card-body">
                 <h6 class="card-title" style="font-weight: 800; font-size: small;">
-                    MY DEPARTMENT UNIT STAFF REQUESTS (<?php echo htmlspecialchars($deptUnitLeadInfo['deptunitname']); ?>)
+                    STAFF REQUESTS - <?php echo htmlspecialchars($deptUnitLeadInfo['deptunitname']); ?>
                 </h6>
-                <div id="staffRequestsTable"></div>
-                <?php
-                if ($deptUnitLeadInfo['deptunitcode']) {
-                    echo $deptunit->getDeptUnitLeadRequests($deptUnitLeadInfo['deptunitcode']);
-                }
-                ?>
+
+                <!-- Tabs for switching between views -->
+                <ul class="nav nav-tabs mb-3" id="requestTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pending-tab" data-bs-toggle="tab"
+                            data-bs-target="#pending" type="button" role="tab">
+                            Pending Approvals
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="my-requests-tab" data-bs-toggle="tab"
+                            data-bs-target="#my-requests" type="button" role="tab">
+                            My Requests
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab content -->
+                <div class="tab-content" id="requestTabsContent">
+                    <!-- Pending Approvals Tab -->
+                    <div class="tab-pane fade show active" id="pending" role="tabpanel">
+                        <?php
+                        if ($deptUnitLeadInfo['deptunitcode']) {
+                            echo $deptunit->getDeptUnitLeadRequests($deptUnitLeadInfo['deptunitcode']);
+                        }
+                        ?>
+                    </div>
+
+                    <!-- My Requests Tab -->
+                    <div class="tab-pane fade" id="my-requests" role="tabpanel">
+                        <?php
+                        if (isset($_SESSION['staffid'])) {
+                            echo $deptunit->getMyStaffRequests($_SESSION['staffid']);
+                        }
+                        ?>
+                    </div>
+                </div>
             </div>
-        </div>
         </div>
     </section>
 </main>
 
 <!-- Request Details Modal -->
-<div class="modal fade" id="requestDetailsModal" tabindex="-1" aria-labelledby="requestDetailsModalLabel" aria-hidden="true">
+<div class="modal fade" id="requestDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="requestDetailsModalLabel">Request Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title">Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <!-- Content will be loaded dynamically -->
+            <div class="modal-body" id="requestDetailsContent">
+                <!-- Content will be loaded here -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="editRequestBtn" style="display: none;">
+                    Edit Request
+                </button>
             </div>
         </div>
     </div>
@@ -91,3 +124,4 @@ $deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="deptunitlead.js"></script>
+<link rel="stylesheet" href="css/approval-timeline.css">
