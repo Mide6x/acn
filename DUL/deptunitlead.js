@@ -658,6 +658,12 @@ function calculateTotalVacantPosts() {
         }
     });
 
+    // Add station button click handler for edit page
+    $('#addStation').click(function() {
+        addStationRequestDeptUnitLead();
+    });
+
+
     // Form submission
     $('#editRequestForm').submit(function(e) {
         e.preventDefault();
@@ -693,7 +699,24 @@ function calculateTotalVacantPosts() {
         });
     });
 });
+function addStationRequestDeptUnitLead() {
+    const requestId = $('input[name="jdrequestid"]').val();
+    const index = $('.station-row').length;
     
+    $.ajax({
+        url: 'deptunitparameter.php',
+        type: 'POST',
+        data: {
+            action: 'get_station_options',
+            index: index,
+            requestId: requestId
+        },
+        success: function(response) {
+            $('#stationContainer').append(response);
+        }
+    });
+}
+
     function loadStationRows() {
         $.ajax({
             url: 'deptunitparameter.php',

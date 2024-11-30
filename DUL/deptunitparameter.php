@@ -281,9 +281,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'jdrequestid' => $_POST['jdrequestid'],
                     'jdtitle' => $_POST['jdtitle'],
                     'novacpost' => $_POST['novacpost'],
-                    'stations' => $_POST['stations'],
-                    'status' => 'draft'
+                    'stations' => []
                 ];
+
+                // Format stations data
+                foreach ($_POST['stations'] as $station) {
+                    $requestData['stations'][] = [
+                        'station' => $station['station'],
+                        'employmenttype' => $station['employmenttype'],
+                        'staffperstation' => $station['staffperstation']
+                    ];
+                }
+
+                // Validate total staff count matches novacpost
+                $totalStaff = array_sum(array_column($requestData['stations'], 'staffperstation'));
+                if ($totalStaff != $requestData['novacpost']) {
+                    echo "Error: Total staff per station must equal the number of vacant positions";
+                    exit;
+                }
 
                 if ($deptunit->updateStaffRequest($requestData)) {
                     echo 'success';
@@ -297,6 +312,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'get_station_options':
             $index = $_POST['index'];
+            $requestId = $_POST['requestId'] ?? '';
+
             $output = '<div class="row mb-2 station-row">
                 <div class="col-sm-4">
                     <label class="form-label">Station</label>

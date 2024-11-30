@@ -81,14 +81,14 @@ try {
                                 </div>
                             <?php endforeach; ?>
                         </div>
-                        <button type="button" class="btn btn-secondary mt-2" id="addStation">
+                        <button type="button" class="btn btn-secondary mt-2" onclick="addStationRequestDeptUnitLead()">
                             <i class="bi bi-plus"></i> Add Station
                         </button>
                     </div>
 
                     <div class="text-end">
                         <button type="button" class="btn btn-secondary" onclick="window.location.href='DeptUnitLead.php'">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="submit" class="btn btn-primary" onclick="saveEditRequestDeptUnitLead()">Save Changes</button>
                     </div>
                 </form>
             </div>

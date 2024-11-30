@@ -952,37 +952,39 @@ class DeptUnit
         try {
             $this->db->beginTransaction();
 
-            // Update main request
+            // Update main request - removed modifiedby and modifieddandt
             $updateRequest = "UPDATE staffrequest 
-                             SET jdtitle = ?, novacpost = ?, 
-                                 modifiedby = ?, modifieddandt = NOW()
+                             SET jdtitle = ?, 
+                                 novacpost = ?
                              WHERE jdrequestid = ?";
+
             $stmt = $this->db->prepare($updateRequest);
             $stmt->execute([
                 $data['jdtitle'],
                 $data['novacpost'],
-                $_SESSION['staffid'],
                 $data['jdrequestid']
             ]);
 
-            // Delete existing stations
-            $deleteStations = "DELETE FROM staffrequestperstation WHERE jdrequestid = ?";
+            // Delete existing stations for this request
+            $deleteStations = "DELETE FROM staffrequestperstation 
+                              WHERE jdrequestid = ?";
             $stmt = $this->db->prepare($deleteStations);
             $stmt->execute([$data['jdrequestid']]);
 
             // Insert updated stations
-            foreach ($data['stations'] as $station) {
-                $insertStation = "INSERT INTO staffrequestperstation (
-                    jdrequestid, station, employmenttype, 
-                    staffperstation, status, createdby, dandt
-                ) VALUES (?, ?, ?, ?, 'draft', ?, NOW())";
+            $insertStation = "INSERT INTO staffrequestperstation 
+                             (jdrequestid, station, employmenttype, 
+                              staffperstation, status, createdby, dandt) 
+                             VALUES (?, ?, ?, ?, ?, ?, NOW())";
 
+            foreach ($data['stations'] as $station) {
                 $stmt = $this->db->prepare($insertStation);
                 $stmt->execute([
                     $data['jdrequestid'],
                     $station['station'],
                     $station['employmenttype'],
                     $station['staffperstation'],
+                    'draft',
                     $_SESSION['staffid']
                 ]);
             }
