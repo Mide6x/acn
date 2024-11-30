@@ -634,40 +634,65 @@ function calculateTotalVacantPosts() {
         loadStationRows();
     
         // Add new station
-        $('#addStation').click(function() {
-            addNewStation();
-        });
-    
-        // Remove station
-        $(document).on('click', '.remove-station', function() {
-            if ($('.station-row').length > 1) {
-                $(this).closest('.station-row').remove();
-            } else {
-                alert('At least one station is required.');
+    $('#addStation').click(function() {
+        const index = $('.station-row').length;
+        $.ajax({
+            url: 'deptunitparameter.php',
+            type: 'POST',
+            data: {
+                action: 'get_station_options',
+                index: index
+            },
+            success: function(response) {
+                $('#stationContainer').append(response);
             }
         });
-    
-        // Form submission
-        $('#editRequestForm').submit(function(e) {
-            e.preventDefault();
-            $.ajax({
-                url: 'deptunitparameter.php',
-                type: 'POST',
-                data: $(this).serialize() + '&action=update_request',
-                success: function(response) {
-                    if (response.includes('success')) {
-                        alert('Request updated successfully');
-                        window.location.href = 'DeptUnitLead.php';
-                    } else {
-                        alert('Error: ' + response);
-                    }
-                },
-                error: function() {
-                    alert('Error updating request');
+    });
+
+    // Remove station
+    $(document).on('click', '.remove-station', function() {
+        if ($('.station-row').length > 1) {
+            $(this).closest('.station-row').remove();
+        } else {
+            alert('At least one station is required.');
+        }
+    });
+
+    // Form submission
+    $('#editRequestForm').submit(function(e) {
+        e.preventDefault();
+        
+        // Validate total staff count matches novacpost
+        let totalStaff = 0;
+        $('.staffperstation').each(function() {
+            totalStaff += parseInt($(this).val() || 0);
+        });
+        
+        const novacpost = parseInt($('input[name="novacpost"]').val());
+        
+        if (totalStaff !== novacpost) {
+            alert('Total staff per station must equal the number of vacant positions');
+            return;
+        }
+
+        $.ajax({
+            url: 'deptunitparameter.php',
+            type: 'POST',
+            data: $(this).serialize() + '&action=update_request',
+            success: function(response) {
+                if (response.includes('success')) {
+                    alert('Request updated successfully');
+                    window.location.href = 'DeptUnitLead.php';
+                } else {
+                    alert('Error: ' + response);
                 }
-            });
+            },
+            error: function() {
+                alert('Error updating request');
+            }
         });
     });
+});
     
     function loadStationRows() {
         $.ajax({
@@ -693,6 +718,9 @@ function calculateTotalVacantPosts() {
             },
             success: function(response) {
                 $('#stationContainer').append(response);
+            },
+            error: function() {
+                alert('Error adding new station');
             }
         });
     }

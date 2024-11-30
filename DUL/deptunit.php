@@ -926,7 +926,12 @@ class DeptUnit
 
     public function getStationDetails($requestId)
     {
-        $query = "SELECT * FROM staffrequestperstation WHERE jdrequestid = ?";
+        $query = "SELECT srps.*, s.stationname, st.stafftype as employmenttype 
+                  FROM staffrequestperstation srps
+                  LEFT JOIN stationtbl s ON srps.station = s.stationcode
+                  LEFT JOIN stafftype st ON srps.employmenttype = st.stprefix
+                  WHERE srps.jdrequestid = ?";
+
         $stmt = $this->db->prepare($query);
         $stmt->execute([$requestId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -950,10 +955,16 @@ class DeptUnit
 
             // Update main request
             $updateRequest = "UPDATE staffrequest 
-                             SET jdtitle = ?, novacpost = ?
+                             SET jdtitle = ?, novacpost = ?, 
+                                 modifiedby = ?, modifieddandt = NOW()
                              WHERE jdrequestid = ?";
             $stmt = $this->db->prepare($updateRequest);
-            $stmt->execute([$data['jdtitle'], $data['novacpost'], $data['jdrequestid']]);
+            $stmt->execute([
+                $data['jdtitle'],
+                $data['novacpost'],
+                $_SESSION['staffid'],
+                $data['jdrequestid']
+            ]);
 
             // Delete existing stations
             $deleteStations = "DELETE FROM staffrequestperstation WHERE jdrequestid = ?";
@@ -964,8 +975,8 @@ class DeptUnit
             foreach ($data['stations'] as $station) {
                 $insertStation = "INSERT INTO staffrequestperstation (
                     jdrequestid, station, employmenttype, 
-                    staffperstation, status, createdby
-                ) VALUES (?, ?, ?, ?, ?, ?)";
+                    staffperstation, status, createdby, dandt
+                ) VALUES (?, ?, ?, ?, 'draft', ?, NOW())";
 
                 $stmt = $this->db->prepare($insertStation);
                 $stmt->execute([
@@ -973,7 +984,6 @@ class DeptUnit
                     $station['station'],
                     $station['employmenttype'],
                     $station['staffperstation'],
-                    $data['status'],
                     $_SESSION['staffid']
                 ]);
             }
@@ -1047,7 +1057,11 @@ class DeptUnit
     public function getStaffTypesWithSelected($selectedValue)
     {
         $options = '';
-        $query = "SELECT employmenttypecode, employmenttype FROM employmenttypetbl WHERE status = 'Active' ORDER BY employmenttype";
+        $query = "SELECT stprefix as employmenttypecode, stafftype as employmenttype 
+                  FROM stafftype 
+                  WHERE status = 'Active' 
+                  ORDER BY stafftype";
+
         $stmt = $this->db->prepare($query);
         $stmt->execute();
 
