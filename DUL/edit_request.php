@@ -15,6 +15,11 @@ $deptunit = new DeptUnit($con);
 $requestId = $_GET['id'] ?? '';
 
 try {
+    if (!$deptunit->isRequestEditable($requestId)) {
+        $_SESSION['error'] = 'This request cannot be edited as it has already been submitted.';
+        header('Location: DeptUnitLead.php');
+        exit();
+    }
     $requestData = $deptunit->getEditRequestData($requestId, $_SESSION['staffid']);
     $requestDetails = $requestData['details'];
     $stations = $requestData['stations'];

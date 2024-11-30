@@ -109,11 +109,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'submit_deptunitlead_request':
             try {
                 $formData = $_POST['formData'];
+
+                // Set status to 'pending' for submitted requests
                 $formData['status'] = 'pending';
-                $result = $deptunit->createStaffRequest($formData);
-                echo $result ? 'success' : 'error';
+
+                if ($deptunit->submitStaffRequest($formData)) {
+                    echo 'success';
+                } else {
+                    echo 'Failed to submit request';
+                }
             } catch (Exception $e) {
-                echo 'error: ' . $e->getMessage();
+                echo "Error: " . $e->getMessage();
             }
             break;
 

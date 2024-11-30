@@ -96,13 +96,9 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
                         </div>
                         <div class="row">
                             <div class="col-sm-10">
-                                <div class="form-group mt-3">
-                                    <button type="button" class="btn btn-primary" onclick="saveAsDraftDeptUnitLead()">
-                                        Save as Draft
-                                    </button>
-                                    <button type="button" class="btn btn-primary" onclick="submitDeptUnitLead()">
-                                        Submit Request
-                                    </button>
+                                <div class="text-end mt-3">
+                                    <button type="button" class="btn btn-primary" onclick="saveAsDraftDeptUnitLead()">Save as Draft</button>
+                                    <button type="button" class="btn btn-primary" onclick="submitDeptUnitLeadRequest()">Submit Request</button>
                                 </div>
                             </div>
                         </div>
@@ -115,5 +111,5 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
 
 
 <?php include("../includes/footer.html"); ?>
-<script src="../assets/js/ac.js"></script>
 <script src="deptunitlead.js"></script>
+<script src="js/create-request.js"></script>

@@ -1077,4 +1077,63 @@ class DeptUnit
         }
         return $options;
     }
+
+    public function submitStaffRequest($data)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Insert main request with 'pending' status
+            $insertRequest = "INSERT INTO staffrequest (
+                jdrequestid, jdtitle, novacpost, 
+                deptunitcode, subdeptunitcode, 
+                staffid, status, dandt
+            ) VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())";
+
+            $stmt = $this->db->prepare($insertRequest);
+            $stmt->execute([
+                $data['jdrequestid'],
+                $data['jdtitle'],
+                $data['novacpost'],
+                $data['deptunitcode'],
+                $data['subdeptunitcode'],
+                $_SESSION['staffid']
+            ]);
+
+            // Insert stations with 'pending' status
+            $insertStation = "INSERT INTO staffrequestperstation 
+                             (jdrequestid, station, employmenttype, 
+                              staffperstation, status, createdby, dandt) 
+                             VALUES (?, ?, ?, ?, 'pending', ?, NOW())";
+
+            foreach ($data['stations'] as $station) {
+                $stmt = $this->db->prepare($insertStation);
+                $stmt->execute([
+                    $data['jdrequestid'],
+                    $station['station'],
+                    $station['employmenttype'],
+                    $station['staffperstation'],
+                    $_SESSION['staffid']
+                ]);
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error in submitStaffRequest: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // Add this method to check if a request is editable
+    public function isRequestEditable($requestId)
+    {
+        $query = "SELECT status FROM staffrequest WHERE jdrequestid = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$requestId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $result && $result['status'] === 'draft';
+    }
 }
