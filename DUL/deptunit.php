@@ -926,10 +926,9 @@ class DeptUnit
 
     public function getStationDetails($requestId)
     {
-        $query = "SELECT srps.*, s.stationname, st.stafftype as employmenttype 
+        $query = "SELECT srps.*, s.stationname 
                   FROM staffrequestperstation srps
                   LEFT JOIN stationtbl s ON srps.station = s.stationcode
-                  LEFT JOIN stafftype st ON srps.employmenttype = st.stprefix
                   WHERE srps.jdrequestid = ?";
 
         $stmt = $this->db->prepare($query);
@@ -1057,18 +1056,22 @@ class DeptUnit
     public function getStaffTypesWithSelected($selectedValue)
     {
         $options = '';
-        $query = "SELECT stprefix as employmenttypecode, stafftype as employmenttype 
-                  FROM stafftype 
-                  WHERE status = 'Active' 
-                  ORDER BY stafftype";
+        $query = "SELECT DISTINCT employmenttype as value, employmenttype as label
+                  FROM staffrequestperstation 
+                  WHERE status IN ('draft', 'pending', 'approved')
+                  UNION
+                  SELECT stprefix as value, stafftype as label
+                  FROM stafftype
+                  WHERE status = 'Active'
+                  ORDER BY label";
 
         $stmt = $this->db->prepare($query);
         $stmt->execute();
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $selected = ($row['employmenttypecode'] === $selectedValue) ? 'selected' : '';
-            $options .= "<option value='" . htmlspecialchars($row['employmenttypecode']) . "' {$selected}>" .
-                htmlspecialchars($row['employmenttype']) . "</option>";
+            $selected = ($row['value'] === $selectedValue) ? 'selected' : '';
+            $options .= "<option value='" . htmlspecialchars($row['value']) . "' {$selected}>" .
+                htmlspecialchars($row['label']) . "</option>";
         }
         return $options;
     }
