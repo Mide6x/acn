@@ -601,7 +601,6 @@ function calculateTotalVacantPosts() {
             });
         });
     });
-
     function viewRequestDetails(requestId) {
         $.ajax({
             url: 'deptunitparameter.php',
@@ -614,13 +613,18 @@ function calculateTotalVacantPosts() {
                 $('#requestDetailsContent').html(response);
                 $('#requestDetailsModal').modal('show');
                 
-                // Show edit button only for draft requests
+                // Get the status and show/hide buttons accordingly
                 const status = $('#requestStatus').val();
                 if (status === 'draft') {
+                    // Show both edit and submit buttons for draft requests
                     $('#editRequestBtn').show();
                     $('#editRequestBtn').attr('onclick', `editRequest('${requestId}')`);
+                    $('#submitDraftRequestBtn').show();
+                    $('#submitDraftRequestBtn').attr('onclick', `submitDraftRequest('${requestId}')`);
                 } else {
+                    // Hide both buttons for non-draft requests
                     $('#editRequestBtn').hide();
+                    $('#submitDraftRequestBtn').hide();
                 }
             }
         });
@@ -754,6 +758,34 @@ function addStationRequestDeptUnitLead() {
             },
             error: function() {
                 alert('Error adding new station');
+            }
+        });
+    }
+
+    function submitDraftRequest(requestId) {
+        if (!confirm('Are you sure you want to submit this request? Once submitted, it cannot be edited.')) {
+            return false;
+        }
+    
+        $.ajax({
+            url: 'deptunitparameter.php',
+            type: 'POST',
+            data: {
+                action: 'submit_draft_request',
+                jdrequestid: requestId
+            },
+            success: function(response) {
+                if (response === 'success') {
+                    alert('Request submitted successfully');
+                    $('#requestDetailsModal').modal('hide');
+                    loadStaffRequests(); // Refresh the requests table
+                } else {
+                    alert('Error: ' + response);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                alert('Error submitting request');
             }
         });
     }

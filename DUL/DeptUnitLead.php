@@ -90,6 +90,9 @@ $deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
                 <button type="button" class="btn btn-primary" id="editRequestBtn" style="display: none;">
                     Edit Request
                 </button>
+                <button type="button" class="btn btn-success" id="submitDraftRequestBtn" style="display: none;">
+                    Submit Request
+                </button>
             </div>
         </div>
     </div>

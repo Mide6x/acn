@@ -389,5 +389,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo "Error loading stations: " . $e->getMessage();
             }
             break;
+
+        case 'submit_draft_request':
+            try {
+                $requestId = $_POST['jdrequestid'];
+
+                // Update request status to pending
+                $updateRequest = "UPDATE staffrequest 
+                                 SET status = 'pending'
+                                 WHERE jdrequestid = ? 
+                                 AND status = 'draft'
+                                 AND staffid = ?";
+
+                $stmt = $con->prepare($updateRequest);
+                $stmt->execute([$requestId, $_SESSION['staffid']]);
+
+                // Update all associated stations to pending
+                $updateStations = "UPDATE staffrequestperstation 
+                                  SET status = 'pending'
+                                  WHERE jdrequestid = ?";
+
+                $stmt = $con->prepare($updateStations);
+                $stmt->execute([$requestId]);
+
+                echo 'success';
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
     }
 }
