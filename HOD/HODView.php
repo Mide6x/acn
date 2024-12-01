@@ -1,5 +1,4 @@
 <?php
-session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
 
@@ -14,8 +13,8 @@ include("../includes/footer.html");
     <section class="section">
         <div class="row mb-4">
             <div class="col-12">
-                <a href="hod2.php" class="btn btn-primary"
-                    onclick="window.location.href='hod2.php'; return false;"
+                <a href="create_requesthod.php" class="btn btn-primary"
+                    onclick="window.location.href='create_requesthod.php'; return false;"
                     style="background-color: #fc7f14; border: #fc7f14; float: right;"
                     onmouseover="this.style.backgroundColor='#000000';"
                     onmouseout="this.style.backgroundColor='#fc7f14';">
@@ -28,7 +27,7 @@ include("../includes/footer.html");
 
         <div class="card mt-4">
             <div class="card-body">
-                <h6 class="card-title" style="font-weight: 800; font-size: small;">MY SUBUNITS STAFF REQUESTS</h6>
+                <h6 class="card-title" style="font-weight: 800; font-size: small;">MY DEPARTMENT STAFF REQUESTS</h6>
                 <div class="table-responsive">
                     <table class="table table-bordered">
                         <thead>
@@ -50,7 +49,7 @@ include("../includes/footer.html");
 
 </main><!-- End #main -->
 
-<script src="assets/js/ac.js"></script>
+<script src="hod.js"></script>
 <script>
     if (document.getElementById('staffRequestTableBody')) {
         document.addEventListener('DOMContentLoaded', loadStaffRequests);

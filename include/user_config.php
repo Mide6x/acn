@@ -1,14 +1,8 @@
 <?php
-// Current user configuration
+// Logged in user configuration
 
-define('CURRENT_USER', [
-    'staffid' => 'SLS001',
-    'email' => 'samuel.a@acn.aero',
-    'position' => 'DeptUnitLead',
-    'deptunitcode' => 'SLS',
-    'subdeptunitcode' => '',
-    'isAdmin' => false
-]);
+
+// Team Lead Details
 /*
 define('CURRENT_USER', [
     'staffid' => 'CSLS001',
@@ -18,6 +12,30 @@ define('CURRENT_USER', [
     'subdeptunitcode' => 'CSLS',
     'isAdmin' => false
 ]);*/
+
+// Dept Unit Lead Details
+/*
+define('CURRENT_USER', [
+    'staffid' => 'SLS001',
+    'email' => 'samuel.a@acn.aero',
+    'position' => 'DeptUnitLead',
+    'deptunitcode' => 'SLS',
+    'subdeptunitcode' => '',
+    'isAdmin' => false
+]);*/
+
+// Head of Department Details
+
+define('CURRENT_USER', [
+    'staffid' => 'COM001',
+    'email' => 'jane.s@acn.aero',
+    'position' => 'HOD',
+    'departmentcode' => 'COM',
+    'deptunitcode' => '',
+    'subdeptunitcode' => '',
+    'isAdmin' => false
+]);
+
 
 // Function to get current user info
 function getCurrentUser($key = null)

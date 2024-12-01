@@ -11,8 +11,8 @@ $PAGE_URLS = [
         'create' => BASE_URL . '/DUL/create_request.php'
     ],
     'HOD' => [
-        'view' => BASE_URL . '/HOD/hod1.php',
-        'create' => BASE_URL . '/HOD/hod2.php'
+        'view' => BASE_URL . '/HOD/HODView.php',
+        'create' => BASE_URL . '/HOD/create_requesthod.php'
     ],
     'HR' => [
         'view' => BASE_URL . '/HR/HRview.php',
