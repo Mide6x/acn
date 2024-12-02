@@ -349,6 +349,8 @@ CREATE TABLE approvaltbl (
 ) ENGINE=InnoDB;
 
 -- Create trigger to populate approval levels when staff request is created
+
+DROP TRIGGER IF EXISTS create_approval_levels;
 DELIMITER //
 
 CREATE TRIGGER create_approval_levels
@@ -357,7 +359,13 @@ FOR EACH ROW
 BEGIN
     DECLARE deptheadid VARCHAR(20);
     DECLARE deptunitleadid VARCHAR(20);
-    
+    DECLARE requestorposition VARCHAR(20);
+
+    -- Get the requestor's position
+    SELECT position INTO requestorposition
+    FROM employeetbl
+    WHERE staffid = NEW.staffid;
+
     -- Get relevant approvers based on department
     SELECT staffid INTO deptheadid
     FROM employeetbl
@@ -367,23 +375,62 @@ BEGIN
     FROM employeetbl
     WHERE deptunitcode = NEW.deptunitcode AND position = 'DeptUnitLead';
 
-    -- Insert approval levels
-    IF deptunitleadid IS NOT NULL THEN
+    -- Handle request based on the requestor's position
+    IF requestorposition = 'TeamLead' THEN
+        -- Insert approval levels for TeamLead requestor
+        IF deptunitleadid IS NOT NULL THEN
+            INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+            VALUES (NEW.jdrequestid, NEW.jdtitle, deptunitleadid, 'DeptUnitLead', 'pending', NEW.createdby);
+        END IF;
+
+        -- HOD approval
         INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
-        VALUES (NEW.jdrequestid, NEW.jdtitle, deptunitleadid, 'DeptUnitLead', 'pending', NEW.createdby);
+        VALUES (NEW.jdrequestid, NEW.jdtitle, deptheadid, 'HOD', 'draft', NEW.createdby);
+
+        -- HR approvals
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES 
+        (NEW.jdrequestid, NEW.jdtitle, 'HR002', 'HR', 'draft', NEW.createdby),
+        (NEW.jdrequestid, NEW.jdtitle, 'HR001', 'HeadOfHR', 'draft', NEW.createdby),
+        (NEW.jdrequestid, NEW.jdtitle, 'CFO001', 'CFO', 'draft', NEW.createdby),
+        (NEW.jdrequestid, NEW.jdtitle, 'CEO001', 'CEO', 'draft', NEW.createdby);
+
+    ELSEIF requestorposition = 'DeptUnitLead' THEN
+        -- Insert approval levels for DeptUnitLead requestor
+        IF deptunitleadid IS NOT NULL THEN
+            INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+            VALUES (NEW.jdrequestid, NEW.jdtitle, deptunitleadid, 'DeptUnitLead', 'approved', NEW.createdby);
+        END IF;
+
+        -- HOD approval as pending
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, deptheadid, 'HOD', 'pending', NEW.createdby);
+
+        -- HR approvals
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES 
+        (NEW.jdrequestid, NEW.jdtitle, 'HR002', 'HR', 'draft', NEW.createdby),
+        (NEW.jdrequestid, NEW.jdtitle, 'HR001', 'HeadOfHR', 'draft', NEW.createdby),
+        (NEW.jdrequestid, NEW.jdtitle, 'CFO001', 'CFO', 'draft', NEW.createdby),
+        (NEW.jdrequestid, NEW.jdtitle, 'CEO001', 'CEO', 'draft', NEW.createdby);
+
+    ELSEIF requestorposition = 'HOD' THEN
+        -- HR approval as pending
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, 'HR002', 'HR', 'pending', NEW.createdby);
+
+        -- HeadOfHR approval
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, 'HR001', 'HeadOfHR', 'draft', NEW.createdby);
+
+        -- CFO approval
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, 'CFO001', 'CFO', 'draft', NEW.createdby);
+
+        -- CEO approval
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, 'CEO001', 'CEO', 'draft', NEW.createdby);
     END IF;
-
-    -- HOD approval
-    INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
-    VALUES (NEW.jdrequestid, NEW.jdtitle, deptheadid, 'HOD', 'draft', NEW.createdby);
-
-    -- HR approvals
-    INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
-    VALUES 
-    (NEW.jdrequestid, NEW.jdtitle, 'HR002', 'HR', 'draft', NEW.createdby),
-    (NEW.jdrequestid, NEW.jdtitle, 'HR001', 'HeadOfHR', 'draft', NEW.createdby),
-    (NEW.jdrequestid, NEW.jdtitle, 'CFO001', 'CFO', 'draft', NEW.createdby),
-    (NEW.jdrequestid, NEW.jdtitle, 'CEO001', 'CEO', 'draft', NEW.createdby);
 END//
 
 DELIMITER ;

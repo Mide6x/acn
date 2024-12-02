@@ -704,63 +704,40 @@ class DeptUnit
                 }
             }
 
-            // If it's a draft, create approval workflow
-            if ($formData['status'] === 'draft') {
-                // For DeptUnitLead, first level is HOD (pending) and their own level is auto-approved
+            // If it's not a draft, update the status to pending
+            if ($formData['status'] !== 'draft') {
+                // Update the main request status
+                $updateRequest = "UPDATE staffrequest 
+                                SET status = 'pending'
+                                WHERE jdrequestid = ?";
+                $stmt = $this->db->prepare($updateRequest);
+                $stmt->execute([$formData['jdrequestid']]);
 
-                // Insert DeptUnitLead approval as approved
-                $insertDeptUnitLead = "INSERT INTO approvaltbl (
-                    jdrequestid, jdtitle, approverstaffid, 
-                    approvallevel, status, createdby, dandt
-                ) VALUES (?, ?, ?, 'DeptUnitLead', 'approved', ?, NOW())";
+                // Update DeptUnitLead approval to approved if it's pending
+                $updateDeptUnitLead = "UPDATE approvaltbl 
+                                      SET status = 'approved',
+                                          dandt = NOW()
+                                      WHERE jdrequestid = ? 
+                                      AND approvallevel = 'DeptUnitLead'
+                                      AND status = 'pending'";
+                $stmt = $this->db->prepare($updateDeptUnitLead);
+                $stmt->execute([$formData['jdrequestid']]);
 
-                $stmt = $this->db->prepare($insertDeptUnitLead);
-                $stmt->execute([
-                    $formData['jdrequestid'],
-                    $formData['jdtitle'],
-                    $formData['staffid'],
-                    $formData['staffid']
-                ]);
-
-                // Insert HOD approval as pending
-                $insertHOD = "INSERT INTO approvaltbl (
-                    jdrequestid, jdtitle, approverstaffid, 
-                    approvallevel, status, createdby, dandt
-                ) VALUES (?, ?, ?, 'HOD', 'pending', ?, NOW())";
-
-                $stmt = $this->db->prepare($insertHOD);
-                $stmt->execute([
-                    $formData['jdrequestid'],
-                    $formData['jdtitle'],
-                    $this->getHODApprover($formData['deptunitcode']),
-                    $formData['staffid']
-                ]);
-
-                // Insert other approval levels as draft
-                $approvalLevels = ['HR', 'HeadOfHR', 'CFO', 'CEO'];
-                foreach ($approvalLevels as $level) {
-                    $insertApproval = "INSERT INTO approvaltbl (
-                        jdrequestid, jdtitle, approverstaffid, 
-                        approvallevel, status, createdby, dandt
-                    ) VALUES (?, ?, ?, ?, 'draft', ?, NOW())";
-
-                    $stmt = $this->db->prepare($insertApproval);
-                    $stmt->execute([
-                        $formData['jdrequestid'],
-                        $formData['jdtitle'],
-                        $this->getApproverByLevel($level),
-                        $level,
-                        $formData['staffid']
-                    ]);
-                }
+                // Update HOD approval to pending
+                $updateHOD = "UPDATE approvaltbl 
+                             SET status = 'pending',
+                                 dandt = NOW()
+                             WHERE jdrequestid = ? 
+                             AND approvallevel = 'HOD'";
+                $stmt = $this->db->prepare($updateHOD);
+                $stmt->execute([$formData['jdrequestid']]);
             }
 
             $this->db->commit();
             return true;
         } catch (Exception $e) {
             $this->db->rollBack();
-            error_log("Error in createStaffRequest: " . $e->getMessage());
-            throw $e;
+            throw new Exception("Error creating staff request: " . $e->getMessage());
         }
     }
 
