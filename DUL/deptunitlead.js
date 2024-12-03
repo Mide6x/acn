@@ -23,51 +23,6 @@ window.approveDeptUnitLeadRequest = function(jdrequestid) {
     }
 };
 
-window.showDeclineModal = function(jdrequestid) {
-    document.getElementById('decline_jdrequestid').value = jdrequestid;
-    document.getElementById('decline_reason').value = '';
-    new bootstrap.Modal(document.getElementById('declineModal')).show();
-};
-
-window.declineDeptUnitLeadRequest = function() {
-    const jdrequestid = document.getElementById('decline_jdrequestid').value;
-    const station = document.getElementById('decline_station').value;
-    const reason = document.getElementById('decline_reason').value.trim();
-
-    console.log('Declining request:', jdrequestid, station, reason); // Debug log
-
-    if (!reason) {
-        alert('Please provide a reason for declining');
-        return;
-    }
-
-    $.ajax({
-        url: 'deptunitparameter.php',
-        type: 'POST',
-        data: {
-            action: 'decline_deptunitlead_station',
-            jdrequestid: jdrequestid,
-            station: station,
-            reason: reason
-        },
-        success: function(response) {
-            console.log('Decline response:', response); // Debug log
-            if (response.includes('success')) {
-                alert('Request declined successfully');
-                $('#declineModal').modal('hide');
-                // Refresh the request details
-                viewDeptUnitLeadRequest(jdrequestid);
-            } else {
-                alert('Error: ' + response);
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('Error declining request:', error);
-            alert('Error declining request: ' + error);
-        }
-    });
-};
-
 function approveDeptUnitLeadStation(jdrequestid, station) {
     if (confirm('Are you sure you want to approve this station request?')) {
         $.ajax({
@@ -161,16 +116,33 @@ $(document).ready(function() {
         e.preventDefault();
         const jdrequestid = $(this).data('requestid');
         const station = $(this).data('station');
+        const stationRow = $(this).closest('tr');
         
-        console.log('Decline button clicked:', { jdrequestid, station });
+        // Remove any existing decline inputs first
+        $('.decline-reason-input').remove();
         
-        // Set the values in modal before showing it
-        $('#decline_jdrequestid').val(jdrequestid);
-        $('#decline_station').val(station);
-        $('#decline_reason').val('');
+        // Create and insert the decline input row after the station row
+        const declineHtml = `
+            <tr class="decline-reason-input">
+                <td colspan="5">
+                    <div class="input-group">
+                        <input type="text" class="form-control" 
+                               id="decline-reason-${station}" 
+                               placeholder="Enter reason for declining">
+                        <button class="btn btn-primary" 
+                                onclick="submitDecline('${jdrequestid}', '${station}')">
+                            Submit
+                        </button>
+                        <button class="btn btn-secondary" 
+                                onclick="cancelDecline()">
+                            Cancel
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
         
-        // Show the modal
-        $('#declineModal').modal('show');
+        stationRow.after(declineHtml);
+        $(`#decline-reason-${station}`).focus();
     });
 
     // Listen for modal opening
@@ -887,3 +859,89 @@ window.viewDeptUnitLeadRequest = function(jdrequestid) {
         }
     });
 };
+
+// Make sure this is defined in the global scope
+window.declineStation = function(jdrequestid, station) {
+    // Remove any existing decline inputs first
+    $('.decline-reason-input').remove();
+    
+    // Get the station row
+    const stationRow = $(`tr[data-station="${station}"]`);
+    
+    // Create and insert the decline input row after the station row
+    const declineHtml = `
+        <tr class="decline-reason-input">
+            <td colspan="5">
+                <div class="input-group">
+                    <input type="text" class="form-control" 
+                           id="decline-reason-${station}" 
+                           placeholder="Enter reason for declining">
+                    <button class="btn btn-primary" 
+                            onclick="submitDecline('${jdrequestid}', '${station}')">
+                        Submit
+                    </button>
+                    <button class="btn btn-secondary" 
+                            onclick="cancelDecline()">
+                        Cancel
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    
+    stationRow.after(declineHtml);
+    $(`#decline-reason-${station}`).focus();
+};
+
+// Make these functions globally accessible as well
+window.submitDecline = function(jdrequestid, station) {
+    const reason = $(`#decline-reason-${station}`).val().trim();
+    
+    if (!reason) {
+        alert("A reason is required to decline a station.");
+        return;
+    }
+
+    $.ajax({
+        url: 'deptunitparameter.php',
+        type: 'POST',
+        data: {
+            action: 'update_station_status',
+            jdrequestid: jdrequestid,
+            station: station,
+            status: 'DeptUnit Lead Declined',
+            reason: reason
+        },
+        success: function(response) {
+            if (response === 'success') {
+                alert('Station declined successfully');
+                // Refresh the view to show updated status
+                viewDeptUnitLeadRequest(jdrequestid);
+            } else {
+                alert('Error: ' + response);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+            alert('Error updating station status');
+        }
+    });
+};
+
+window.cancelDecline = function() {
+    $('.decline-reason-input').remove();
+};
+
+// Add some basic styling
+$('<style>')
+    .text(`
+        .decline-reason-input {
+            background-color: #f8f9fa;
+        }
+        .decline-reason-input td {
+            padding: 10px;
+        }
+        .decline-reason-input .input-group {
+            margin-bottom: 0;
+        }
+    `)
+    .appendTo('head');

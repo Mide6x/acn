@@ -98,30 +98,6 @@ $deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
     </div>
 </div>
 
-<!-- Decline Modal -->
-<div class="modal fade" id="declineModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Decline Request</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="decline_jdrequestid">
-                <input type="hidden" id="decline_station">
-                <div class="mb-3">
-                    <label for="decline_reason" class="form-label">Reason for Declining</label>
-                    <textarea class="form-control" id="decline_reason" rows="3" required></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="declineDeptUnitLeadStation()">Submit</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <?php include("../includes/footer.html"); ?>
 <!-- Make sure jQuery is loaded before your script -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

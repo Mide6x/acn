@@ -101,4 +101,25 @@
     .timeline-line {
         margin: 0 -10px;
     }
+}
+
+.decline-reason-input {
+    background-color: #f8f9fa;
+}
+
+.decline-reason-input td {
+    padding: 10px !important;
+}
+
+.decline-reason-input .input-group {
+    margin-bottom: 0 !important;
+}
+
+.decline-reason-input input {
+    border-radius: 4px 0 0 4px !important;
+}
+
+.decline-reason-input .btn {
+    margin-left: 5px;
+    border-radius: 4px !important;
 } 

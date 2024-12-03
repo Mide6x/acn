@@ -9,7 +9,6 @@ include("../includes/footer.html");
 
 ?>
 <main id="main" class="main">
-
     <section class="section">
         <div class="row mb-4">
             <div class="col-12">
@@ -22,33 +21,67 @@ include("../includes/footer.html");
                 </a>
             </div>
         </div>
+        <ul class="nav nav-tabs" id="requestTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dept-requests-tab" data-bs-toggle="tab" data-bs-target="#dept-requests" type="button" role="tab" aria-controls="dept-requests" aria-selected="true">Department Requests</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="hod-requests-tab" data-bs-toggle="tab" data-bs-target="#hod-requests" type="button" role="tab" aria-controls="hod-requests" aria-selected="false">My Requests</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="requestTabsContent">
+            <div class="tab-pane fade show active" id="dept-requests" role="tabpanel" aria-labelledby="dept-requests-tab">
 
-        <!--table to show allstaff request made by the user-->
 
-        <div class="card mt-4">
-            <div class="card-body">
-                <h6 class="card-title" style="font-weight: 800; font-size: small;">MY DEPARTMENT STAFF REQUESTS</h6>
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr style="background-color: #fc7f14; color: #fff;">
-                                <th>Request ID</th>
-                                <th>Job Title</th>
-                                <th>Total Positions</th>
-                                <th>Dept Unit</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="staffRequestTableBody">
-                        </tbody>
-                    </table>
+                <!--table to show allstaff request made by the user-->
+
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h6 class="card-title" style="font-weight: 800; font-size: small;">MY DEPARTMENT STAFF REQUESTS</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr style="background-color: #fc7f14; color: #fff;">
+                                        <th>Request ID</th>
+                                        <th>Job Title</th>
+                                        <th>Total Positions</th>
+                                        <th>Dept Unit</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staffRequestTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="hod-requests" role="tabpanel" aria-labelledby="hod-requests-tab">
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h6 class="card-title" style="font-weight: 800; font-size: small;">MY OWN REQUESTS</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr style="background-color: #fc7f14; color: #fff;">
+                                        <th>Request ID</th>
+                                        <th>Job Title</th>
+                                        <th>Total Positions</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="hodRequestTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
-
-</main><!-- End #main -->
+</main>
 
 <!-- Request Details Modal -->
 <div class="modal fade" id="requestDetailsModal" tabindex="-1" aria-labelledby="requestDetailsModalLabel" aria-hidden="true">
@@ -72,6 +105,27 @@ include("../includes/footer.html");
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    $(document).ready(function() {
+        loadStaffRequests(); // Load department requests
+        loadHODRequests(); // Load HOD's own requests
+    });
+
+    function loadHODRequests() {
+        $.ajax({
+            url: 'HODParameters.php',
+            type: 'POST',
+            data: {
+                action: 'getHODRequests'
+            },
+            success: function(response) {
+                $('#hodRequestTableBody').html(response);
+            },
+            error: function() {
+                alert('Failed to load HOD requests.');
+            }
+        });
+    }
+
     // Inline script to ensure function is defined
     function updateRequestStatus(requestId, status) {
         let comments = '';

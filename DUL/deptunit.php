@@ -308,40 +308,33 @@ class DeptUnit
                             </tr></thead><tbody>";
 
                 foreach ($stations as $station) {
-                    $actionButtons = '';
-                    if (in_array(strtolower($station['status']), ['pending', 'draft', 'new', '']) || $station['status'] === NULL) {
-                        $actionButtons = "
-                            <button class='btn btn-success btn-sm me-2 btn-approve-station' 
-                                    data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'
-                                    data-station='" . htmlspecialchars($station['station']) . "'>
-                                Approve
-                            </button>
-                            <button class='btn btn-danger btn-sm btn-decline-station' 
-           data-bs-toggle='modal' 
-           data-bs-target='#declineModal'
-           data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'
-           data-station='" . htmlspecialchars($station['station']) . "'>
-       Decline
-   </button>";
-                    } else {
-                        $badgeClass = ($station['status'] === 'DeptUnit Lead Approved') ? 'bg-success' : 'bg-danger';
-                        $actionButtons = "<span class='badge {$badgeClass}' style='color: white;'>" .
-                            htmlspecialchars($station['status']) . "</span>";
+                    $stationId = "station-row-" . htmlspecialchars($station['station']);
+                    $output .= "<tr id='{$stationId}'>
+                        <td>" . htmlspecialchars($station['stationname']) . "</td>
+                        <td>" . htmlspecialchars($station['employmenttype']) . "</td>
+                        <td>" . htmlspecialchars($station['staffperstation']) . "</td>
+                        <td>" . htmlspecialchars($station['status'] ?? 'Pending') . "</td>
+                        <td>";
 
-                        // Show reason if declined
-                        if ($station['status'] === 'DeptUnit Lead Declined' && !empty($station['reason'])) {
-                            $actionButtons .= "<br><small class='text-danger mt-1 d-block'>" .
-                                htmlspecialchars($station['reason']) . "</small>";
+                    if (in_array(strtolower($station['status']), ['pending', 'draft', 'new', '']) || $station['status'] === NULL) {
+                        $output .= "<button class='btn btn-success btn-sm me-2 btn-approve-station' 
+                                            data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'
+                                            data-station='" . htmlspecialchars($station['station']) . "'>
+                                        Approve
+                                    </button>
+                                    <button class='btn btn-danger btn-sm btn-decline-station' 
+                                            data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'
+                                            data-station='" . htmlspecialchars($station['station']) . "'>
+                                        Decline
+                                    </button>";
+                    } else {
+                        $output .= htmlspecialchars($station['status']);
+                        if ($station['reason']) {
+                            $output .= "<br><small class='text-muted'>Reason: " . htmlspecialchars($station['reason']) . "</small>";
                         }
                     }
 
-                    $output .= "<tr>
-                                <td>" . htmlspecialchars($station['stationname']) . "</td>
-                                <td>" . htmlspecialchars($station['employmenttype']) . "</td>
-                                <td>" . htmlspecialchars($station['staffperstation']) . "</td>
-                                <td>" . htmlspecialchars($station['status']) . "</td>
-                                <td>{$actionButtons}</td>
-                                </tr>";
+                    $output .= "</td></tr>";
                 }
 
                 $output .= "</tbody></table>";
@@ -441,7 +434,7 @@ class DeptUnit
             $mainStatus = $allStationsDeclined ? 'DeptUnit Lead Declined' : 'DeptUnit Lead Approved';
             $updateRequest = "UPDATE staffrequest 
                              SET status = ?,
-                                 decline_reason = ?
+                                 reason = ?
                              WHERE jdrequestid = ?";
             $stmt = $this->db->prepare($updateRequest);
             $stmt->execute([$mainStatus, $allStationsDeclined ? $reason : null, $jdrequestid]);
@@ -511,7 +504,7 @@ class DeptUnit
         } else {
             $updateRequest = "UPDATE staffrequest 
                              SET status = 'DeptUnit Lead Declined',
-                                 decline_reason = ?
+                                 reason = ?
                              WHERE jdrequestid = ?";
             $stmt = $this->db->prepare($updateRequest);
             $stmt->execute([$reason, $jdrequestid]);

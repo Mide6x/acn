@@ -484,5 +484,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo "Error: " . $e->getMessage();
             }
             break;
+
+        case 'update_station_status':
+            try {
+                if (!isset($_POST['jdrequestid']) || !isset($_POST['station']) || !isset($_POST['status'])) {
+                    throw new Exception('Missing required parameters');
+                }
+
+                $jdrequestid = $_POST['jdrequestid'];
+                $station = $_POST['station'];
+                $status = $_POST['status'];
+                $reason = $_POST['reason'] ?? null; // Get decline reason if provided
+
+                // Start transaction
+                $con->beginTransaction();
+
+                // Update station status and reason
+                $query = "UPDATE staffrequestperstation 
+                         SET status = ?, 
+                             reason = ? 
+                         WHERE jdrequestid = ? 
+                         AND station = ?";
+
+                $stmt = $con->prepare($query);
+                $stmt->execute([$status, $reason, $jdrequestid, $station]);
+
+                // Check if all stations are declined
+                $checkQuery = "SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'DeptUnit Lead Declined' THEN 1 ELSE 0 END) as declined
+                FROM staffrequestperstation 
+                WHERE jdrequestid = ?";
+
+                $stmt = $con->prepare($checkQuery);
+                $stmt->execute([$jdrequestid]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $allStationsDeclined = ($result['total'] > 0 && $result['total'] == $result['declined']);
+
+                // Update main request status based on station statuses
+                $mainStatus = $allStationsDeclined ? 'DeptUnit Lead Declined' : 'DeptUnit Lead Approved';
+                $updateRequest = "UPDATE staffrequest 
+                                 SET status = ?
+                                 WHERE jdrequestid = ?";
+
+                $stmt = $con->prepare($updateRequest);
+                $stmt->execute([$mainStatus, $jdrequestid]);
+
+                // Update approval table status
+                $approvalStatus = $allStationsDeclined ? 'declined' : 'approved';
+                $updateApproval = "UPDATE approvaltbl 
+                                  SET status = ?,
+                                      dandt = NOW()
+                                  WHERE jdrequestid = ? 
+                                  AND approvallevel = 'DeptUnitLead'";
+
+                $stmt = $con->prepare($updateApproval);
+                $stmt->execute([$approvalStatus, $jdrequestid]);
+
+                // If not all declined, update HOD status to pending
+                if (!$allStationsDeclined) {
+                    $updateHOD = "UPDATE approvaltbl 
+                                 SET status = 'pending',
+                                     dandt = NOW()
+                                 WHERE jdrequestid = ? 
+                                 AND approvallevel = 'HOD'";
+                    $stmt = $con->prepare($updateHOD);
+                    $stmt->execute([$jdrequestid]);
+                }
+
+                $con->commit();
+                echo 'success';
+            } catch (Exception $e) {
+                $con->rollBack();
+                error_log("Error in update_station_status: " . $e->getMessage());
+                echo "Error: " . $e->getMessage();
+            }
+            break;
     }
 }
