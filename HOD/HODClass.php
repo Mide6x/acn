@@ -7,7 +7,46 @@ class HOD
     {
         $this->db = $con;
     }
+    public function generateRequestId()
+    {
+        try {
+            $year = date('Y');
+            $query = "SELECT MAX(CAST(SUBSTRING(jdrequestid, 8) AS UNSIGNED)) as max_id 
+                      FROM staffrequest 
+                      WHERE jdrequestid LIKE 'REQ{$year}%'";
 
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $nextId = ($result['max_id'] ?? 0) + 1;
+            $requestId = "REQ" . $year . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+
+            error_log("Generated Request ID: " . $requestId); // Debug log
+            return $requestId;
+        } catch (Exception $e) {
+            error_log("Error generating request ID: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getJobTitles()
+    {
+        $query = "SELECT jdtitle 
+                 FROM jobtitletbl 
+                 WHERE jdstatus = 'Active' 
+                 AND deptunitcode = ?";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$_SESSION['deptunitcode'] ?? DEFAULT_DEPT_UNIT_CODE]);
+
+        $output = "";
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $output .= "<option value='" . htmlspecialchars($row['jdtitle']) . "'>"
+                . htmlspecialchars($row['jdtitle']) . "</option>";
+        }
+        return $output;
+    }
     public function getHODPendingRequests($deptCode)
     {
         try {
@@ -186,6 +225,82 @@ class HOD
         } catch (Exception $e) {
             $this->db->rollBack();
             error_log("Error in updateStationStatus: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    public function getHODInfo($staffid)
+    {
+        try {
+            $query = "SELECT e.*, d.deptunitname, d.deptunitcode, d.deptcode, dept.departmentname 
+                     FROM employeetbl e 
+                     JOIN departmentunit d ON e.deptunitcode = d.deptunitcode 
+                     JOIN departments dept ON d.deptcode = dept.departmentcode 
+                     WHERE e.staffid = ? 
+                     AND e.position = 'HOD' 
+                     AND e.status = 'Active'";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$staffid]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getHODInfo: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getAvailablePositions($deptunitcode)
+    {
+        try {
+            $query = "SELECT COUNT(*) as count 
+                     FROM jobtitletbl 
+                     WHERE deptunitcode = ? 
+                     AND jdstatus = 'Active'";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$deptunitcode]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['count'] ?? 0;
+        } catch (Exception $e) {
+            error_log("Error in getAvailablePositions: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getStations()
+    {
+        try {
+            $query = "SELECT stationcode, stationname 
+                     FROM stationtbl 
+                     WHERE status = 'Active' 
+                     ORDER BY stationname";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+
+            $output = "";
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $output .= "<option value='" . htmlspecialchars($row['stationcode']) . "'>"
+                    . htmlspecialchars($row['stationname']) . "</option>";
+            }
+            return $output;
+        } catch (Exception $e) {
+            error_log("Error in getStations: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getStaffTypes()
+    {
+        try {
+            $types = ['Permanent', 'Contract', 'Temporary'];
+            $output = "";
+            foreach ($types as $type) {
+                $output .= "<option value='" . htmlspecialchars($type) . "'>"
+                    . htmlspecialchars($type) . "</option>";
+            }
+            return $output;
+        } catch (Exception $e) {
+            error_log("Error in getStaffTypes: " . $e->getMessage());
             throw $e;
         }
     }

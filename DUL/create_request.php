@@ -71,21 +71,21 @@ if (empty($jdrequestid)) {
                                 <div class="row mb-3">
                                     <div class="col-sm-4">
                                         <label class="form-label">Station</label>
-                                        <select class="form-control" id="station" name="station" style="border-radius: 8px" required>
+                                        <select class="form-control" name="station" style="border-radius: 8px" required>
                                             <option value="">Select Station</option>
                                             <?php echo $deptunit->getStations(); ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-4">
                                         <label class="form-label">Employment Type</label>
-                                        <select class="form-control" id="employmenttype" name="employmenttype" style="border-radius: 8px" required>
+                                        <select class="form-control" name="employmenttype" style="border-radius: 8px" required>
                                             <option value="">Select Type</option>
                                             <?php echo $deptunit->getStaffTypes(); ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-4">
                                         <label class="form-label">Staff Per Station</label>
-                                        <input type="number" class="form-control staffperstation" id="staffperstation" name="staffperstation"
+                                        <input type="number" class="form-control staffperstation" name="staffperstation"
                                             style="border-radius: 8px" required min="1">
                                     </div>
                                 </div>
@@ -93,9 +93,11 @@ if (empty($jdrequestid)) {
                         </div>
 
                         <div class="row mb-3">
-                            <button type="button" class="btn btn-secondary mt-2" onclick="addStationRequestDeptUnitLead()">
-                                <i class="bi bi-plus"></i> Add Station
-                            </button>
+                            <div class="col-12">
+                                <button type="button" class="btn btn-secondary mt-2" id="addStation">
+                                    <i class="bi bi-plus"></i> Add Station
+                                </button>
+                            </div>
                         </div>
 
                         <div class="col-lg-12" id="loadstaffreqperstation">

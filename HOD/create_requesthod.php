@@ -3,14 +3,22 @@ session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/HOD/HODClass.php';
 
 // Include header, sidebar, and footer
 include("../includes/header.html");
 include("../includes/sidebar.html");
 include("../includes/footer.html");
+
+$hod = new HOD($con);
+$staffid = $_SESSION['staffid'];
+$hodInfo = $hod->getHODInfo($staffid);
+$availablePositions = $hod->getAvailablePositions($hodInfo['deptunitcode']);
+$jdrequestid = $hod->generateRequestId();
+$departmentcode = $hodInfo['deptcode'];
+
 ?>
 <main id="main" class="main">
-
 
     <section class="section">
         <div class="row">
@@ -23,8 +31,12 @@ include("../includes/footer.html");
                                 <h6 class="card-title" style="font-weight: 800; font-size: small;">STAFF REQUEST DETAILS</h6>
                             </div>
                             <div class="col-sm-6 text-end">
-                                <span id="jdrequestid" style="font-size: small; font-weight: 700;"></span>
-                                <span id="availablevacant" style="font-size: small; font-weight: 700;"></span>
+                                <span id="jdrequestid" style="font-size: small; font-weight: 700;">
+                                    <?php echo $jdrequestid; ?>
+                                </span>
+                                <span id="availablevacant" style="font-size: small; font-weight: 700;">
+                                    Available Positions for <?php echo $departmentcode; ?>: <?php echo $availablePositions; ?>
+                                </span>
                             </div>
                         </div>
 
@@ -34,12 +46,11 @@ include("../includes/footer.html");
                                     <label class="form-label">Job Title</label>
                                     <select class="form-control" id="jdtitle" name="jdtitle" style="border-radius: 8px" required>
                                         <option value="">Select Job Title</option>
-                                        <?php echo $revenue->getJobTitles(); ?>
+                                        <?php echo $hod->getJobTitles(); ?>
                                     </select>
                                 </div>
                             </div>
                         </form>
-
 
                         <div class="col-sm-6">
                             <h6 class="card-title" style="font-weight: 800; font-size: small;">STAFF PER STATION DETAILS</h6>
@@ -51,14 +62,14 @@ include("../includes/footer.html");
                                         <label class="form-label">Station</label>
                                         <select class="form-control" id="station" name="station" style="border-radius: 8px" required>
                                             <option value="">Select Station</option>
-                                            <?php echo $revenue->getStations(); ?>
+                                            <?php echo $hod->getStations(); ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-4">
                                         <label class="form-label">Employment Type</label>
                                         <select class="form-control" id="employmenttype" name="employmenttype" style="border-radius: 8px" required>
                                             <option value="">Select Type</option>
-                                            <?php echo $revenue->getStaffTypes(); ?>
+                                            <?php echo $hod->getStaffTypes(); ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-4">
@@ -77,8 +88,6 @@ include("../includes/footer.html");
                             </button>
 
                         </div>
-
-
 
                         <div class="col-lg-12" id="loadstaffreqperstation">
                         </div>

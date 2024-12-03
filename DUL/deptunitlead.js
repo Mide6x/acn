@@ -174,6 +174,20 @@ $(document).ready(function() {
             console.error('No request ID found on edit button');
         }
     });
+
+    // Add station button click handler
+    $('#addStation').click(function() {
+        addStationRequestDeptUnitLead();
+    });
+
+    // Remove station button handler
+    $(document).on('click', '.remove-station', function() {
+        if ($('.station-row').length > 1) {
+            $(this).closest('.station-row').remove();
+        } else {
+            alert('At least one station is required.');
+        }
+    });
 });
 
 // Function to load staff requests
@@ -282,30 +296,40 @@ console.log('Values set in modal:', {
 });
 
 function addStationRequestDeptUnitLead() {
+    const requestId = $('#jdrequestid').val();
+    const index = $('.station-row').length;
+
+    console.log('Adding station:', { requestId, index }); // Debug log
+
     $.ajax({
         url: 'deptunitparameter.php',
-        type: 'GET',
+        type: 'POST',
         data: {
-            action: 'get_new_station_request_html'
+            action: 'get_station_options',
+            index: index,
+            requestId: requestId
         },
         success: function(response) {
-            if (!response.includes('error')) {
-                $('#stationRequests').append(response);
-            } else {
-                alert('Error: ' + response);
-            }
+            console.log('Received response:', response); // Debug log
+            
+            // Create a temporary div to hold the response
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = response.trim();
+            
+            // Append the new content to the container
+            $('#stationRequests').append(tempDiv.firstChild);
+            
+            // Log the container contents after append
+            console.log('Container after append:', $('#stationRequests').html());
         },
         error: function(xhr, status, error) {
-            console.error('Error:', error);
-            alert('Error adding new station request');
+            console.error('Error adding station:', error);
+            alert('Error adding new station');
         }
     });
 }
 
-function removeStationRequest(button) {
-    $(button).closest('.station-request').remove();
-}
-
+// Add validation for station selection
 function validateStationSelection(selectElement) {
     const selectedValue = $(selectElement).val();
     let isDuplicate = false;
@@ -323,26 +347,8 @@ function validateStationSelection(selectElement) {
     }
 }
 
-function validateStationSelection(selectElement) {
-    const selectedValue = $(selectElement).val();
-    let isDuplicate = false;
-
-    $('.station-request select[name="station"]').each(function() {
-        if (this !== selectElement && $(this).val() === selectedValue) {
-            isDuplicate = true;
-            return false;
-        }
-    });
-
-    if (isDuplicate) {
-        alert('This station has already been selected. Please choose a different station.');
-        $(selectElement).val('');
-    }
-}
-
 function removeStationRequest(button) {
     $(button).closest('.station-request').remove();
-    updateAvailableStations();
 }
 
 function updateAvailableStations() {
