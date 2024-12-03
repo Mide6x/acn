@@ -32,20 +32,26 @@ class HOD
 
     public function getJobTitles()
     {
-        $query = "SELECT jdtitle 
-                 FROM jobtitletbl 
-                 WHERE jdstatus = 'Active' 
-                 AND deptunitcode = ?";
+        try {
+            $query = "SELECT jt.jdtitle 
+                      FROM jobtitletbl jt
+                      JOIN departmentunit du ON jt.deptunitcode = du.deptunitcode
+                      WHERE jt.jdstatus = 'Active' 
+                      AND du.deptcode = :deptcode";
 
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$_SESSION['deptunitcode'] ?? DEFAULT_DEPT_UNIT_CODE]);
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['deptcode' => CURRENT_USER['departmentcode']]);
 
-        $output = "";
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $output .= "<option value='" . htmlspecialchars($row['jdtitle']) . "'>"
-                . htmlspecialchars($row['jdtitle']) . "</option>";
+            $output = "";
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $output .= "<option value='" . htmlspecialchars($row['jdtitle']) . "'>"
+                    . htmlspecialchars($row['jdtitle']) . "</option>";
+            }
+            return $output;
+        } catch (Exception $e) {
+            error_log("Error in getJobTitles: " . $e->getMessage());
+            throw $e;
         }
-        return $output;
     }
     public function getHODPendingRequests($deptCode)
     {
@@ -302,6 +308,64 @@ class HOD
         } catch (Exception $e) {
             error_log("Error in getStaffTypes: " . $e->getMessage());
             throw $e;
+        }
+    }
+
+    public function createHODRequest($formData)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $jdrequestid = $this->generateRequestId();
+            $staffid = CURRENT_USER['staffid']; // Get staffid from CURRENT_USER
+
+            // Insert into staffrequest table - added createdby field
+            $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, departmentcode, novacpost, status, createdby) 
+                  VALUES (:jdrequestid, :jdtitle, :departmentcode, :novacpost, 'draft', :createdby)";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([
+                'jdrequestid' => $jdrequestid,
+                'jdtitle' => $formData['jdtitle'],
+                'departmentcode' => CURRENT_USER['departmentcode'],
+                'novacpost' => count($formData['stations']),
+                'createdby' => $staffid
+            ]);
+
+            // Insert into staffrequestperstation table - added createdby field
+            foreach ($formData['stations'] as $station) {
+                $query = "INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation, createdby) 
+                      VALUES (:jdrequestid, :station, :employmenttype, :staffperstation, :createdby)";
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([
+                    'jdrequestid' => $jdrequestid,
+                    'station' => $station['station'],
+                    'employmenttype' => $station['employmenttype'],
+                    'staffperstation' => $station['staffperstation'],
+                    'createdby' => $staffid
+                ]);
+            }
+
+            $this->db->commit();
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error in createHODRequest: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getMyRequests($staffid)
+    {
+        try {
+            $query = "SELECT jdrequestid, jdtitle, status, dandt 
+                  FROM staffrequest 
+                  WHERE staffid = :staffid 
+                  ORDER BY dandt DESC";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['staffid' => $staffid]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getMyRequests: " . $e->getMessage());
+            return [];
         }
     }
 }

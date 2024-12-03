@@ -61,18 +61,20 @@ include("../includes/footer.html");
                 <div class="card mt-4">
                     <div class="card-body">
                         <h6 class="card-title" style="font-weight: 800; font-size: small;">MY OWN REQUESTS</h6>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
+                        <div id="myRequests">
+                            <h3>My Requests</h3>
+                            <table id="requestsTable" class="table">
                                 <thead>
-                                    <tr style="background-color: #fc7f14; color: #fff;">
+                                    <tr>
                                         <th>Request ID</th>
                                         <th>Job Title</th>
-                                        <th>Total Positions</th>
                                         <th>Status</th>
+                                        <th>Date</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="hodRequestTableBody">
+                                <tbody>
+                                    <!-- Requests will be dynamically loaded here -->
                                 </tbody>
                             </table>
                         </div>
@@ -93,6 +95,25 @@ include("../includes/footer.html");
             </div>
             <div class="modal-body" id="modal-content">
                 <!-- Modal content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Viewing Details -->
+<div id="detailsModal" class="modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Job details will be loaded here -->
+                <div id="jobDetails"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

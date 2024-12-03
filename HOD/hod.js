@@ -68,4 +68,109 @@ function updateRequestStatus(requestId, status) {
 // Initialize when document is ready
 $(document).ready(function() {
     loadStaffRequests();
+    $('#addStation').click(function() {
+        addStationRequestHOD();
+    });
+    loadMyRequests();
 });
+
+function addStationRequestHOD() {
+    const index = $('.station-request').length;
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: {
+            action: 'get_station_options',
+            index: index
+        },
+        success: function(response) {
+            if (response.trim() !== '') {
+                $('#stationRequests').append(response);
+            } else {
+                alert('Failed to load station options.');
+            }
+        },
+        error: function() {
+            alert('Error adding new station');
+        }
+    });
+}
+
+function submitHODRequest() {
+    const formData = $('#hodRequestForm').serialize();
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: {
+            action: 'createHODRequest',
+            formData: formData
+        },
+        success: function(response) {
+            alert(response);
+            window.location.href = 'HODView.php'; // Redirect to HOD view page
+        },
+        error: function() {
+            alert('Failed to submit request');
+        }
+    });
+}
+
+function savedraftHODstaffrequest() {
+    const formData = $('#staffRequestForm').serialize();
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: {
+            action: 'createHODRequest',
+            formData: formData
+        },
+        success: function(response) {
+            alert(response);
+            window.location.href = 'HODView.php'; // Redirect to view page
+        },
+        error: function() {
+            alert('Failed to submit request');
+        }
+    });
+}
+
+function loadMyRequests() {
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: { action: 'getMyRequests' },
+        success: function(response) {
+            const requests = JSON.parse(response);
+            const tbody = $('#requestsTable tbody');
+            tbody.empty();
+            requests.forEach(request => {
+                const row = `<tr>
+                    <td>${request.jdrequestid}</td>
+                    <td>${request.jdtitle}</td>
+                    <td>${request.status}</td>
+                    <td>${request.dandt}</td>
+                    <td><button class="btn btn-info" onclick="viewRequestDetails('${request.jdrequestid}')">View Details</button></td>
+                </tr>`;
+                tbody.append(row);
+            });
+        },
+        error: function() {
+            alert('Failed to load requests');
+        }
+    });
+}
+
+function viewRequestDetails(jdrequestid) {
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: { action: 'getRequestDetails', jdrequestid: jdrequestid },
+        success: function(response) {
+            $('#jobDetails').html(response);
+            $('#detailsModal').modal('show');
+        },
+        error: function() {
+            alert('Failed to load request details');
+        }
+    });
+}

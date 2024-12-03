@@ -37,80 +37,15 @@ if (isset($_POST['action'])) {
 
         case 'getRequestDetails':
             try {
-                $requestId = $_POST['requestId'];
-                $details = $hod->getRequestDetails($requestId);
+                $jdrequestid = $_POST['jdrequestid'];
+                $details = $hod->getRequestDetails($jdrequestid);
 
                 if (!empty($details)) {
                     $request = $details[0];
-                    echo "<div class='request-info mb-4'>
-                            <h6 class='fw-bold'>Request Information</h6>
-                            <div class='row'>
-                                <div class='col-md-6'>
-                                    <p><strong>Request ID:</strong> {$request['jdrequestid']}</p>
-                                    <p><strong>Job Title:</strong> {$request['jdtitle']}</p>
-                                </div>
-                                <div class='col-md-6'>
-                                    <p><strong>Total Positions:</strong> {$request['novacpost']}</p>
-                                    <p><strong>Status:</strong> {$request['status']}</p>
-                                </div>
-                            </div>
-                          </div>
-                          <div class='station-info'>
-                            <h6 class='fw-bold'>Station Requests</h6>
-                            <div class='table-responsive'>
-                                <table class='table table-bordered'>
-                                    <thead>
-                                        <tr>
-                                            <th>Station</th>
-                                            <th>Employment Type</th>
-                                            <th>Staff Count</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>";
-
-                    foreach ($details as $station) {
-                        echo "<tr>
-                                <td>{$station['station']}</td>
-                                <td>{$station['employmenttype']}</td>
-                                <td>{$station['staffperstation']}</td>
-                                <td>{$station['status']}</td>
-                              </tr>";
-                    }
-
-                    echo "</tbody></table></div></div>
-                          <div class='job-details mt-4'>
-                            <h6 class='fw-bold'>Job Details</h6>";
-
-                    // Display job details from jobtitletbl
-                    $jobFields = [
-                        'Educational Qualification' => 'eduqualification',
-                        'Professional Qualification' => 'proqualification',
-                        'Work Relation' => 'workrelation',
-                        'Job Condition' => 'jdcondition',
-                        'Age Bracket' => 'agebracket',
-                        'Person Specification' => 'personspec',
-                        'Technical Skills' => 'fuctiontech',
-                        'Managerial Skills' => 'managerial',
-                        'Behavioral Skills' => 'behavioural'
-                    ];
-
-                    foreach ($jobFields as $label => $field) {
-                        if (!empty($request[$field])) {
-                            echo "<p><strong>{$label}:</strong> {$request[$field]}</p>";
-                        }
-                    }
-
-                    // Add approve/decline buttons at the bottom
-                    echo "</div>
-                          <div class='mt-4 text-center'>
-                            <button type='button' class='btn btn-success me-2' onclick='updateRequestStatus(\"{$request['jdrequestid']}\", \"approved\")'>
-                                Approve Request
-                            </button>
-                            <button type='button' class='btn btn-danger' onclick='updateRequestStatus(\"{$request['jdrequestid']}\", \"declined\")'>
-                                Decline Request
-                            </button>
-                          </div>";
+                    echo "<p><strong>Request ID:</strong> {$request['jdrequestid']}</p>
+                          <p><strong>Job Title:</strong> {$request['jdtitle']}</p>
+                          <p><strong>Status:</strong> {$request['status']}</p>";
+                    // Add more details as needed
                 } else {
                     echo "<p>No details found for this request.</p>";
                 }
@@ -141,6 +76,67 @@ if (isset($_POST['action'])) {
                 }
             } catch (Exception $e) {
                 echo "Error: {$e->getMessage()}";
+            }
+            break;
+
+        case 'createHODRequest':
+            try {
+                parse_str($_POST['formData'], $formData);
+                $hod->createHODRequest($formData);
+                echo "Request saved as draft successfully.";
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
+
+        case 'get_station_options':
+            try {
+                $index = $_POST['index'];
+                $stations = $hod->getStations();
+                $staffTypes = $hod->getStaffTypes();
+
+                $html = '<div class="station-request">
+                    <div class="row mb-3">
+                        <div class="col-sm-4">
+                            <label class="form-label">Station</label>
+                            <select class="form-control" name="stations[' . $index . '][station]" style="border-radius: 8px" required>
+                                <option value="">Select Station</option>
+                                ' . $stations . '
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label">Employment Type</label>
+                            <select class="form-control" name="stations[' . $index . '][employmenttype]" style="border-radius: 8px" required>
+                                <option value="">Select Type</option>
+                                ' . $staffTypes . '
+                            </select>
+                        </div>
+                        <div class="col-sm-3">
+                            <label class="form-label">Staff Per Station</label>
+                            <input type="number" class="form-control staffperstation" 
+                                   name="stations[' . $index . '][staffperstation]"
+                                   style="border-radius: 8px" required min="1">
+                        </div>
+                        <div class="col-sm-1">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn btn-danger btn-sm remove-station">×</button>
+                        </div>
+                    </div>
+                </div>';
+
+                echo $html;
+            } catch (Exception $e) {
+                echo 'Error: ' . $e->getMessage();
+            }
+            break;
+
+        case 'getMyRequests':
+            try {
+                $staffid = $_SESSION['staffid'];
+                $requests = $hod->getMyRequests($staffid);
+                echo json_encode($requests);
+            } catch (Exception $e) {
+                echo json_encode([]);
             }
             break;
     }
