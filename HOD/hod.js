@@ -72,6 +72,7 @@ $(document).ready(function() {
         addStationRequestHOD();
     });
     loadMyRequests();
+    loadHODRequests();
 });
 
 function addStationRequestHOD() {
@@ -171,6 +172,40 @@ function viewRequestDetails(jdrequestid) {
         },
         error: function() {
             alert('Failed to load request details');
+        }
+    });
+}
+
+function loadHODRequests() {
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: {
+            action: 'getHODRequests'
+        },
+        success: function(response) {
+            $('#hodRequestTableBody').html(response);
+        },
+        error: function() {
+            alert('Failed to load HOD requests.');
+        }
+    });
+}
+
+function viewJobDetails(jdtitle) {
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: {
+            action: 'getJobDetails',
+            jdtitle: jdtitle
+        },
+        success: function(response) {
+            $('#jobDetails').html(response);
+            $('#detailsModal').modal('show');
+        },
+        error: function() {
+            alert('Failed to load job details.');
         }
     });
 }

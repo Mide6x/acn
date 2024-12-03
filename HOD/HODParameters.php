@@ -139,6 +139,71 @@ if (isset($_POST['action'])) {
                 echo json_encode([]);
             }
             break;
+
+        case 'getHODRequests':
+            try {
+                $staffid = CURRENT_USER['staffid'];
+                $requests = $hod->getHODRequests($staffid);
+
+                if (empty($requests)) {
+                    echo "<tr><td colspan='6' class='text-center'>No requests found</td></tr>";
+                    return;
+                }
+
+                foreach ($requests as $request) {
+                    $stations = explode(',', $request['stations']);
+                    $staff_counts = explode(',', $request['staff_counts']);
+                    $employment_types = explode(',', $request['employment_types']);
+
+                    $stationDetails = [];
+                    for ($i = 0; $i < count($stations); $i++) {
+                        $stationDetails[] = "{$stations[$i]} ({$staff_counts[$i]} {$employment_types[$i]})";
+                    }
+
+                    echo "<tr>
+                            <td>{$request['jdrequestid']}</td>
+                            <td>{$request['jdtitle']}</td>
+                            <td>{$request['novacpost']}</td>
+                            <td>" . implode(', ', $stationDetails) . "</td>
+                            <td><span class='badge " . getBadgeClass($request['status']) . "'>{$request['status']}</span></td>
+                            <td>
+                                <button class='btn btn-sm btn-info' onclick='viewJobDetails(\"{$request['jdtitle']}\")'>
+                                    View Details
+                                </button>
+                            </td>
+                        </tr>";
+                }
+            } catch (Exception $e) {
+                echo "<tr><td colspan='6' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
+            }
+            break;
+
+        case 'getJobDetails':
+            try {
+                $jdtitle = $_POST['jdtitle'];
+                $details = $hod->getJobDetails($jdtitle);
+
+                if ($details) {
+                    echo "<div class='job-details'>
+                            <h5>Job Title: {$details['jdtitle']}</h5>
+                            <p><strong>Description:</strong> {$details['jddescription']}</p>
+                            <p><strong>Educational Qualification:</strong> {$details['eduqualification']}</p>
+                            <p><strong>Professional Qualification:</strong> {$details['proqualification']}</p>
+                            <p><strong>Work Relations:</strong> {$details['workrelation']}</p>
+                            <p><strong>Position Level:</strong> {$details['jdposition']}</p>
+                            <p><strong>Age Bracket:</strong> {$details['agebracket']}</p>
+                            <p><strong>Person Specification:</strong> {$details['personspec']}</p>
+                            <p><strong>Technical Requirements:</strong> {$details['fuctiontech']}</p>
+                            <p><strong>Managerial Requirements:</strong> {$details['managerial']}</p>
+                            <p><strong>Behavioral Requirements:</strong> {$details['behavioural']}</p>
+                          </div>";
+                } else {
+                    echo "<p>No job details found.</p>";
+                }
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
     }
 }
 

@@ -320,13 +320,14 @@ class HOD
             $staffid = CURRENT_USER['staffid']; // Get staffid from CURRENT_USER
 
             // Insert into staffrequest table - added createdby field
-            $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, departmentcode, novacpost, status, createdby) 
-                  VALUES (:jdrequestid, :jdtitle, :departmentcode, :novacpost, 'draft', :createdby)";
+            $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, departmentcode, staffid, novacpost, status, createdby) 
+                  VALUES (:jdrequestid, :jdtitle, :departmentcode, :staffid, :novacpost, 'draft', :createdby)";
             $stmt = $this->db->prepare($query);
             $stmt->execute([
                 'jdrequestid' => $jdrequestid,
                 'jdtitle' => $formData['jdtitle'],
                 'departmentcode' => CURRENT_USER['departmentcode'],
+                'staffid' => $staffid,
                 'novacpost' => count($formData['stations']),
                 'createdby' => $staffid
             ]);
@@ -366,6 +367,41 @@ class HOD
         } catch (Exception $e) {
             error_log("Error in getMyRequests: " . $e->getMessage());
             return [];
+        }
+    }
+
+    public function getHODRequests($staffid)
+    {
+        try {
+            $query = "SELECT sr.jdrequestid, sr.jdtitle, sr.status, sr.dandt, sr.novacpost,
+                             GROUP_CONCAT(srs.station) as stations,
+                             GROUP_CONCAT(srs.staffperstation) as staff_counts,
+                             GROUP_CONCAT(srs.employmenttype) as employment_types
+                      FROM staffrequest sr
+                      LEFT JOIN staffrequestperstation srs ON sr.jdrequestid = srs.jdrequestid
+                      WHERE sr.staffid = :staffid
+                      GROUP BY sr.jdrequestid
+                      ORDER BY sr.dandt DESC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['staffid' => $staffid]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getHODRequests: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getJobDetails($jdtitle)
+    {
+        try {
+            $query = "SELECT * FROM jobtitletbl WHERE jdtitle = :jdtitle";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['jdtitle' => $jdtitle]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getJobDetails: " . $e->getMessage());
+            return null;
         }
     }
 }

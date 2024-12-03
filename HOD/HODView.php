@@ -61,20 +61,20 @@ include("../includes/footer.html");
                 <div class="card mt-4">
                     <div class="card-body">
                         <h6 class="card-title" style="font-weight: 800; font-size: small;">MY OWN REQUESTS</h6>
-                        <div id="myRequests">
-                            <h3>My Requests</h3>
-                            <table id="requestsTable" class="table">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
                                 <thead>
-                                    <tr>
+                                    <tr style="background-color: #fc7f14; color: #fff;">
                                         <th>Request ID</th>
                                         <th>Job Title</th>
+                                        <th>Total Positions</th>
+                                        <th>Stations</th>
                                         <th>Status</th>
-                                        <th>Date</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Requests will be dynamically loaded here -->
+                                <tbody id="hodRequestTableBody">
+                                    <!-- Requests will be loaded here dynamically -->
                                 </tbody>
                             </table>
                         </div>
