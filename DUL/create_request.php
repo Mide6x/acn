@@ -17,6 +17,11 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
     header("Location: ../index.php");
     exit;
 }
+
+if (empty($jdrequestid)) {
+    error_log("Failed to generate request ID");
+    // Handle error appropriately
+}
 ?>
 
 <main id="main" class="main">
@@ -29,6 +34,7 @@ if (!$deptUnitLeadInfo['deptunitcode'] && !$_SESSION['isAdmin']) {
                             <input type="hidden" id="createdby" value="<?php echo $_SESSION['staffid']; ?>">
                             <input type="hidden" id="deptunitcode" value="<?php echo $deptUnitLeadInfo['deptunitcode']; ?>">
                             <input type="hidden" id="subdeptunitcode" value="<?php echo $deptUnitLeadInfo['subdeptunitcode']; ?>">
+                            <input type="hidden" id="jdrequestid" name="jdrequestid" value="<?php echo htmlspecialchars($jdrequestid); ?>">
                             <div class="col-sm-6">
                                 <h6 class="card-title" style="font-weight: 800; font-size: small;">STAFF REQUEST DETAILS</h6>
                             </div>

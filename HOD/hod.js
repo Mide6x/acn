@@ -25,31 +25,42 @@ function viewDetails(requestId) {
             requestId: requestId
         },
         success: function(response) {
-            $('#requestDetailsModal .modal-body').html(response);
+            $('#modal-content').html(response);
             $('#requestDetailsModal').modal('show');
+        },
+        error: function() {
+            alert('Failed to load request details.');
         }
     });
 }
 
-function updateStatus(requestId, status) {
+function updateRequestStatus(requestId, status) {
     let comments = '';
     if (status === 'declined') {
         comments = prompt('Please provide a reason for declining:');
         if (comments === null) return; // User cancelled
+        if (comments.trim() === '') {
+            alert('Please provide a reason for declining.');
+            return;
+        }
     }
 
     $.ajax({
         url: 'HODParameters.php',
         type: 'POST',
         data: {
-            action: 'updateStatus',
+            action: 'updateStationStatus',
             requestId: requestId,
             status: status,
             comments: comments
         },
         success: function(response) {
-            loadStaffRequests(); // Reload the table
-            alert('Status updated successfully');
+            alert(response);
+            $('#requestDetailsModal').modal('hide');
+            loadStaffRequests(); // Reload the main table
+        },
+        error: function() {
+            alert('Failed to update status');
         }
     });
 }

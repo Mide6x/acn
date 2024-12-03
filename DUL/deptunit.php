@@ -44,17 +44,25 @@ class DeptUnit
     // Generate unique request ID with format REQ + YEAR + 4-digit sequence
     public function generateRequestId()
     {
-        $year = date('Y');
-        $query = "SELECT MAX(SUBSTRING(jdrequestid, 8)) as max_seq 
-                 FROM staffrequest 
-                 WHERE jdrequestid LIKE 'REQ{$year}%'";
+        try {
+            $year = date('Y');
+            $query = "SELECT MAX(CAST(SUBSTRING(jdrequestid, 8) AS UNSIGNED)) as max_id 
+                      FROM staffrequest 
+                      WHERE jdrequestid LIKE 'REQ{$year}%'";
 
-        $stmt = $this->db->prepare($query);
-        $stmt->execute();
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $sequence = $result['max_seq'] ? intval($result['max_seq']) + 1 : 1;
-        return sprintf("REQ%d%04d", $year, $sequence);
+            $nextId = ($result['max_id'] ?? 0) + 1;
+            $requestId = "REQ" . $year . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+
+            error_log("Generated Request ID: " . $requestId); // Debug log
+            return $requestId;
+        } catch (Exception $e) {
+            error_log("Error generating request ID: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function getJobTitles()
@@ -101,58 +109,6 @@ class DeptUnit
             $output .= "<option value='" . htmlspecialchars($row['stafftype']) . "'>"
                 . htmlspecialchars($row['stafftype']) . "</option>";
         }
-        return $output;
-    }
-    // Add new function to get draft requests for DeptUnitLead
-
-
-    public function getDeptUnitLeadDraftRequests($deptunitcode)
-    {
-        $query = "SELECT sr.*, e.staffname as requestor
-               FROM staffrequest sr
-               JOIN employeetbl e ON sr.createdby = e.staffid
-               WHERE sr.deptunitcode = ? 
-               AND sr.status = 'draft'
-               ORDER BY sr.dandt DESC";
-
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$deptunitcode]);
-        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if (empty($requests)) {
-            return "<tr><td colspan='6' class='text-center'>No draft requests found</td></tr>";
-        }
-
-        $output = "<table class='table table-bordered'>
-                 <thead>
-                     <tr>
-                         <th>Request ID</th>
-                         <th>Job Title</th>
-                         <th>Positions</th>
-                         <th>Requestor</th>
-                         <th>Status</th>
-                         <th>Actions</th>
-                     </tr>
-                 </thead>
-                 <tbody>";
-
-        foreach ($requests as $request) {
-            $output .= "<tr>
-                     <td>{$request['jdrequestid']}</td>
-                     <td>{$request['jdtitle']}</td>
-                     <td>{$request['novacpost']}</td>
-                     <td>{$request['requestor']}</td>
-                     <td>Draft</td>
-                     <td>
-                         <button class='btn btn-sm btn-primary' 
-                                 onclick='viewRequest(\"{$request['jdrequestid']}\")'>
-                             View
-                         </button>
-                     </td>
-                 </tr>";
-        }
-
-        $output .= "</tbody></table>";
         return $output;
     }
 
@@ -832,8 +788,8 @@ class DeptUnit
                             <td>' . htmlspecialchars($row['current_level'] ?? 'N/A') . '</td>
                             <td>
                                 <button type="button" class="btn btn-primary btn-sm" 
-                                        onclick="viewRequestDetails(\'' . $row['jdrequestid'] . '\')">
-                                    View Details
+                                       onclick="viewRequestDetails(\'' . $row['jdrequestid'] . '\')">
+                                    View Details23
                                 </button>
                                 ' . ($row['current_status'] === 'Draft' ? '' : '') . '
                             </td>

@@ -1,4 +1,3 @@
-// Move these functions outside document.ready
 window.approveDeptUnitLeadRequest = function(jdrequestid) {
     if (confirm('Are you sure you want to approve this request?')) {
         $.ajax({
@@ -65,26 +64,6 @@ window.declineDeptUnitLeadRequest = function() {
         error: function(xhr, status, error) {
             console.error('Error declining request:', error);
             alert('Error declining request: ' + error);
-        }
-    });
-};
-
-// View request details
-window.viewDeptUnitLeadRequest = function(jdrequestid) {
-    $.ajax({
-        url: 'deptunitparameter.php',
-        type: 'GET',
-        data: {
-            action: 'get_deptunitlead_request_details',
-            jdrequestid: jdrequestid
-        },
-        success: function(response) {
-            $('#requestDetailsModal .modal-body').html(response);
-            $('#requestDetailsModal').modal('show');
-        },
-        error: function(xhr, status, error) {
-            console.error('Error loading request details:', error);
-            $('#requestDetailsModal .modal-body').html('<div class="alert alert-danger">Error loading request details</div>');
         }
     });
 };
@@ -213,6 +192,16 @@ $(document).ready(function() {
             station: $('#decline_station').val()
         });
     });
+
+    // Handle edit button click in the modal
+    $(document).on('click', '#editRequestBtn', function() {
+        const requestId = $(this).data('requestid');
+        if (requestId) {
+            editRequest(requestId);
+        } else {
+            console.error('No request ID found on edit button');
+        }
+    });
 });
 
 // Function to load staff requests
@@ -236,8 +225,7 @@ function loadStaffRequests() {
 }
 
 // View request details function
-function viewDeptUnitLeadRequest(jdrequestid) {
-    console.log('Viewing request:', jdrequestid);
+window.viewDeptUnitLeadRequest = function(jdrequestid) {
     $.ajax({
         url: 'deptunitparameter.php',
         type: 'GET',
@@ -247,14 +235,30 @@ function viewDeptUnitLeadRequest(jdrequestid) {
         },
         success: function(response) {
             $('#requestDetailsModal .modal-body').html(response);
+            
+            // Set the request ID on the edit button
+            $('#editRequestBtn')
+                .data('requestid', jdrequestid)
+                .show(); // Show the edit button
+            
+            // Show/hide edit button based on request status
+            const requestStatus = $('#requestStatus').val();
+            if (requestStatus === 'draft') {
+                $('#editRequestBtn').show();
+                $('#submitDraftRequestBtn').show();
+            } else {
+                $('#editRequestBtn').hide();
+                $('#submitDraftRequestBtn').hide();
+            }
+            
             $('#requestDetailsModal').modal('show');
         },
         error: function(xhr, status, error) {
-            console.error('Error:', error);
+            console.error('Error loading request details:', error);
             $('#requestDetailsModal .modal-body').html('<div class="alert alert-danger">Error loading request details</div>');
         }
     });
-}
+};
 
 // Approve station function
 function approveDeptUnitLeadStation(jdrequestid, station) {
@@ -421,36 +425,35 @@ function collectFormData() {
 //save draft
 function saveAsDraftDeptUnitLead() {
     if (!validateForm()) return false;
-     // Calculate total vacant posts
+
+    // Calculate total vacant posts
     let totalVacantPosts = 0;
     $('.staffperstation').each(function() {
         totalVacantPosts += parseInt($(this).val()) || 0;
     });
-     const formData = {
-        jdrequestid: $('#jdrequestid').val(),
-        jdtitle: $('#jdtitle').val(),
-        novacpost: totalVacantPosts,
-        deptunitcode: $('#deptunitcode').val(),
-        subdeptunitcode: $('#subdeptunitcode').val() || null, // Optional
-        createdby: $('#createdby').val(),
-        status: 'draft',
-        stations: []
+
+    let formData = {
+        'action': 'save_draft_deptunitlead',
+        'jdrequestid': $('#jdrequestid').text().trim(),
+        'jdtitle': $('#jdtitle').val(),
+        'novacpost': totalVacantPosts,
+        'deptunitcode': $('#deptunitcode').val(),
+        'subdeptunitcode': $('#subdeptunitcode').val() || null,
+        'createdby': $('#createdby').val(),
+        'status': 'draft'
     };
-     // Collect all station requests
-    $('.station-request').each(function() {
-        formData.stations.push({
-            station: $(this).find('select[name="station"]').val(),
-            employmenttype: $(this).find('select[name="employmenttype"]').val(),
-            staffperstation: $(this).find('input[name="staffperstation"]').val()
-        });
+
+    // Add station data
+    $('.station-request').each(function(index) {
+        formData[`station_${index}`] = $(this).find('select[name="station"]').val();
+        formData[`employmenttype_${index}`] = $(this).find('select[name="employmenttype"]').val();
+        formData[`staffperstation_${index}`] = $(this).find('input[name="staffperstation"]').val();
     });
-     $.ajax({
+
+    $.ajax({
         url: 'deptunitparameter.php',
         type: 'POST',
-        data: {
-            action: 'save_draft_deptunitlead',
-            formData: formData
-        },
+        data: formData,
         success: function(response) {
             if (response === 'success') {
                 alert('Request saved as draft successfully');
@@ -465,8 +468,8 @@ function saveAsDraftDeptUnitLead() {
         }
     });
     return false;
- 
 }
+
 function submitDeptUnitLead() {
     if (!validateForm()) return false;
 
@@ -678,6 +681,7 @@ function calculateTotalVacantPosts() {
     });
 
 
+    
     // Form submission
     $('#editRequestForm').submit(function(e) {
         e.preventDefault();
@@ -731,19 +735,30 @@ function addStationRequestDeptUnitLead() {
     });
 }
 
-    function loadStationRows() {
-        $.ajax({
-            url: 'deptunitparameter.php',
-            type: 'POST',
-            data: {
-                action: 'get_edit_station_rows',
-                requestId: $('input[name="jdrequestid"]').val()
-            },
-            success: function(response) {
-                $('#stationContainer').html(response);
-            }
-        });
+function loadStationRows() {
+    const requestId = $('input[name="jdrequestid"]').val();
+    console.log('Request ID:', requestId); // Debug line
+
+    if (!requestId) {
+        console.error('No request ID found in form');
+        return;
     }
+
+    $.ajax({
+        url: 'deptunitparameter.php',
+        type: 'POST',
+        data: {
+            action: 'get_edit_station_rows',
+            jdrequestid: requestId
+        },
+        success: function(response) {
+            $('#stationContainer').html(response);
+        },
+        error: function(xhr, status, error) {
+            console.error('Ajax error:', error);
+        }
+    });
+}
     
     function addNewStation() {
         $.ajax({
@@ -789,3 +804,86 @@ function addStationRequestDeptUnitLead() {
             }
         });
     }
+
+
+    // Add this function to handle edit button clicks
+$(document).ready(function() {
+    // Handle edit button click in the modal
+    $('#editRequestBtn').click(function() {
+        const requestId = $(this).data('requestid');
+        window.location.href = `edit_request.php?id=${requestId}`;
+    });
+});
+
+// Modify the viewDeptUnitLeadRequest function to set the request ID on the edit button
+window.viewDeptUnitLeadRequest = function(jdrequestid) {
+    $.ajax({
+        url: 'deptunitparameter.php',
+        type: 'GET',
+        data: {
+            action: 'get_deptunitlead_request_details',
+            jdrequestid: jdrequestid
+        },
+        success: function(response) {
+            $('#requestDetailsModal .modal-body').html(response);
+            
+            // Set the request ID on the edit button
+            $('#editRequestBtn')
+                .data('requestid', jdrequestid)
+                .show(); // Show the edit button
+                
+            // Show/hide edit button based on request status
+            const requestStatus = $('#requestStatus').val(); // You'll need to add this hidden input in your modal
+            if (requestStatus === 'draft') {
+                $('#editRequestBtn').show();
+                $('#submitDraftRequestBtn').show();
+            } else {
+                $('#editRequestBtn').hide();
+                $('#submitDraftRequestBtn').hide();
+            }
+            
+            $('#requestDetailsModal').modal('show');
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading request details:', error);
+            $('#requestDetailsModal .modal-body').html('<div class="alert alert-danger">Error loading request details</div>');
+        }
+    });
+};
+
+
+// Update the viewDeptUnitLeadRequest function
+window.viewDeptUnitLeadRequest = function(jdrequestid) {
+    $.ajax({
+        url: 'deptunitparameter.php',
+        type: 'GET',
+        data: {
+            action: 'get_deptunitlead_request_details',
+            jdrequestid: jdrequestid
+        },
+        success: function(response) {
+            $('#requestDetailsModal .modal-body').html(response);
+            
+            // Set the onclick attribute directly with the request ID
+            $('#editRequestBtn')
+                .attr('onclick', `editRequest('${jdrequestid}')`)
+                .show(); // Show the edit button
+            
+            // Show/hide edit button based on request status
+            const requestStatus = $('#requestStatus').val();
+            if (requestStatus === 'draft') {
+                $('#editRequestBtn').show();
+                $('#submitDraftRequestBtn').show();
+            } else {
+                $('#editRequestBtn').hide();
+                $('#submitDraftRequestBtn').hide();
+            }
+            
+            $('#requestDetailsModal').modal('show');
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading request details:', error);
+            $('#requestDetailsModal .modal-body').html('<div class="alert alert-danger">Error loading request details</div>');
+        }
+    });
+};

@@ -56,14 +56,10 @@ class HOD
     {
         try {
             $query = "
-                SELECT 
-                    sr.*,
-                    srs.station,
-                    srs.employmenttype,
-                    srs.staffperstation,
-                    srs.status as station_status
+                SELECT sr.*, srps.*, jt.*
                 FROM staffrequest sr
-                LEFT JOIN staffrequestperstation srs ON sr.jdrequestid = srs.jdrequestid
+                LEFT JOIN staffrequestperstation srps ON sr.jdrequestid = srps.jdrequestid
+                LEFT JOIN jobtitletbl jt ON sr.jdtitle = jt.jdtitle
                 WHERE sr.jdrequestid = :requestId";
 
             $stmt = $this->db->prepare($query);
@@ -71,7 +67,7 @@ class HOD
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("Error in getRequestDetails: " . $e->getMessage());
-            return [];
+            throw $e;
         }
     }
 
@@ -125,6 +121,72 @@ class HOD
             $this->db->rollBack();
             error_log("Error in updateApprovalStatus: " . $e->getMessage());
             return false;
+        }
+    }
+
+    public function updateStationStatus($requestId, $status, $comments = '')
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Update HOD approval status
+            $updateHODQuery = "
+                UPDATE approvaltbl 
+                SET status = :status,
+                    comments = :comments,
+                    dandt = CURRENT_TIMESTAMP
+                WHERE jdrequestid = :requestId 
+                AND approvallevel = 'HOD'";
+
+            $stmtHOD = $this->db->prepare($updateHODQuery);
+            $stmtHOD->execute([
+                'status' => $status,
+                'comments' => $comments,
+                'requestId' => $requestId
+            ]);
+
+            // If HOD approves, update HR status to pending
+            if ($status === 'approved') {
+                $updateHRQuery = "
+                    UPDATE approvaltbl 
+                    SET status = 'pending'
+                    WHERE jdrequestid = :requestId 
+                    AND approvallevel = 'HR'";
+
+                $stmtHR = $this->db->prepare($updateHRQuery);
+                $stmtHR->execute(['requestId' => $requestId]);
+            }
+
+            // If HOD declines, update all subsequent levels to 'draft'
+            if ($status === 'declined') {
+                $updateSubsequentQuery = "
+                    UPDATE approvaltbl 
+                    SET status = 'draft'
+                    WHERE jdrequestid = :requestId 
+                    AND approvallevel IN ('HR', 'HeadOfHR', 'CFO', 'CEO')";
+
+                $stmtSubsequent = $this->db->prepare($updateSubsequentQuery);
+                $stmtSubsequent->execute(['requestId' => $requestId]);
+            }
+
+            // Update the main staffrequest status
+            $updateMainStatus = "
+                UPDATE staffrequest 
+                SET status = :status
+                WHERE jdrequestid = :requestId";
+
+            $stmtMain = $this->db->prepare($updateMainStatus);
+            $stmtMain->execute([
+                'status' => $status,
+                'requestId' => $requestId
+            ]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error in updateStationStatus: " . $e->getMessage());
+            throw $e;
         }
     }
 }

@@ -35,6 +35,7 @@ include("../includes/footer.html");
                                 <th>Request ID</th>
                                 <th>Job Title</th>
                                 <th>Total Positions</th>
+                                <th>Dept Unit</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -49,16 +50,6 @@ include("../includes/footer.html");
 
 </main><!-- End #main -->
 
-<script src="hod.js"></script>
-<script>
-    if (document.getElementById('staffRequestTableBody')) {
-        document.addEventListener('DOMContentLoaded', loadStaffRequests);
-    }
-</script>
-<?php
-include("../includes/footer.html");
-?>
-
 <!-- Request Details Modal -->
 <div class="modal fade" id="requestDetailsModal" tabindex="-1" aria-labelledby="requestDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -67,37 +58,8 @@ include("../includes/footer.html");
                 <h5 class="modal-title" id="requestDetailsModalLabel">Request Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="request-info mb-4">
-                    <h6 class="fw-bold">Request Information</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Request ID:</strong> <span id="modal-requestid"></span></p>
-                            <p><strong>Job Title:</strong> <span id="modal-jobtitle"></span></p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Total Positions:</strong> <span id="modal-positions"></span></p>
-                            <p><strong>Status:</strong> <span id="modal-status"></span></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="station-info">
-                    <h6 class="fw-bold">Station Requests</h6>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Station</th>
-                                    <th>Employment Type</th>
-                                    <th>Staff Count</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modal-stations">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="modal-body" id="modal-content">
+                <!-- Modal content will be loaded dynamically -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -105,3 +67,44 @@ include("../includes/footer.html");
         </div>
     </div>
 </div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Inline script to ensure function is defined
+    function updateRequestStatus(requestId, status) {
+        let comments = '';
+        if (status === 'declined') {
+            comments = prompt('Please provide a reason for declining:');
+            if (comments === null) return; // User cancelled
+            if (comments.trim() === '') {
+                alert('Please provide a reason for declining.');
+                return;
+            }
+        }
+
+        $.ajax({
+            url: 'HODParameters.php',
+            type: 'POST',
+            data: {
+                action: 'updateStationStatus',
+                requestId: requestId,
+                status: status,
+                comments: comments
+            },
+            success: function(response) {
+                alert(response);
+                $('#requestDetailsModal').modal('hide');
+                loadStaffRequests(); // Reload the main table
+            },
+            error: function() {
+                alert('Failed to update status');
+            }
+        });
+    }
+</script>
+<script src="hod.js"></script>
+<?php
+include("../includes/footer.html");
+?>

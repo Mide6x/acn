@@ -97,8 +97,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'save_draft_deptunitlead':
             try {
-                $formData = $_POST['formData'];
-                $formData['status'] = 'draft';
+                // Create structured data array
+                $formData = [
+                    'jdrequestid' => $_POST['jdrequestid'],
+                    'jdtitle' => $_POST['jdtitle'],
+                    'novacpost' => $_POST['novacpost'],
+                    'deptunitcode' => $_POST['deptunitcode'],
+                    'subdeptunitcode' => $_POST['subdeptunitcode'],
+                    'createdby' => $_POST['createdby'],
+                    'status' => 'draft',
+                    'stations' => []
+                ];
+
+                // Process station data
+                $index = 0;
+                while (isset($_POST["station_$index"])) {
+                    $formData['stations'][] = [
+                        'station' => $_POST["station_$index"],
+                        'employmenttype' => $_POST["employmenttype_$index"],
+                        'staffperstation' => $_POST["staffperstation_$index"]
+                    ];
+                    $index++;
+                }
+
                 $result = $deptunit->createStaffRequest($formData);
                 echo $result ? 'success' : 'error';
             } catch (Exception $e) {
@@ -108,17 +129,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'submit_deptunitlead_request':
             try {
+                if (!isset($_POST['formData'])) {
+                    throw new Exception('No form data provided');
+                }
+
                 $formData = $_POST['formData'];
 
-                // Set status to 'pending' for submitted requests
-                $formData['status'] = 'pending';
-
-                if ($deptunit->submitStaffRequest($formData)) {
-                    echo 'success';
-                } else {
-                    echo 'Failed to submit request';
+                // Validate request ID
+                if (empty($formData['jdrequestid'])) {
+                    throw new Exception('Request ID is required');
                 }
+
+                error_log("Processing submission for request ID: " . $formData['jdrequestid']);
+
+                // Begin transaction
+                $con->beginTransaction();
+
+                // Insert into staffrequest table
+                $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby, subdeptunitcode, staffid) 
+                         VALUES (?, ?, ?, ?, 'draft', ?, ?, ?)";
+
+                $stmt = $con->prepare($query);
+                $stmt->execute([
+                    $formData['jdrequestid'],
+                    $formData['jdtitle'],
+                    $formData['novacpost'],
+                    $formData['deptunitcode'],
+                    $_SESSION['staffid'],
+                    $formData['subdeptunitcode'],
+                    $_SESSION['staffid']
+                ]);
+
+                // Insert station details
+                foreach ($formData['stations'] as $station) {
+                    $query = "INSERT INTO staffrequestperstation (jdrequestid, station, employmenttype, staffperstation, createdby) 
+                             VALUES (?, ?, ?, ?, ?)";
+
+                    $stmt = $con->prepare($query);
+                    $stmt->execute([
+                        $formData['jdrequestid'],
+                        $station['station'],
+                        $station['employmenttype'],
+                        $station['staffperstation'],
+                        $_SESSION['staffid']
+                    ]);
+                }
+
+                $con->commit();
+                echo 'success';
             } catch (Exception $e) {
+                $con->rollBack();
+                error_log("Error in submit_deptunitlead_request: " . $e->getMessage());
                 echo "Error: " . $e->getMessage();
             }
             break;
@@ -351,7 +412,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'get_edit_station_rows':
             try {
+                // Get jdrequestid from POST data
                 $requestId = $_POST['requestId'];
+
+                if (!$requestId) {
+                    throw new Exception('Request ID is required');
+                }
+
                 $stations = $deptunit->getStationDetails($requestId);
                 $output = '';
 

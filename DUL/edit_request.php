@@ -1,22 +1,19 @@
 <?php
+ob_start(); // Start output buffering
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/DUL/deptunit.php';
 
 include("../includes/header.html");
 include("../includes/sidebar.html");
 
-// Check if user is logged in and is a DeptUnitLead
-if (!isset($_SESSION['staffid']) || $_SESSION['position'] !== 'DeptUnitLead') {
-    header('Location: ../login.php');
-    exit();
-}
-
 $deptunit = new DeptUnit($con);
-$requestId = $_GET['id'] ?? '';
+$requestId = $_GET['jdrequestid'] ?? '';
 
 try {
     if (!$deptunit->isRequestEditable($requestId)) {
         $_SESSION['error'] = 'This request cannot be edited as it has already been submitted.';
+        ob_clean();
         header('Location: DeptUnitLead.php');
         exit();
     }
@@ -24,9 +21,19 @@ try {
     $requestDetails = $requestData['details'];
     $stations = $requestData['stations'];
 } catch (Exception $e) {
-    $_SESSION['error'] = $e->getMessage();
+    error_log("Error in edit_request.php: " . $e->getMessage());
+    $_SESSION['error'] = 'An error occurred while trying to load the request.';
+    ob_clean();
     header('Location: DeptUnitLead.php');
     exit();
+}
+
+// Add debugging information
+if (empty($requestId)) {
+    error_log("Request ID is missing.");
+} else {
+    error_log("Editing request with ID: " . $requestId);
+    echo "<script>console.log('Editing request with ID: " . $requestId . "');</script>";
 }
 ?>
 
