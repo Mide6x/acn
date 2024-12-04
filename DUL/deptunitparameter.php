@@ -190,27 +190,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Get request details with approval status
                 $query = "SELECT 
-                            sr.*,
-                            jt.jobdescription,
-                            jt.jobresponsibilities,
-                            jt.jobrequirements,
-                            hod.status as hod_status,
-                            hod.dandt as hod_date,
-                            hod.comments as hod_comments,
-                            COALESCE(
-                                (SELECT approvallevel 
-                                 FROM approvaltbl 
-                                 WHERE jdrequestid = sr.jdrequestid 
-                                 AND status = 'pending'
-                                 ORDER BY id ASC 
-                                 LIMIT 1),
-                                'Completed'
-                            ) as current_level
-                        FROM staffrequest sr
-                        LEFT JOIN jobtitletbl jt ON sr.jdtitle = jt.jobtitle
-                        LEFT JOIN approvaltbl hod ON sr.jdrequestid = hod.jdrequestid 
-                            AND hod.approvallevel = 'HOD'
-                        WHERE sr.jdrequestid = ?";
+                    sr.*,
+                    jt.jobdescription,
+                    jt.jobresponsibilities,
+                    jt.jobrequirements,
+                    hod.status as hod_status,
+                    hod.dandt as hod_date,
+                    hod.comments as hod_comments,
+                    COALESCE(
+                        (SELECT approvallevel 
+                         FROM approvaltbl 
+                         WHERE jdrequestid = sr.jdrequestid 
+                         AND status IN ('pending', 'draft')  -- Include 'draft' explicitly
+                         ORDER BY id ASC 
+                         LIMIT 1),
+                        'Completed'
+                    ) as current_level
+                FROM staffrequest sr
+                LEFT JOIN jobtitletbl jt ON sr.jdtitle = jt.jobtitle
+                LEFT JOIN approvaltbl hod ON sr.jdrequestid = hod.jdrequestid 
+                    AND hod.approvallevel = 'HOD'
+                WHERE sr.jdrequestid = ?";
 
                 // Use the DeptUnit class method to get request details
                 $requestDetails = $deptunit->getRequestDetails($requestId);
@@ -295,14 +295,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stageClass = 'completed';
                     } elseif ($status == 'pending') {
                         $stageClass = 'current';
+                    } elseif ($status == 'declined') {
+                        $stageClass = 'declined';
                     }
+                    $dotClass = ($status === 'declined') ? 'timeline-dot declined' : (($status === 'draft') ? 'timeline-dot draft' : 'timeline-dot');
 
                     $output .= "<div class='timeline-item {$stageClass}'>
-                            <div class='timeline-dot' data-bs-toggle='tooltip' 
-                                 title='Status: " . ucfirst($status) . "&#013;Date: {$date}&#013;Comments: {$comments}'>
-                            </div>
-                            <div class='timeline-label'>{$stage}</div>
-                          </div>";
+                        <div class='timeline-dot {$dotClass}' data-bs-toggle='tooltip' 
+                             title='Status: " . ucfirst($status) . "&#013;Date: {$date}&#013;Comments: {$comments}'>
+                        </div>
+                        <div class='timeline-label'>{$stage}</div>
+                      </div>";
 
                     if ($index < count($approvalStages) - 1) {
                         $output .= "<div class='timeline-line " . ($status == 'approved' ? 'completed' : '') . "'></div>";

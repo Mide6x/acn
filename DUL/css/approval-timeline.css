@@ -122,4 +122,13 @@
 .decline-reason-input .btn {
     margin-left: 5px;
     border-radius: 4px !important;
+}
+.timeline-dot.declined {
+    background-color: #dc3545; /* Bootstrap's red color */
+    border-color: #dc3545;
 } 
+.timeline-dot.draft {
+    background-color: #ffc107; /* Amber for draft */
+    border: 1px solid #ffc107;
+}
+

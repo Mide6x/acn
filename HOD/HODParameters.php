@@ -2,6 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
 require_once 'HODClass.php';
 
+
 $hod = new HOD($con);
 
 if (isset($_POST['action'])) {
@@ -36,21 +37,19 @@ if (isset($_POST['action'])) {
             break;
 
         case 'getRequestDetails':
-            try {
-                $jdrequestid = $_POST['jdrequestid'];
-                $details = $hod->getRequestDetails($jdrequestid);
 
-                if (!empty($details)) {
-                    $request = $details[0];
-                    echo "<p><strong>Request ID:</strong> {$request['jdrequestid']}</p>
+            $jdrequestid = $_POST['requestId'];
+            $details = $hod->getRequestDetails($jdrequestid);
+
+            if (!empty($details)) {
+                $request = $details[0];
+                $output = "<p><strong>Request ID:</strong> {$request['jdrequestid']}</p>
                           <p><strong>Job Title:</strong> {$request['jdtitle']}</p>
                           <p><strong>Status:</strong> {$request['status']}</p>";
-                    // Add more details as needed
-                } else {
-                    echo "<p>No details found for this request.</p>";
-                }
-            } catch (Exception $e) {
-                echo "<p>Error: {$e->getMessage()}</p>";
+
+                echo $output;
+            } else {
+                echo "<p>No details found for this request.</p>";
             }
             break;
 
@@ -130,15 +129,6 @@ if (isset($_POST['action'])) {
             }
             break;
 
-        case 'getMyRequests':
-            try {
-                $staffid = $_SESSION['staffid'];
-                $requests = $hod->getMyRequests($staffid);
-                echo json_encode($requests);
-            } catch (Exception $e) {
-                echo json_encode([]);
-            }
-            break;
 
         case 'getHODRequests':
             try {
@@ -181,22 +171,107 @@ if (isset($_POST['action'])) {
         case 'getJobDetails':
             try {
                 $jdtitle = $_POST['jdtitle'];
+                $requestId = $_POST['requestId'] ?? null;
+
+                // Get job details
                 $details = $hod->getJobDetails($jdtitle);
 
+                // Get approval workflow if requestId is provided
+                $approvals = $requestId ? $hod->getApprovalWorkflow($requestId) : [];
+
+                // Get request status if requestId is provided
+                $requestStatus = $requestId ? $hod->getRequestStatus($requestId) : 'unknown';
+
                 if ($details) {
-                    echo "<div class='job-details'>
-                            <h5>Job Title: {$details['jdtitle']}</h5>
-                            <p><strong>Description:</strong> {$details['jddescription']}</p>
-                            <p><strong>Educational Qualification:</strong> {$details['eduqualification']}</p>
-                            <p><strong>Professional Qualification:</strong> {$details['proqualification']}</p>
-                            <p><strong>Work Relations:</strong> {$details['workrelation']}</p>
-                            <p><strong>Position Level:</strong> {$details['jdposition']}</p>
-                            <p><strong>Age Bracket:</strong> {$details['agebracket']}</p>
-                            <p><strong>Person Specification:</strong> {$details['personspec']}</p>
-                            <p><strong>Technical Requirements:</strong> {$details['fuctiontech']}</p>
-                            <p><strong>Managerial Requirements:</strong> {$details['managerial']}</p>
-                            <p><strong>Behavioral Requirements:</strong> {$details['behavioural']}</p>
-                          </div>";
+                    $output = "<input type='hidden' id='requestStatus' value='{$requestStatus}'>";
+                    $output .= "<div class='row mb-3'>
+                            <div class='col-md-6'>
+                                <h6>Job Details</h6>
+                                <p><strong>Job Title:</strong> {$details['jdtitle']}</p>
+                                <p><strong>Description:</strong> {$details['jddescription']}</p>
+                                <p><strong>Educational Qualification:</strong> {$details['eduqualification']}</p>
+                                <p><strong>Professional Qualification:</strong> {$details['proqualification']}</p>
+                                <p><strong>Work Relations:</strong> {$details['workrelation']}</p>
+                                <p><strong>Position Level:</strong> {$details['jdposition']}</p>
+                            </div>
+                            <div class='col-md-6'>
+                                <h6>Additional Requirements</h6>
+                                <p><strong>Age Bracket:</strong> {$details['agebracket']}</p>
+                                <p><strong>Person Specification:</strong> {$details['personspec']}</p>
+                                <p><strong>Technical Requirements:</strong> {$details['fuctiontech']}</p>
+                                <p><strong>Managerial Requirements:</strong> {$details['managerial']}</p>
+                                <p><strong>Behavioral Requirements:</strong> {$details['behavioural']}</p>
+                            </div>
+                        </div>";
+
+                    // Add Approval Workflow if approvals exist
+                    if (!empty($approvals)) {
+                        $output .= "<div class='row mb-3'>
+                                <div class='col-12'>
+                                    <h6>Approval Workflow</h6>
+                                    <div class='approval-timeline'>
+                                        <div class='timeline-wrapper'>";
+
+                        $approvalStages = ['HR', 'HeadOfHR', 'CFO', 'CEO'];
+                        foreach ($approvalStages as $index => $stage) {
+                            $status = isset($approvals[$stage]) ? $approvals[$stage]['status'] : 'draft';
+                            $date = isset($approvals[$stage]['date']) ? date('Y-m-d', strtotime($approvals[$stage]['date'])) : '-';
+                            $comments = isset($approvals[$stage]['comments']) ? $approvals[$stage]['comments'] : '-';
+
+                            // Determine the dot class based on status
+                            $dotClass = match ($status) {
+                                'approved' => 'timeline-dot completed',
+                                'declined' => 'timeline-dot declined',
+                                'pending' => 'timeline-dot current',
+                                default => 'timeline-dot draft'
+                            };
+
+                            $output .= "<div class='timeline-item'>
+                                <div class='{$dotClass}' data-bs-toggle='tooltip' 
+                                     title='Status: " . ucfirst($status) . "&#013;Date: {$date}&#013;Comments: {$comments}'>
+                                </div>
+                                <div class='timeline-label'>{$stage}</div>
+                            </div>";
+
+                            // Add connecting line if not the last item
+                            if ($index < count($approvalStages) - 1) {
+                                $lineClass = $status === 'approved' ? 'timeline-line completed' : 'timeline-line';
+                                $output .= "<div class='{$lineClass}'></div>";
+                            }
+                        }
+
+                        $output .= "</div></div></div>";
+                    }
+
+                    // Load station details using the provided method
+                    $stationDetails = $hod->getRequestDetails($requestId);
+                    if (!empty($stationDetails)) {
+                        $output .= "<div class='row'>
+                            <div class='col-12'>
+                                <h6>Station Details</h6>
+                                <table class='table table-bordered'>
+                                    <thead>
+                                        <tr>
+                                            <th>Station</th>
+                                            <th>Employment Type</th>
+                                            <th>Staff Count</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>";
+
+                        foreach ($stationDetails as $station) {
+                            $output .= "<tr>
+                                <td>{$station['station']}</td>
+                                <td>{$station['employmenttype']}</td>
+                                <td>{$station['staffperstation']}</td>
+                            </tr>";
+                        }
+                        $output .= "</tbody></table></div></div>";
+                    } else {
+                        $output .= "<div class='row'><div class='col-12'><p class='text-center'>No station details found.</p></div></div>";
+                    }
+
+                    echo $output;
                 } else {
                     echo "<p>No job details found.</p>";
                 }
@@ -217,18 +292,33 @@ if (isset($_POST['action'])) {
                 $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 if (!empty($stations)) {
+                    $output = "<div class='row'>
+                        <div class='col-12'>
+                            <h6>Station Details</h6>
+                            <table class='table table-bordered'>
+                                <thead>
+                                    <tr>
+                                        <th>Station</th>
+                                        <th>Employment Type</th>
+                                        <th>Staff Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>";
+
                     foreach ($stations as $station) {
-                        echo "<tr>
-                                <td>{$station['station']}</td>
-                                <td>{$station['employmenttype']}</td>
-                                <td>{$station['staffperstation']}</td>
-                              </tr>";
+                        $output .= "<tr>
+                            <td>{$station['station']}</td>
+                            <td>{$station['employmenttype']}</td>
+                            <td>{$station['staffperstation']}</td>
+                        </tr>";
                     }
+                    $output .= "</tbody></table></div></div>";
+                    echo $output;
                 } else {
-                    echo "<tr><td colspan='3' class='text-center'>No station details found.</td></tr>";
+                    echo "<div class='row'><div class='col-12'><p class='text-center'>No station details found.</p></div></div>";
                 }
             } catch (Exception $e) {
-                echo "<tr><td colspan='3' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
+                echo "<div class='row'><div class='col-12'><p class='text-center text-danger'>Error: {$e->getMessage()}</p></div></div>";
             }
             break;
 
@@ -265,6 +355,41 @@ if (isset($_POST['action'])) {
                 echo "Error: " . $e->getMessage();
             }
             break;
+
+        case 'submitDraftRequest':
+            try {
+                $requestId = $_POST['requestId'];
+
+                // Verify that this request belongs to the current HOD
+                $verifyQuery = "SELECT staffid FROM staffrequest WHERE jdrequestid = :requestId";
+                $stmt = $con->prepare($verifyQuery);
+                $stmt->execute(['requestId' => $requestId]);
+                $request = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($request && $request['staffid'] === CURRENT_USER['staffid']) {
+                    $hod->submitHODRequest($requestId);
+                    echo "Request submitted successfully. HR will be notified for review.";
+                } else {
+                    throw new Exception("Unauthorized access or invalid request.");
+                }
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
+
+        case 'checkRequestStatus':
+            try {
+                $requestId = $_POST['requestId'];
+                $query = "SELECT status FROM staffrequest WHERE jdrequestid = :requestId";
+                $stmt = $con->prepare($query);
+                $stmt->execute(['requestId' => $requestId]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                echo $result['status'];
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
+
 
         case 'getHODDepartmentRequests':
             try {

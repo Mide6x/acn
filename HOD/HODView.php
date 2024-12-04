@@ -8,6 +8,9 @@ include("../includes/sidebar.html");
 include("../includes/footer.html");
 
 ?>
+<style>
+    <?php include("css/approval-timeline.css"); ?>
+</style>
 <main id="main" class="main">
     <section class="section">
         <div class="row mb-4">
@@ -109,62 +112,6 @@ include("../includes/footer.html");
                         <!-- Station details will be loaded here -->
                     </tbody>
                 </table>
-                <h6>Approval Tracker</h6>
-                <div class="approval-tracker">
-                    <div class="tracker-step">HOD</div>
-                    <div class="tracker-line"></div>
-                    <div class="tracker-step">HR</div>
-                    <div class="tracker-line"></div>
-                    <div class="tracker-step">Head of HR</div>
-                    <div class="tracker-line"></div>
-                    <div class="tracker-step">CFO</div>
-                    <div class="tracker-line"></div>
-                    <div class="tracker-step">CEO</div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="editRequestBtn" onclick="editRequest()">Edit</button>
-                <button type="button" class="btn btn-success" id="submitRequestBtn" onclick="submitRequest($(this).data('requestId'))">Submit</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-    .approval-tracker {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-top: 20px;
-    }
-
-    .tracker-step {
-        width: 20px;
-        height: 20px;
-        background-color: #fc7f14;
-        border-radius: 50%;
-        position: relative;
-    }
-
-    .tracker-line {
-        flex-grow: 1;
-        height: 2px;
-        background-color: #fc7f14;
-    }
-</style>
-
-<!-- Modal for Viewing Details -->
-<div id="detailsModal" class="modal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Request Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Job details will be loaded here -->
-                <div id="jobDetails"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -172,6 +119,8 @@ include("../includes/footer.html");
         </div>
     </div>
 </div>
+
+
 
 <!-- Department Request Details Modal -->
 <div class="modal fade" id="departmentRequestModal" tabindex="-1" aria-labelledby="departmentRequestModalLabel" aria-hidden="true">
@@ -188,6 +137,30 @@ include("../includes/footer.html");
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-danger" id="declineBtn" onclick="declineDepartmentRequest($(this).data('requestId'))">Decline</button>
                 <button type="button" class="btn btn-success" id="approveBtn" onclick="approveDepartmentRequest($(this).data('requestId'))">Approve</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Job Details Modal -->
+<div class="modal fade" id="jobDetailsModal" tabindex="-1" aria-labelledby="jobDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="jobDetailsModalLabel">Job Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="editRequestBtn" style="display: none;">
+                    Edit Request
+                </button>
+                <button type="button" class="btn btn-success" id="submitDraftRequestBtn" style="display: none;">
+                    Submit Request
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

@@ -194,28 +194,37 @@ function loadHODRequests() {
 }
 
 function viewJobDetails(jdtitle, requestId) {
-    console.log('ViewJobDetails - RequestID:', requestId); // Debug log
     $.ajax({
         url: 'HODParameters.php',
         type: 'POST',
         data: {
             action: 'getJobDetails',
-            jdtitle: jdtitle
+            jdtitle: jdtitle,
+            requestId: requestId
         },
         success: function(response) {
-            $('#jobDetails').html(response);
-            loadStationDetails(jdtitle);
+            $('#jobDetailsModal .modal-body').html(response);
             
-            // Store the requestId for the submit button
-            $('#submitRequestBtn').data('requestId', requestId);
+            // Check if request is in draft status
+            const requestStatus = $('#requestStatus').val();
+            if (requestStatus === 'draft') {
+                $('#editRequestBtn').show().attr('data-requestid', requestId);
+                $('#submitDraftRequestBtn').show().attr('data-requestid', requestId);
+            } else {
+                $('#editRequestBtn').hide();
+                $('#submitDraftRequestBtn').hide();
+            }
             
-            // Check status and show/hide buttons
-            checkRequestStatus(requestId);
+            $('#jobDetailsModal').modal('show');
             
-            $('#requestDetailsModal').modal('show');
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
         },
-        error: function() {
-            alert('Failed to load job details.');
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
         }
     });
 }
@@ -371,3 +380,41 @@ function declineDepartmentRequest(requestId) {
         });
     }
 }
+
+// Add event listeners for the buttons
+$(document).ready(function() {
+    // Edit button click handler
+    $('#editRequestBtn').click(function() {
+        const requestId = $(this).attr('data-requestid');
+        window.location.href = `edit_request.php?requestId=${requestId}`;
+    });
+
+    // Submit draft request button click handler
+    $('#submitDraftRequestBtn').click(function() {
+        const requestId = $(this).attr('data-requestid');
+        if (confirm('Are you sure you want to submit this request? Once submitted, it cannot be edited.')) {
+            $.ajax({
+                url: 'HODParameters.php',
+                type: 'POST',
+                data: {
+                    action: 'submitDraftRequest',
+                    requestId: requestId
+                },
+                success: function(response) {
+                    if (response.includes('success')) {
+                        alert('Request submitted successfully');
+                        $('#jobDetailsModal').modal('hide');
+                        // Refresh the requests list
+                        loadRequests();
+                    } else {
+                        alert('Error: ' + response);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                    alert('Error submitting request');
+                }
+            });
+        }
+    });
+});

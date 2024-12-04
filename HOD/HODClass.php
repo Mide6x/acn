@@ -7,6 +7,29 @@ class HOD
     {
         $this->db = $con;
     }
+    public function getApprovallevelbyjdrequestid($jdrequestid)
+    {
+        $approvalStages = ['HOD', 'HR', 'HeadOfHR', 'CFO', 'CEO'];
+        $query = "SELECT approvallevel, status, dandt, comments 
+                  FROM approvaltbl 
+                  WHERE jdrequestid = ? 
+                  AND approvallevel IN ('" . implode("','", $approvalStages) . "')";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$jdrequestid]);
+        $approvals = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $approvalStatuses = [];
+        foreach ($approvals as $approval) {
+            $approvalStatuses[$approval['approvallevel']] = [
+                'status' => $approval['status'],
+                'date' => $approval['dandt'],
+                'comments' => $approval['comments']
+            ];
+        }
+        return $approvalStatuses;
+    }
+
+
     public function generateRequestId()
     {
         try {
@@ -108,8 +131,20 @@ class HOD
                 WHERE sr.jdrequestid = :requestId";
 
             $stmt = $this->db->prepare($query);
+            if (!$stmt) {
+                error_log("Prepare failed: " . print_r($this->db->errorInfo(), true));
+                return [];
+            }
+
             $stmt->execute(['requestId' => $requestId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($result)) {
+                error_log("No details found for request ID: " . $requestId);
+                return [];
+            }
+
+            return $result;
         } catch (Exception $e) {
             error_log("Error in getRequestDetails: " . $e->getMessage());
             throw $e;
@@ -570,6 +605,47 @@ class HOD
         } catch (Exception $e) {
             $this->db->rollBack();
             error_log("Error in declineHODDepartmentRequest: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getApprovalWorkflow($requestId)
+    {
+        try {
+            $query = "SELECT approvallevel, status, dandt, comments 
+                      FROM approvaltbl 
+                      WHERE jdrequestid = :requestId 
+                      ORDER BY FIELD(approvallevel, 'HR', 'HeadOfHR', 'CFO', 'CEO')";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['requestId' => $requestId]);
+
+            $approvals = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $approvals[$row['approvallevel']] = [
+                    'status' => $row['status'],
+                    'date' => $row['dandt'],
+                    'comments' => $row['comments']
+                ];
+            }
+
+            return $approvals;
+        } catch (Exception $e) {
+            error_log("Error in getApprovalWorkflow: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getRequestStatus($requestId)
+    {
+        try {
+            $query = "SELECT status FROM staffrequest WHERE jdrequestid = :requestId";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['requestId' => $requestId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['status'] : null;
+        } catch (Exception $e) {
+            error_log("Error in getRequestStatus: " . $e->getMessage());
             throw $e;
         }
     }

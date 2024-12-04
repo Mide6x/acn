@@ -75,7 +75,8 @@ echo "<!-- " . htmlspecialchars($jobTitles) . " -->";
                                     onmouseout="this.style.backgroundColor='#fc7f14';">Save as Draft
                                 </button>
                                 <button type="button" class="btn btn-primary"
-                                    onclick="return submitHODstaffrequest()"
+                                    id="submitRequestBtn"
+                                    onclick="submitRequest('<?php echo $jdrequestid; ?>')"
                                     style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
                                     onmouseover="this.style.backgroundColor='#000000';"
                                     onmouseout="this.style.backgroundColor='#fc7f14';">Submit Request
