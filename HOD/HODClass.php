@@ -380,7 +380,7 @@ class HOD
                       FROM staffrequest sr
                       LEFT JOIN staffrequestperstation srs ON sr.jdrequestid = srs.jdrequestid
                       WHERE sr.staffid = :staffid
-                      GROUP BY sr.jdrequestid
+                      GROUP BY sr.jdrequestid, sr.status
                       ORDER BY sr.dandt DESC";
 
             $stmt = $this->db->prepare($query);
@@ -402,6 +402,175 @@ class HOD
         } catch (Exception $e) {
             error_log("Error in getJobDetails: " . $e->getMessage());
             return null;
+        }
+    }
+
+    public function submitHODRequest($requestId)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Update staffrequest status
+            $requestQuery = "UPDATE staffrequest 
+                            SET status = 'pending' 
+                            WHERE jdrequestid = :requestId 
+                            AND status = 'draft'";
+
+            $stmt = $this->db->prepare($requestQuery);
+            $stmt->execute(['requestId' => $requestId]);
+
+            // Update staffrequestperstation status
+            $stationQuery = "UPDATE staffrequestperstation 
+                            SET status = 'pending' 
+                            WHERE jdrequestid = :requestId 
+                            AND status = 'draft'";
+
+            $stmt = $this->db->prepare($stationQuery);
+            $stmt->execute(['requestId' => $requestId]);
+
+            // Update approval table - set HR level to pending
+            $approvalQuery = "UPDATE approvaltbl 
+                             SET status = 'pending' 
+                             WHERE jdrequestid = :requestId 
+                             AND approvallevel = 'HR' 
+                             AND status = 'draft'";
+
+            $stmt = $this->db->prepare($approvalQuery);
+            $stmt->execute(['requestId' => $requestId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error in submitHODRequest: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getHODDepartmentRequests($deptCode)
+    {
+        try {
+            $query = "SELECT sr.jdrequestid, sr.jdtitle, sr.status as request_status, 
+                             sr.dandt as request_date, sr.novacpost,
+                             du.deptunitname, du.deptcode,
+                             GROUP_CONCAT(DISTINCT srs.station) as stations,
+                             GROUP_CONCAT(DISTINCT srs.staffperstation) as staff_counts,
+                             GROUP_CONCAT(DISTINCT srs.employmenttype) as employment_types,
+                             GROUP_CONCAT(DISTINCT srs.status) as station_statuses,
+                             a.status as approval_status
+                      FROM staffrequest sr
+                      JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode
+                      LEFT JOIN staffrequestperstation srs ON sr.jdrequestid = srs.jdrequestid
+                      JOIN approvaltbl a ON sr.jdrequestid = a.jdrequestid
+                      WHERE du.deptcode = :deptCode
+                      AND a.approvallevel = 'HOD'
+                      AND a.status = 'pending'
+                      GROUP BY sr.jdrequestid
+                      ORDER BY sr.dandt DESC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['deptCode' => $deptCode]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getHODDepartmentRequests: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getDepartmentRequestDetails($requestId)
+    {
+        try {
+            $query = "SELECT sr.*, jt.*, du.deptunitname,
+                             GROUP_CONCAT(srs.station) as stations,
+                             GROUP_CONCAT(srs.employmenttype) as employment_types,
+                             GROUP_CONCAT(srs.staffperstation) as staff_counts
+                      FROM staffrequest sr
+                      LEFT JOIN staffrequestperstation srs ON sr.jdrequestid = srs.jdrequestid
+                      LEFT JOIN jobtitletbl jt ON sr.jdtitle = jt.jdtitle
+                      LEFT JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode
+                      WHERE sr.jdrequestid = :requestId
+                      GROUP BY sr.jdrequestid";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['requestId' => $requestId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getDepartmentRequestDetails: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function approveHODDepartmentRequest($requestId, $comments = '')
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Update HOD approval status
+            $hodQuery = "UPDATE approvaltbl 
+                         SET status = 'approved',
+                             comments = :comments,
+                             dandt = CURRENT_TIMESTAMP
+                         WHERE jdrequestid = :requestId 
+                         AND approvallevel = 'HOD'";
+
+            $stmt = $this->db->prepare($hodQuery);
+            $stmt->execute([
+                'comments' => $comments,
+                'requestId' => $requestId
+            ]);
+
+            // Update HR status to pending
+            $hrQuery = "UPDATE approvaltbl 
+                        SET status = 'pending'
+                        WHERE jdrequestid = :requestId 
+                        AND approvallevel = 'HR'";
+
+            $stmt = $this->db->prepare($hrQuery);
+            $stmt->execute(['requestId' => $requestId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error in approveHODDepartmentRequest: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function declineHODDepartmentRequest($requestId, $comments)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Update HOD approval status
+            $hodQuery = "UPDATE approvaltbl 
+                         SET status = 'declined',
+                             comments = :comments,
+                             dandt = CURRENT_TIMESTAMP
+                         WHERE jdrequestid = :requestId 
+                         AND approvallevel = 'HOD'";
+
+            $stmt = $this->db->prepare($hodQuery);
+            $stmt->execute([
+                'comments' => $comments,
+                'requestId' => $requestId
+            ]);
+
+            // Set subsequent approval levels to draft
+            $updateQuery = "UPDATE approvaltbl 
+                           SET status = 'draft'
+                           WHERE jdrequestid = :requestId 
+                           AND approvallevel IN ('HR', 'HeadOfHR', 'CFO', 'CEO')";
+
+            $stmt = $this->db->prepare($updateQuery);
+            $stmt->execute(['requestId' => $requestId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error in declineHODDepartmentRequest: " . $e->getMessage());
+            throw $e;
         }
     }
 }

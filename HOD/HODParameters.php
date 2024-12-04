@@ -167,7 +167,7 @@ if (isset($_POST['action'])) {
                             <td>" . implode(', ', $stationDetails) . "</td>
                             <td><span class='badge " . getBadgeClass($request['status']) . "'>{$request['status']}</span></td>
                             <td>
-                                <button class='btn btn-sm btn-info' onclick='viewJobDetails(\"{$request['jdtitle']}\")'>
+                                <button class='btn btn-sm btn-info' onclick='viewJobDetails(\"{$request['jdtitle']}\", \"{$request['jdrequestid']}\")'>
                                     View Details
                                 </button>
                             </td>
@@ -199,6 +199,181 @@ if (isset($_POST['action'])) {
                           </div>";
                 } else {
                     echo "<p>No job details found.</p>";
+                }
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
+
+        case 'getStationDetails':
+            try {
+                $jdtitle = $_POST['jdtitle'];
+                $query = "SELECT srs.station, srs.employmenttype, srs.staffperstation
+                          FROM staffrequestperstation srs
+                          JOIN staffrequest sr ON srs.jdrequestid = sr.jdrequestid
+                          WHERE sr.jdtitle = :jdtitle";
+                $stmt = $con->prepare($query);
+                $stmt->execute(['jdtitle' => $jdtitle]);
+                $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (!empty($stations)) {
+                    foreach ($stations as $station) {
+                        echo "<tr>
+                                <td>{$station['station']}</td>
+                                <td>{$station['employmenttype']}</td>
+                                <td>{$station['staffperstation']}</td>
+                              </tr>";
+                    }
+                } else {
+                    echo "<tr><td colspan='3' class='text-center'>No station details found.</td></tr>";
+                }
+            } catch (Exception $e) {
+                echo "<tr><td colspan='3' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
+            }
+            break;
+
+        case 'submitRequest':
+            try {
+                $requestId = $_POST['requestId'];
+
+                // Verify that this request belongs to the current HOD
+                $verifyQuery = "SELECT staffid FROM staffrequest WHERE jdrequestid = :requestId";
+                $stmt = $con->prepare($verifyQuery);
+                $stmt->execute(['requestId' => $requestId]);
+                $request = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($request && $request['staffid'] === CURRENT_USER['staffid']) {
+                    $hod->submitHODRequest($requestId);
+                    echo "Request submitted successfully. HR will be notified for review.";
+                } else {
+                    throw new Exception("Unauthorized access or invalid request.");
+                }
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
+
+        case 'checkRequestStatus':
+            try {
+                $requestId = $_POST['requestId'];
+                $query = "SELECT status FROM staffrequest WHERE jdrequestid = :requestId";
+                $stmt = $con->prepare($query);
+                $stmt->execute(['requestId' => $requestId]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                echo $result['status'];
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
+
+        case 'getHODDepartmentRequests':
+            try {
+                $deptCode = CURRENT_USER['departmentcode'];
+                $requests = $hod->getHODDepartmentRequests($deptCode);
+
+                if (empty($requests)) {
+                    echo "<tr><td colspan='6' class='text-center'>No pending requests found</td></tr>";
+                    return;
+                }
+
+                foreach ($requests as $request) {
+                    echo "<tr>
+                            <td>{$request['jdrequestid']}</td>
+                            <td>{$request['jdtitle']}</td>
+                            <td>{$request['novacpost']}</td>
+                            <td>{$request['deptunitname']}</td>
+                            <td><span class='badge " . getBadgeClass($request['approval_status']) . "'>{$request['approval_status']}</span></td>
+                            <td>
+                                <button class='btn btn-sm btn-info' onclick='viewDepartmentRequestDetails(\"{$request['jdrequestid']}\")'>
+                                    View Details
+                                </button>
+                            </td>
+                        </tr>";
+                }
+            } catch (Exception $e) {
+                echo "<tr><td colspan='6' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
+            }
+            break;
+
+        case 'getDepartmentRequestDetails':
+            try {
+                $requestId = $_POST['requestId'];
+                $details = $hod->getDepartmentRequestDetails($requestId);
+
+                if ($details) {
+                    $output = "<div class='job-details'>
+                                <h5>Request Details</h5>
+                                <p><strong>Request ID:</strong> {$details['jdrequestid']}</p>
+                                <p><strong>Job Title:</strong> {$details['jdtitle']}</p>
+                                <p><strong>Department Unit:</strong> {$details['deptunitname']}</p>
+                                <p><strong>Total Positions:</strong> {$details['novacpost']}</p>
+                                <p><strong>Description:</strong> {$details['jddescription']}</p>
+                                <p><strong>Educational Qualification:</strong> {$details['eduqualification']}</p>
+                                <p><strong>Professional Qualification:</strong> {$details['proqualification']}</p>
+                              </div>
+                              <div class='station-details mt-4'>
+                                <h5>Station Details</h5>
+                                <table class='table table-bordered'>
+                                    <thead>
+                                        <tr>
+                                            <th>Station</th>
+                                            <th>Employment Type</th>
+                                            <th>Staff Count</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>";
+
+                    $stations = explode(',', $details['stations']);
+                    $types = explode(',', $details['employment_types']);
+                    $counts = explode(',', $details['staff_counts']);
+
+                    for ($i = 0; $i < count($stations); $i++) {
+                        $output .= "<tr>
+                                    <td>{$stations[$i]}</td>
+                                    <td>{$types[$i]}</td>
+                                    <td>{$counts[$i]}</td>
+                                   </tr>";
+                    }
+
+                    $output .= "</tbody></table></div>";
+                    echo $output;
+                } else {
+                    echo "<p>No details found for this request.</p>";
+                }
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
+
+        case 'approveHODDepartmentRequest':
+            try {
+                $requestId = $_POST['requestId'];
+                $comments = $_POST['comments'] ?? '';
+
+                if ($hod->approveHODDepartmentRequest($requestId, $comments)) {
+                    echo "Request approved successfully.";
+                } else {
+                    echo "Failed to approve request.";
+                }
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage();
+            }
+            break;
+
+        case 'declineHODDepartmentRequest':
+            try {
+                $requestId = $_POST['requestId'];
+                $comments = $_POST['comments'] ?? '';
+
+                if (empty($comments)) {
+                    echo "Please provide a reason for declining.";
+                    return;
+                }
+
+                if ($hod->declineHODDepartmentRequest($requestId, $comments)) {
+                    echo "Request declined successfully.";
+                } else {
+                    echo "Failed to decline request.";
                 }
             } catch (Exception $e) {
                 echo "Error: " . $e->getMessage();

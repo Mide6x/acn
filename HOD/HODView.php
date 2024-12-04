@@ -95,13 +95,64 @@ include("../includes/footer.html");
             </div>
             <div class="modal-body" id="modal-content">
                 <!-- Modal content will be loaded dynamically -->
+                <div id="jobDetails"></div>
+                <h6>Stations</h6>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Station</th>
+                            <th>Employment Type</th>
+                            <th>Staff Per Station</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stationDetails">
+                        <!-- Station details will be loaded here -->
+                    </tbody>
+                </table>
+                <h6>Approval Tracker</h6>
+                <div class="approval-tracker">
+                    <div class="tracker-step">HOD</div>
+                    <div class="tracker-line"></div>
+                    <div class="tracker-step">HR</div>
+                    <div class="tracker-line"></div>
+                    <div class="tracker-step">Head of HR</div>
+                    <div class="tracker-line"></div>
+                    <div class="tracker-step">CFO</div>
+                    <div class="tracker-line"></div>
+                    <div class="tracker-step">CEO</div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="editRequestBtn" onclick="editRequest()">Edit</button>
+                <button type="button" class="btn btn-success" id="submitRequestBtn" onclick="submitRequest($(this).data('requestId'))">Submit</button>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .approval-tracker {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+
+    .tracker-step {
+        width: 20px;
+        height: 20px;
+        background-color: #fc7f14;
+        border-radius: 50%;
+        position: relative;
+    }
+
+    .tracker-line {
+        flex-grow: 1;
+        height: 2px;
+        background-color: #fc7f14;
+    }
+</style>
 
 <!-- Modal for Viewing Details -->
 <div id="detailsModal" class="modal" tabindex="-1">
@@ -117,6 +168,26 @@ include("../includes/footer.html");
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Department Request Details Modal -->
+<div class="modal fade" id="departmentRequestModal" tabindex="-1" aria-labelledby="departmentRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="departmentRequestModalLabel">Department Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="departmentRequestDetails"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="declineBtn" onclick="declineDepartmentRequest($(this).data('requestId'))">Decline</button>
+                <button type="button" class="btn btn-success" id="approveBtn" onclick="approveDepartmentRequest($(this).data('requestId'))">Approve</button>
             </div>
         </div>
     </div>

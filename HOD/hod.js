@@ -73,6 +73,7 @@ $(document).ready(function() {
     });
     loadMyRequests();
     loadHODRequests();
+    loadDepartmentRequests();
 });
 
 function addStationRequestHOD() {
@@ -192,7 +193,8 @@ function loadHODRequests() {
     });
 }
 
-function viewJobDetails(jdtitle) {
+function viewJobDetails(jdtitle, requestId) {
+    console.log('ViewJobDetails - RequestID:', requestId); // Debug log
     $.ajax({
         url: 'HODParameters.php',
         type: 'POST',
@@ -202,10 +204,170 @@ function viewJobDetails(jdtitle) {
         },
         success: function(response) {
             $('#jobDetails').html(response);
-            $('#detailsModal').modal('show');
+            loadStationDetails(jdtitle);
+            
+            // Store the requestId for the submit button
+            $('#submitRequestBtn').data('requestId', requestId);
+            
+            // Check status and show/hide buttons
+            checkRequestStatus(requestId);
+            
+            $('#requestDetailsModal').modal('show');
         },
         error: function() {
             alert('Failed to load job details.');
         }
     });
+}
+
+function loadStationDetails(jdtitle) {
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: {
+            action: 'getStationDetails',
+            jdtitle: jdtitle
+        },
+        success: function(response) {
+            console.log('Station Details Response:', response); // Debug log
+            $('#stationDetails').html(response);
+            $('#requestDetailsModal').modal('show'); // Ensure modal is shown after loading data
+        },
+        error: function() {
+            alert('Failed to load station details.');
+        }
+    });
+}
+
+function editRequest() {
+    // Implement edit functionality
+    alert('Edit functionality to be implemented.');
+}
+
+function submitRequest(requestId) {
+    if (confirm('Are you sure you want to submit this request? Once submitted, it cannot be edited.')) {
+        $.ajax({
+            url: 'HODParameters.php',
+            type: 'POST',
+            data: {
+                action: 'submitRequest',
+                requestId: requestId
+            },
+            success: function(response) {
+                alert(response);
+                $('#requestDetailsModal').modal('hide');
+                loadHODRequests(); // Reload the requests table
+            },
+            error: function() {
+                alert('Failed to submit request.');
+            }
+        });
+    }
+}
+
+function checkRequestStatus(requestId) {
+    console.log('CheckRequestStatus - RequestID:', requestId); // Debug log
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: {
+            action: 'checkRequestStatus',
+            requestId: requestId
+        },
+        success: function(response) {
+            console.log('Status Response:', response); // Debug log
+            if (response === 'draft') {
+                console.log('Showing buttons'); // Debug log
+                $('#submitRequestBtn').show();
+                $('#editRequestBtn').show();
+            } else {
+                console.log('Hiding buttons'); // Debug log
+                $('#submitRequestBtn').hide();
+                $('#editRequestBtn').hide();
+            }
+        }
+    });
+}
+
+function loadDepartmentRequests() {
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: {
+            action: 'getHODDepartmentRequests'
+        },
+        success: function(response) {
+            $('#staffRequestTableBody').html(response);
+        },
+        error: function() {
+            alert('Failed to load department requests.');
+        }
+    });
+}
+
+function viewDepartmentRequestDetails(requestId) {
+    $.ajax({
+        url: 'HODParameters.php',
+        type: 'POST',
+        data: {
+            action: 'getDepartmentRequestDetails',
+            requestId: requestId
+        },
+        success: function(response) {
+            $('#departmentRequestDetails').html(response);
+            
+            // Show approve/decline buttons
+            $('#approveBtn').data('requestId', requestId).show();
+            $('#declineBtn').data('requestId', requestId).show();
+            
+            $('#departmentRequestModal').modal('show');
+        },
+        error: function() {
+            alert('Failed to load request details.');
+        }
+    });
+}
+
+function approveDepartmentRequest(requestId) {
+    if (confirm('Are you sure you want to approve this request?')) {
+        $.ajax({
+            url: 'HODParameters.php',
+            type: 'POST',
+            data: {
+                action: 'approveHODDepartmentRequest',
+                requestId: requestId
+            },
+            success: function(response) {
+                alert(response);
+                $('#departmentRequestModal').modal('hide');
+                loadDepartmentRequests();
+            },
+            error: function() {
+                alert('Failed to approve request.');
+            }
+        });
+    }
+}
+
+function declineDepartmentRequest(requestId) {
+    const comments = prompt('Please provide a reason for declining:');
+    if (comments) {
+        $.ajax({
+            url: 'HODParameters.php',
+            type: 'POST',
+            data: {
+                action: 'declineHODDepartmentRequest',
+                requestId: requestId,
+                comments: comments
+            },
+            success: function(response) {
+                alert(response);
+                $('#departmentRequestModal').modal('hide');
+                loadDepartmentRequests();
+            },
+            error: function() {
+                alert('Failed to decline request.');
+            }
+        });
+    }
 }
