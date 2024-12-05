@@ -1,0 +1,73 @@
+.approval-timeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    margin: 20px 0;
+    position: relative;
+    width: 100%;
+}
+
+.timeline-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.timeline-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    min-width: 80px;
+}
+
+.timeline-dot {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    border: 3px solid #adb5bd;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 2;
+}
+
+.timeline-dot.completed {
+    background-color: #28a745; /* Green for approved */
+    border-color: #28a745;
+}
+
+.timeline-dot.current {
+    background-color: #ffc107; /* Amber for current */
+    border-color: #ffc107;
+}
+
+.timeline-dot.declined {
+    background-color: #dc3545; /* Red for declined */
+    border-color: #dc3545;
+}
+
+.timeline-dot.draft {
+    background-color: #6c757d; /* Gray for draft */
+    border-color: #6c757d;
+}
+
+.timeline-line {
+    flex-grow: 1;
+    height: 3px;
+    background-color: #e9ecef;
+}
+
+.timeline-line.completed {
+    background-color: #28a745; /* Green for completed */
+}
+
+.timeline-label {
+    font-size: 12px;
+    margin-top: 5px;
+    text-align: center;
+}

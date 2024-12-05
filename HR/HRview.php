@@ -1,13 +1,13 @@
 <?php
 session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
+require_once 'HRClass.php';
 
 include("../includes/header.html");
 include("../includes/sidebar.html");
 
-$revenue = new Revenue($con);
-$pendingRequests = $revenue->getPendingRequests();
+$hr = new HR($con);
+$pendingRequests = $hr->getPendingRequests();
 ?>
 
 <main id="main" class="main">
@@ -16,21 +16,72 @@ $pendingRequests = $revenue->getPendingRequests();
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-body">
-                        <h6 class="card-title" style="font-weight: 800; font-size: small;">ALL PENDING STAFF REQUESTS</h6>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Request ID</th>
-                                        <th>Department</th>
-                                        <th>Job Title</th>
-                                        <th>Total Positions</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="pendingRequestsTable">
-                                </tbody>
-                            </table>
+                        <h6 class="card-title" style="font-weight: 800; font-size: small;">HR DASHBOARD</h6>
+                        <ul class="nav nav-tabs" id="requestTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="all-pending-tab" data-bs-toggle="tab" data-bs-target="#all-pending" type="button" role="tab" aria-controls="all-pending" aria-selected="true">All Pending Staff Requests</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="hr-only-tab" data-bs-toggle="tab" data-bs-target="#hr-only" type="button" role="tab" aria-controls="hr-only" aria-selected="false">HR Only Requests</button>
+                            </li>
+                            <!-- Add other tabs if needed -->
+                        </ul>
+                        <div class="tab-content" id="requestTabsContent">
+                            <div class="tab-pane fade show active" id="all-pending" role="tabpanel" aria-labelledby="all-pending-tab">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Request ID</th>
+                                                <th>Department</th>
+                                                <th>Job Title</th>
+                                                <th>Approved Positions</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pendingRequestsTable">
+                                            <?php
+                                            if (!empty($pendingRequests)) {
+                                                foreach ($pendingRequests as $request) {
+                                                    echo "<tr>";
+                                                    echo "<td>{$request['jdrequestid']}</td>";
+                                                    echo "<td>{$request['departmentname']}</td>";
+                                                    echo "<td>{$request['jdtitle']}</td>";
+                                                    echo "<td>{$request['approved_positions_count']}</td>";
+                                                    echo "<td>
+                                                        <button onclick='viewRequestDetails(\"{$request['jdrequestid']}\")' class='btn btn-sm btn-info'>
+                                                            <i class='bi bi-eye'></i> View
+                                                        </button>
+                                                    </td>";
+                                                    echo "</tr>";
+                                                }
+                                            } else {
+                                                echo "<tr><td colspan='5' class='text-center'>No pending requests found</td></tr>";
+                                            }
+                                            ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="hr-only" role="tabpanel" aria-labelledby="hr-only-tab">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Request ID</th>
+                                                <th>Department</th>
+                                                <th>Job Title</th>
+                                                <th>Approved Positions</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="hrOnlyRequestsTable">
+
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- Add other tab panes if needed -->
                         </div>
                     </div>
                 </div>
@@ -39,67 +90,39 @@ $pendingRequests = $revenue->getPendingRequests();
     </section>
 </main>
 
-<!-- Decline Reason Modal -->
-<div class="modal fade" id="declineModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Decline Request</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="declineForm" onsubmit="event.preventDefault(); submitDecline();">
-                    <input type="hidden" id="decline_jdrequestid">
-                    <input type="hidden" id="decline_station">
-                    <div class="mb-3">
-                        <label for="decline_reason" class="form-label">Reason for Declining</label>
-                        <textarea class="form-control" id="decline_reason" rows="3" required
-                            placeholder="Please provide a reason for declining this request"></textarea>
-                    </div>
-                    <div class="modal-footer px-0 pb-0">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger">Submit</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="hr.js"></script>
+<?php include("../includes/footer.html"); ?>
 
-<!-- Request Details Modal -->
-<div class="modal fade" id="requestDetailsModal" tabindex="-1">
+<div class="modal fade" id="requestDetailsModal" tabindex="-1" aria-labelledby="requestDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="card-title" style="font-weight: 800; font-size: small;">ALL STAFF REQUESTS</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="requestDetailsModalLabel">Staff Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="jobTitleDetails"></div>
-                <hr>
-                <h6>Station Requests</h6>
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Station</th>
-                                <th>Employment Type</th>
-                                <th>Staff Count</th>
-                                <th>Status</th>
-                                <th width="200" class="text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="stationRequestsTable">
-                            <!-- Station requests will be loaded here dynamically -->
-                        </tbody>
-                    </table>
-                </div>
+                <!-- Content will be loaded dynamically -->
             </div>
+            <div class="modal-footer"></div>
+            <button type="button" class="btn btn-success" id="approveRequestBtn">
+                <i class="bi bi-check-circle"></i> Approve Request
+            </button>
+            <button type="button" class="btn btn-danger" id="declineRequestBtn">
+                <i class="bi bi-x-circle"></i> Decline Request
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
     </div>
 </div>
+</div>
 
-<script src="assets/js/hr.js">
-    document.addEventListener('DOMContentLoaded', loadPendingRequests);
+<script>
+    // Fallback function in case the main JS file doesn't load
+    if (typeof viewRequestDetails !== 'function') {
+        function viewRequestDetails(requestId) {
+            console.error('Main JS file not loaded properly');
+            alert('Error: Could not load request details. Please refresh the page and try again.');
+        }
+    }
 </script>
-<?php include("../includes/footer.html"); ?>
