@@ -123,10 +123,9 @@ class HR
     public function updateRequestStatus($requestId, $status, $comments = null)
     {
         try {
-            // Start transaction
             $this->db->beginTransaction();
 
-            // Update HR status
+            // Update HR status in approvaltbl
             $hrQuery = "UPDATE approvaltbl 
                         SET status = :status,
                             comments = :comments,
@@ -141,7 +140,6 @@ class HR
                 'requestId' => $requestId
             ]);
 
-            // If HR approves, create a new pending record for Head of HR
             if ($status === 'approved') {
                 // Check if Head of HR record exists
                 $checkQuery = "SELECT COUNT(*) FROM approvaltbl 
@@ -172,6 +170,19 @@ class HR
                     $updateHohrStmt = $this->db->prepare($updateHohrQuery);
                     $updateHohrStmt->execute(['requestId' => $requestId]);
                 }
+            } elseif ($status === 'declined') {
+                // Update all stations for this request in staffrequestperstation
+                $stationQuery = "UPDATE staffrequestperstation 
+                               SET status = 'rejected',
+                                   reason = :reason,
+                                   dandt = NOW()
+                               WHERE jdrequestid = :requestId";
+
+                $stationStmt = $this->db->prepare($stationQuery);
+                $stationStmt->execute([
+                    'reason' => $comments,
+                    'requestId' => $requestId
+                ]);
             }
 
             // Commit transaction

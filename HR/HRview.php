@@ -104,14 +104,15 @@ $pendingRequests = $hr->getPendingRequests();
             <div class="modal-body">
                 <!-- Content will be loaded dynamically -->
             </div>
-            <div class="modal-footer"></div>
-            <button type="button" class="btn btn-success" id="approveRequestBtn">
-                <i class="bi bi-check-circle"></i> Approve Request
-            </button>
-            <button type="button" class="btn btn-danger" id="declineRequestBtn">
-                <i class="bi bi-x-circle"></i> Decline Request
-            </button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="approveRequestBtn">
+                    <i class="bi bi-check-circle"></i> Approve Request
+                </button>
+                <button type="button" class="btn btn-danger" id="declineRequestBtn">
+                    <i class="bi bi-x-circle"></i> Decline Request
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
