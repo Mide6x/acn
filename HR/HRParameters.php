@@ -68,92 +68,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $details = $hr->getRequestDetails($_POST['requestId']);
-
-                // Fetch job details from the jobtitletbl based on the jdtitle
                 $jobDetails = $hr->getJobDetailsByTitle($details['requestDetails']['jobTitle']);
 
-                // Generate HTML for the modal
-                $html = '<div class="request-details">';
-
                 // Basic Details
-                $html .= '<div class="basic-details mb-4">
+                echo '<div class="basic-details mb-4">
                     <h6 class="fw-bold">Basic Information</h6>
                     <div class="row">
                         <div class="col-md-6">
                             <p><strong>Request ID:</strong> ' . htmlspecialchars($details['requestDetails']['requestId']) . '</p>
-                            <p><strong>Job Title:</strong> ' . htmlspecialchars($details['requestDetails']['jobTitle']) . '</p>
                             <p><strong>Department:</strong> ' . htmlspecialchars($details['requestDetails']['department']) . '</p>
+                            <p><strong>Status:</strong> ' . htmlspecialchars($details['requestDetails']['status']) . '</p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Status:</strong> ' . htmlspecialchars($details['requestDetails']['status']) . '</p>
                             <p><strong>Request Date:</strong> ' . htmlspecialchars($details['requestDetails']['requestDate']) . '</p>
                             <p><strong>Created By:</strong> ' . htmlspecialchars($details['requestDetails']['createdBy']) . '</p>
                         </div>
                     </div>
                 </div>';
 
-                // Job Details and Requirements
-                $html .= '<div class="row mb-4">
-    <div class="col-md-6">
-        <h6 class="fw-bold">Job Details</h6>
-        <p><strong>Job Title:</strong> ' . htmlspecialchars($jobDetails['jdtitle'] ?? 'N/A') . '</p>
-        <p><strong>Description:</strong> ' . nl2br(htmlspecialchars($jobDetails['jddescription'] ?? 'N/A')) . '</p>
-        <p><strong>Educational Qualification:</strong> ' . nl2br(htmlspecialchars($jobDetails['eduqualification'] ?? 'N/A')) . '</p>
-        <p><strong>Professional Qualification:</strong> ' . nl2br(htmlspecialchars($jobDetails['proqualification'] ?? 'N/A')) . '</p>
-        <p><strong>Work Relations:</strong> ' . nl2br(htmlspecialchars($jobDetails['workrelation'] ?? 'N/A')) . '</p>
-        <p><strong>Position Level:</strong> ' . htmlspecialchars($jobDetails['jdposition'] ?? 'N/A') . '</p>
-    </div>
-    <div class="col-md-6">
-        <h6 class="fw-bold">Additional Requirements</h6>
-        <p><strong>Age Bracket:</strong> ' . htmlspecialchars($jobDetails['agebracket'] ?? 'N/A') . '</p>
-        <p><strong>Person Specification:</strong> ' . nl2br(htmlspecialchars($jobDetails['personspec'] ?? 'N/A')) . '</p>
-        <p><strong>Technical Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['fuctiontech'] ?? 'N/A')) . '</p>
-        <p><strong>Managerial Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['managerial'] ?? 'N/A')) . '</p>
-        <p><strong>Behavioral Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['behavioural'] ?? 'N/A')) . '</p>
-    </div>
-</div>';
+                // Job Details
+                echo '<div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Job Details</h6>
+                        <p><strong>Job Title:</strong> ' . htmlspecialchars($jobDetails['jdtitle']) . '</p>
+                        <p><strong>Description:</strong> ' . nl2br(htmlspecialchars($jobDetails['jddescription'])) . '</p>
+                        <p><strong>Educational Qualification:</strong> ' . nl2br(htmlspecialchars($jobDetails['eduqualification'])) . '</p>
+                        <p><strong>Professional Qualification:</strong> ' . nl2br(htmlspecialchars($jobDetails['proqualification'])) . '</p>
+                        <p><strong>Work Relations:</strong> ' . nl2br(htmlspecialchars($jobDetails['workrelation'])) . '</p>
+                        <p><strong>Position Level:</strong> ' . htmlspecialchars($jobDetails['jdposition']) . '</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Additional Requirements</h6>
+                        <p><strong>Age Bracket:</strong> ' . htmlspecialchars($jobDetails['agebracket']) . '</p>
+                        <p><strong>Person Specification:</strong> ' . nl2br(htmlspecialchars($jobDetails['personspec'])) . '</p>
+                        <p><strong>Technical Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['fuctiontech'])) . '</p>
+                        <p><strong>Managerial Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['managerial'])) . '</p>
+                        <p><strong>Behavioral Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['behavioural'])) . '</p>
+                    </div>
+                </div>';
 
                 // Station Details
-                $html .= '<div class="station-details mb-4">
-                    <h6 class="fw-bold">Station Requirements</h6>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Station</th>
-                                <th>Employment Type</th>
-                                <th>Number of Staff</th>
-                            </tr>
-                        </thead>
-                        <tbody>';
+                if (!empty($details['stations'])) {
+                    echo '<div class="station-details mb-4">
+                        <h6 class="fw-bold">Station Requirements</h6>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Station</th>
+                                    <th>Employment Type</th>
+                                    <th>Number of Staff</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
 
-                foreach ($details['stations'] as $station) {
-                    $html .= '<tr>
-                        <td>' . htmlspecialchars($station['station']) . '</td>
-                        <td>' . htmlspecialchars($station['employmentType']) . '</td>
-                        <td>' . htmlspecialchars($station['count']) . '</td>
-                    </tr>';
+                    foreach ($details['stations'] as $station) {
+                        echo '<tr>
+                            <td>' . htmlspecialchars($station['station']) . '</td>
+                            <td>' . htmlspecialchars($station['employmentType']) . '</td>
+                            <td>' . htmlspecialchars($station['count']) . '</td>
+                        </tr>';
+                    }
+
+                    echo '</tbody></table></div>';
                 }
-
-                $html .= '</tbody></table></div>';
-
-                // Add hidden inputs for timeline status
-                foreach ($details['approvals'] as $approval) {
-                    $html .= '<input type="hidden" id="' . strtolower($approval['level']) . 'Status" value="' . htmlspecialchars($approval['status']) . '">';
-                }
-
-                // Add a hidden input field for the request status, with the value being the status of the request
-                $html .= '<input type="hidden" id="requestStatus" value="' . htmlspecialchars($details['requestDetails']['status']) . '">';
-
-                // Add a hidden input field for the department code, with the value being the first three characters of the department unit code
-                if (isset($details['requestDetails']['deptunitcode'])) {
-                    $html .= '<input type="hidden" id="createdByDept" value="' . substr($details['requestDetails']['deptunitcode'], 0, 3) . '">';
-                } else {
-                    $html .= '<input type="hidden" id="createdByDept" value="">';
-                }
-
-                $html .= '</div>';
-
-                echo $html;
                 break;
 
             case 'create_hr_request':
@@ -408,6 +385,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 echo $output ?: "<tr><td colspan='6' class='text-center'>No department requests found</td></tr>";
+                break;
+
+            case 'get_hr_request_details':
+                if (!isset($_POST['requestId'])) {
+                    throw new Exception("Request ID is required");
+                }
+
+                $details = $hr->getRequestDetails($_POST['requestId']);
+                $jobDetails = $hr->getJobDetailsByTitle($details['requestDetails']['jobTitle']);
+
+                // Output the status first for JavaScript to handle button display
+                echo '<input type="hidden" id="requestStatus" value="' . htmlspecialchars($details['requestDetails']['status']) . '">';
+
+                // Basic Details
+                echo '<div class="basic-details mb-4">
+                    <h6 class="fw-bold">Basic Information</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Request ID:</strong> ' . htmlspecialchars($details['requestDetails']['requestId']) . '</p>
+                            <p><strong>Department:</strong> ' . htmlspecialchars($details['requestDetails']['department']) . '</p>
+                            <p><strong>Status:</strong> ' . htmlspecialchars($details['requestDetails']['status']) . '</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Request Date:</strong> ' . htmlspecialchars($details['requestDetails']['requestDate']) . '</p>
+                            <p><strong>Created By:</strong> ' . htmlspecialchars($details['requestDetails']['createdBy']) . '</p>
+                        </div>
+                    </div>
+                </div>';
+
+                // Job Details
+                echo '<div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Job Details</h6>
+                        <p><strong>Job Title:</strong> ' . htmlspecialchars($jobDetails['jdtitle']) . '</p>
+                        <p><strong>Description:</strong> ' . nl2br(htmlspecialchars($jobDetails['jddescription'])) . '</p>
+                        <p><strong>Educational Qualification:</strong> ' . nl2br(htmlspecialchars($jobDetails['eduqualification'])) . '</p>
+                        <p><strong>Professional Qualification:</strong> ' . nl2br(htmlspecialchars($jobDetails['proqualification'])) . '</p>
+                        <p><strong>Work Relations:</strong> ' . nl2br(htmlspecialchars($jobDetails['workrelation'])) . '</p>
+                        <p><strong>Position Level:</strong> ' . htmlspecialchars($jobDetails['jdposition']) . '</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Additional Requirements</h6>
+                        <p><strong>Age Bracket:</strong> ' . htmlspecialchars($jobDetails['agebracket']) . '</p>
+                        <p><strong>Person Specification:</strong> ' . nl2br(htmlspecialchars($jobDetails['personspec'])) . '</p>
+                        <p><strong>Technical Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['fuctiontech'])) . '</p>
+                        <p><strong>Managerial Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['managerial'])) . '</p>
+                        <p><strong>Behavioral Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['behavioural'])) . '</p>
+                    </div>
+                </div>';
+
+                // Station Details
+                if (!empty($details['stations'])) {
+                    echo '<div class="station-details mb-4">
+                        <h6 class="fw-bold">Station Requirements</h6>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Station</th>
+                                    <th>Employment Type</th>
+                                    <th>Number of Staff</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
+
+                    foreach ($details['stations'] as $station) {
+                        echo '<tr>
+                            <td>' . htmlspecialchars($station['station']) . '</td>
+                            <td>' . htmlspecialchars($station['employmentType']) . '</td>
+                            <td>' . htmlspecialchars($station['count']) . '</td>
+                        </tr>';
+                    }
+
+                    echo '</tbody></table></div>';
+                }
                 break;
         }
     } catch (Exception $e) {

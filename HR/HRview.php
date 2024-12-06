@@ -59,7 +59,7 @@ $pendingRequests = $hr->getPendingRequests();
                                                     echo "<td>{$request['jdtitle']}</td>";
                                                     echo "<td>{$request['approved_positions_count']}</td>";
                                                     echo "<td>
-                                                        <button onclick='viewRequestDetails(\"{$request['jdrequestid']}\")' class='btn btn-sm btn-info'>
+                                                        <button onclick='viewRequestDetails(\"{$request['jdrequestid']}\", \"all-pending\")' class='btn btn-sm btn-info'>
                                                             <i class='bi bi-eye'></i> View
                                                         </button>
                                                     </td>";
@@ -105,7 +105,8 @@ $pendingRequests = $hr->getPendingRequests();
 <script src="hr.js"></script>
 <?php include("../includes/footer.html"); ?>
 
-<div class="modal fade" id="requestDetailsModal" tabindex="-1">
+<!-- Modal for All Pending Requests -->
+<div class="modal fade" id="allPendingModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -113,9 +114,7 @@ $pendingRequests = $hr->getPendingRequests();
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-
-                <!-- Request Details Content -->
-                <div id="requestDetailsContent"></div>
+                <div id="allPendingContent"></div>
 
                 <!-- Comments Section for Decline -->
                 <div id="declineCommentsSection" style="display: none;" class="mt-3">
@@ -126,13 +125,34 @@ $pendingRequests = $hr->getPendingRequests();
                 </div>
             </div>
             <div class="modal-footer">
-                <div id="actionButtons">
-                    <button type="button" class="btn btn-success" id="approveRequestBtn">
-                        <i class="bi bi-check-circle"></i> Approve Request
+                <div id="allPendingButtons">
+                    <button type="button" class="btn btn-success" id="approveBtn">
+                        <i class="bi bi-check-circle"></i> Approve
                     </button>
-                    <button type="button" class="btn btn-danger" id="declineRequestBtn">
-                        <i class="bi bi-x-circle"></i> Decline Request
+                    <button type="button" class="btn btn-danger" id="declineBtn">
+                        <i class="bi bi-x-circle"></i> Decline
                     </button>
+                </div>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for HR Only Requests -->
+<div class="modal fade" id="hrOnlyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">HR Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="hrOnlyContent"></div>
+            </div>
+            <div class="modal-footer">
+                <div id="hrOnlyButtons">
+                    <!-- Buttons will be dynamically added here -->
                 </div>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
@@ -143,7 +163,7 @@ $pendingRequests = $hr->getPendingRequests();
 <script>
     // Fallback function in case the main JS file doesn't load
     if (typeof viewRequestDetails !== 'function') {
-        function viewRequestDetails(requestId) {
+        function viewRequestDetails(requestId, tab) {
             console.error('Main JS file not loaded properly');
             alert('Error: Could not load request details. Please refresh the page and try again.');
         }

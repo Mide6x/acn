@@ -1,51 +1,33 @@
-function viewRequestDetails(requestId) {
-    // Show loading state
-    $('#requestDetailsContent').html('<div class="text-center"><i class="bi bi-hourglass-split"></i> Loading...</div>');
-    $('#requestDetailsModal').modal('show');
-    $('#declineCommentsSection').hide();
+function viewRequestDetails(requestId, type) {
+    const modalId = type === 'all-pending' ? '#allPendingModal' : '#hrOnlyModal';
+    const contentId = type === 'all-pending' ? '#allPendingContent' : '#hrOnlyContent';
     
-    // Reset and show action buttons
-    $('#actionButtons').show();
-    $('#approveRequestBtn, #declineRequestBtn').show();
+    $(contentId).html('<div class="text-center"><i class="bi bi-hourglass-split"></i> Loading...</div>');
+    $(modalId).modal('show');
     
-    // Store requestId in buttons
-    $('#approveRequestBtn, #declineRequestBtn').data('requestid', requestId);
-    
-    // Fetch request details
     $.ajax({
         url: 'HRParameters.php',
         type: 'POST',
         data: {
-            action: 'get_request_details',
+            action: type === 'all-pending' ? 'get_request_details' : 'get_hr_request_details',
             requestId: requestId
         },
         success: function(response) {
-            $('#requestDetailsContent').html(response);
+            $(contentId).html(response);
             
-            // Get status values from hidden inputs
-            const hodStatus = $('#hodStatus').val();
-            const hrStatus = $('#hrStatus').val();
-            const hohrStatus = $('#hohrStatus').val();
-            
-            // Update timeline dots based on status
-            updateTimelineDot('hodDot', hodStatus);
-            updateTimelineDot('hrDot', hrStatus);
-            updateTimelineDot('hohrDot', hohrStatus);
-            
-            // Show/hide buttons based on request status
-            const requestStatus = $('#requestStatus').val();
-            const createdByDept = $('#createdByDept').val();
-            
-            if (createdByDept !== 'HRD' && requestStatus === 'pending') {
-                $('#actionButtons').show();
-            } else {
-                $('#actionButtons').hide();
+            if (type === 'hr-only') {
+                const status = $('#requestStatus').val();
+                if (status === 'draft') {
+                    $('#hrOnlyButtons').html(`
+                        <button type="button" class="btn btn-primary" onclick="editRequest('${requestId}')">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="submitRequest('${requestId}')">
+                            <i class="bi bi-check-circle"></i> Submit
+                        </button>
+                    `);
+                }
             }
-        },
-        error: function(xhr, status, error) {
-            $('#requestDetailsContent').html(
-                '<div class="alert alert-danger">Error loading request details: ' + error + '</div>'
-            );
         }
     });
 }
@@ -85,27 +67,27 @@ $(document).ready(function() {
         }
     });
     
-    $('#approveRequestBtn').click(function() {
+    $('#approveBtn').click(function() {
         const requestId = $(this).data('requestid');
         if (confirm('Are you sure you want to approve this request?')) {
             approveRequest(requestId);
         }
     });
     
-    $('#declineRequestBtn').click(function() {
+    $('#declineBtn').click(function() {
         const requestId = $(this).data('requestid');
         $('#declineCommentsSection').show();
-        $('#actionButtons').hide();
+        $('#allPendingButtons').hide();
         
         // Add submit decline button
         if (!$('#submitDeclineBtn').length) {
             const submitBtn = $('<button type="button" class="btn btn-danger" id="submitDeclineBtn">Submit Decline</button>');
-            $('#actionButtons').after(submitBtn);
+            $('#declineCommentsSection').after(submitBtn);
         }
     });
     
     $(document).on('click', '#submitDeclineBtn', function() {
-        const requestId = $('#declineRequestBtn').data('requestid');
+        const requestId = $('#declineBtn').data('requestid');
         const comments = $('#declineComments').val().trim();
         
         if (!comments) {
@@ -114,6 +96,20 @@ $(document).ready(function() {
         }
         
         declineRequest(requestId, comments);
+    });
+    
+    // Edit button handler
+    $(document).on('click', '#editRequestBtn', function() {
+        const requestId = $(this).data('requestid');
+        window.location.href = 'edit_requesthr.php?id=' + requestId;
+    });
+    
+    // Submit button handler
+    $(document).on('click', '#submitRequestBtn', function() {
+        const requestId = $(this).data('requestid');
+        if (confirm('Are you sure you want to submit this request? You won\'t be able to edit it after submission.')) {
+            submitHRRequest(requestId);
+        }
     });
 });
 
@@ -197,4 +193,55 @@ function loadOtherRequests() {
             );
         }
     });
+}
+
+// Add new function to handle HR request submission
+function submitHRRequest(requestId) {
+    $.ajax({
+        url: 'HRParameters.php',
+        type: 'POST',
+        data: {
+            action: 'submit_hr_request',
+            requestId: requestId
+        },
+        success: function(response) {
+            if (response === 'success') {
+                alert('Request submitted successfully');
+                $('#requestDetailsModal').modal('hide');
+                location.reload(); // Refresh the page to update the table
+            } else {
+                alert('Error submitting request: ' + response);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('Error submitting request: ' + error);
+        }
+    });
+}
+
+// Functions for HR Only requests
+function editRequest(requestId) {
+    window.location.href = 'edit_requesthr.php?id=' + requestId;
+}
+
+function submitRequest(requestId) {
+    if (confirm('Are you sure you want to submit this request? You won\'t be able to edit it after submission.')) {
+        $.ajax({
+            url: 'HRParameters.php',
+            type: 'POST',
+            data: {
+                action: 'submit_hr_request',
+                requestId: requestId
+            },
+            success: function(response) {
+                if (response === 'success') {
+                    alert('Request submitted successfully');
+                    $('#hrOnlyModal').modal('hide');
+                    loadHRRequests();
+                } else {
+                    alert('Error submitting request: ' + response);
+                }
+            }
+        });
+    }
 }
