@@ -31,7 +31,7 @@ define('CURRENT_USER', [
     'deptunitcode' => 'MKT',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);*/
+]);
 
 // Head of Department Details
 
@@ -44,7 +44,18 @@ define('CURRENT_USER', [
     'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
+*/
 
+//HR Details
+define('CURRENT_USER', [
+    'staffid' => 'HR001',
+    'email' => 'john.d@acn.aero',
+    'position' => 'HR',
+    'departmentcode' => 'HRD',
+    'deptunitcode' => 'HRD',
+    'subdeptunitcode' => '',
+    'isAdmin' => false
+]);
 
 
 // Function to get current user info

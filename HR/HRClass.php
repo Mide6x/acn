@@ -7,7 +7,112 @@ class HR
     {
         $this->db = $con;
     }
+    public function generateRequestId()
+    {
+        try {
+            $year = date('Y');
+            $query = "SELECT MAX(CAST(SUBSTRING(jdrequestid, 8) AS UNSIGNED)) as max_id 
+                      FROM staffrequest 
+                      WHERE jdrequestid LIKE 'REQ{$year}%'";
 
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $nextId = ($result['max_id'] ?? 0) + 1;
+            $requestId = "REQ" . $year . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+
+            error_log("Generated Request ID: " . $requestId); // Debug log
+            return $requestId;
+        } catch (Exception $e) {
+            error_log("Error generating request ID: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getAvailablePositions($deptunitcode)
+    {
+        try {
+            // Get the department code from the department unit code
+            $deptQuery = "SELECT deptcode FROM departmentunit WHERE deptunitcode = ?";
+            $deptStmt = $this->db->prepare($deptQuery);
+            $deptStmt->execute([$deptunitcode]);
+            $deptResult = $deptStmt->fetch(PDO::FETCH_ASSOC);
+            $deptCode = $deptResult['deptcode'];
+
+            // Get the deptnostaff value from the departments table
+            $deptNoStaffQuery = "SELECT deptnostaff FROM departments WHERE departmentcode = ?";
+            $deptNoStaffStmt = $this->db->prepare($deptNoStaffQuery);
+            $deptNoStaffStmt->execute([$deptCode]);
+            $deptNoStaffResult = $deptNoStaffStmt->fetch(PDO::FETCH_ASSOC);
+            $deptNoStaff = $deptNoStaffResult['deptnostaff'];
+
+            // Get the count of active staff in the department
+            $activeStaffQuery = "SELECT COUNT(*) as count FROM employeetbl WHERE deptunitcode = ? AND status = 'Active'";
+            $activeStaffStmt = $this->db->prepare($activeStaffQuery);
+            $activeStaffStmt->execute([$deptunitcode]);
+            $activeStaffResult = $activeStaffStmt->fetch(PDO::FETCH_ASSOC);
+            $activeStaffCount = $activeStaffResult['count'];
+
+            // Get the count of pending staff requests for the department
+            $pendingRequestsQuery = "SELECT COUNT(*) as count FROM staffrequest WHERE deptunitcode = ? AND status = 'pending'";
+            $pendingRequestsStmt = $this->db->prepare($pendingRequestsQuery);
+            $pendingRequestsStmt->execute([$deptunitcode]);
+            $pendingRequestsResult = $pendingRequestsStmt->fetch(PDO::FETCH_ASSOC);
+            $pendingRequestsCount = $pendingRequestsResult['count'];
+
+            // Calculate available positions
+            $availablePositions = $deptNoStaff - ($activeStaffCount + $pendingRequestsCount);
+
+            return $availablePositions;
+        } catch (Exception $e) {
+            error_log("Error in getAvailablePositions: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    public function getHRInfo($staffid)
+    {
+        try {
+            $query = "SELECT e.*, d.deptunitname, d.deptunitcode, d.deptcode, dept.departmentname 
+                     FROM employeetbl e 
+                     JOIN departmentunit d ON e.deptunitcode = d.deptunitcode 
+                     JOIN departments dept ON d.deptcode = dept.departmentcode 
+                     WHERE e.staffid = ? 
+                     AND e.status = 'Active'";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$staffid]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$result) {
+                // If no HR info found, return default HR department info
+                $defaultQuery = "SELECT d.deptunitname, d.deptunitcode, d.deptcode, dept.departmentname 
+                               FROM departmentunit d 
+                               JOIN departments dept ON d.deptcode = dept.departmentcode 
+                               WHERE d.deptcode = 'HRD' 
+                               LIMIT 1";
+
+                $defaultStmt = $this->db->prepare($defaultQuery);
+                $defaultStmt->execute();
+                $defaultResult = $defaultStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$defaultResult) {
+                    throw new Exception("No HR department information found");
+                }
+
+                return array_merge([
+                    'staffid' => $staffid,
+                    'position' => 'HR',
+                    'email' => CURRENT_USER['email'] ?? 'hr@acn.aero'
+                ], $defaultResult);
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            error_log("Error in getHRInfo: " . $e->getMessage());
+            throw $e;
+        }
+    }
     public function getPendingRequests()
     {
         try {
@@ -42,6 +147,30 @@ class HR
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("Error in getPendingRequests: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getJobTitles()
+    {
+        try {
+            $query = "SELECT jt.jdtitle 
+                      FROM jobtitletbl jt
+                      JOIN departmentunit du ON jt.deptunitcode = du.deptunitcode
+                      WHERE jt.jdstatus = 'Active' 
+                      AND du.deptcode = :deptcode";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['deptcode' => CURRENT_USER['departmentcode']]);
+
+            $output = "";
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $output .= "<option value='" . htmlspecialchars($row['jdtitle']) . "'>"
+                    . htmlspecialchars($row['jdtitle']) . "</option>";
+            }
+            return $output;
+        } catch (Exception $e) {
+            error_log("Error in getJobTitles: " . $e->getMessage());
             throw $e;
         }
     }
@@ -192,6 +321,95 @@ class HR
             // Rollback transaction on error
             $this->db->rollBack();
             error_log("Error in updateRequestStatus: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function createHRRequest($data)
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Insert into staffrequest table
+            $requestQuery = "INSERT INTO staffrequest (
+                jdrequestid, jdtitle, novacpost, deptunitcode, 
+                status, createdby, subdeptunitcode, staffid, departmentcode
+            ) VALUES (
+                :jdrequestid, :jdtitle, :novacpost, :deptunitcode,
+                'draft', :createdby, :subdeptunitcode, :staffid, :departmentcode
+            )";
+
+            $requestStmt = $this->db->prepare($requestQuery);
+            $requestStmt->execute([
+                'jdrequestid' => $data['jdrequestid'],
+                'jdtitle' => $data['jdtitle'],
+                'novacpost' => $data['total_positions'],
+                'deptunitcode' => getCurrentUser('deptunitcode'),
+                'createdby' => getCurrentUser('email'),
+                'subdeptunitcode' => getCurrentUser('subdeptunitcode'),
+                'staffid' => getCurrentUser('staffid'),
+                'departmentcode' => getCurrentUser('departmentcode')
+            ]);
+
+            // Insert station requests
+            foreach ($data['stations'] as $station) {
+                $stationQuery = "INSERT INTO staffrequestperstation (
+                    jdrequestid, station, employmenttype, 
+                    staffperstation, status, createdby
+                ) VALUES (
+                    :jdrequestid, :station, :employmenttype,
+                    :staffperstation, 'draft', :createdby
+                )";
+
+                $stationStmt = $this->db->prepare($stationQuery);
+                $stationStmt->execute([
+                    'jdrequestid' => $data['jdrequestid'],
+                    'station' => $station['station'],
+                    'employmenttype' => $station['employmenttype'],
+                    'staffperstation' => $station['staffperstation'],
+                    'createdby' => $data['createdby']
+                ]);
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error in createHRRequest: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getStations()
+    {
+        try {
+            $query = "SELECT stationcode, stationname FROM stationtbl WHERE status = 'Active' ORDER BY stationname";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+
+            $options = '';
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $options .= "<option value='{$row['stationcode']}'>{$row['stationname']}</option>";
+            }
+            return $options;
+        } catch (Exception $e) {
+            error_log("Error in getStations: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getStaffTypes()
+    {
+        try {
+            $types = ['Permanent', 'Contract', 'Temporary'];
+            $output = "";
+            foreach ($types as $type) {
+                $output .= "<option value='" . htmlspecialchars($type) . "'>"
+                    . htmlspecialchars($type) . "</option>";
+            }
+            return $output;
+        } catch (Exception $e) {
+            error_log("Error in getStaffTypes: " . $e->getMessage());
             throw $e;
         }
     }

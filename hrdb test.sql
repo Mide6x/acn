@@ -424,6 +424,23 @@ CREATE TRIGGER `create_approval_levels` AFTER INSERT ON `staffrequest` FOR EACH 
         -- CEO approval
         INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
         VALUES (NEW.jdrequestid, NEW.jdtitle, 'CEO001', 'CEO', 'draft', NEW.createdby);
+
+    ELSEIF requestorposition = 'HR' THEN
+        -- HR approval as pending
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, 'HR001', 'HR', 'approved', NEW.createdby);
+
+        -- HeadOfHR approval
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, 'HR002', 'HeadOfHR', 'pending', NEW.createdby);
+
+        -- CFO approval
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, 'CFO001', 'CFO', 'draft', NEW.createdby);
+
+        -- CEO approval
+        INSERT INTO approvaltbl (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby)
+        VALUES (NEW.jdrequestid, NEW.jdtitle, 'CEO001', 'CEO', 'draft', NEW.createdby);
     END IF;
 END
 $$

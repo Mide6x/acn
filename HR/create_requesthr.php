@@ -1,23 +1,37 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/include/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/class/rev.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/HOD/HODClass.php';
+require_once 'HRClass.php';
 
 // Include header, sidebar, and footer
 include("../includes/header.html");
 include("../includes/sidebar.html");
 
-$hod = new HOD($con);
-$staffid = $_SESSION['staffid'];
-$hodInfo = $hod->getHODInfo($staffid);
-$availablePositions = $hod->getAvailablePositions($hodInfo['deptunitcode']);
-$jdrequestid = $hod->generateRequestId();
-$departmentcode = $hodInfo['deptcode'];
+try {
+    $hr = new HR($con);
+    $staffid = $_SESSION['staffid'] ?? 'HR001';
 
-$jobTitles = $hod->getJobTitles();
-echo "<!-- Debug: Job Titles -->";
-echo "<!-- " . htmlspecialchars($jobTitles) . " -->";
+    // Get HR Info with fallback
+    try {
+        $hrInfo = $hr->getHRInfo($staffid);
+    } catch (Exception $e) {
+        // If there's an error getting HR info, use default values
+        $hrInfo = [
+            'deptunitcode' => 'HRD',
+            'deptcode' => 'HRD',
+            'departmentname' => 'Human Resources'
+        ];
+    }
 
+    $availablePositions = $hr->getAvailablePositions($hrInfo['deptunitcode']);
+    $jdrequestid = $hr->generateRequestId();
+    $departmentcode = $hrInfo['deptcode'];
+
+    $jobTitles = $hr->getJobTitles();
+} catch (Exception $e) {
+    error_log("Error in create_requesthr.php: " . $e->getMessage());
+    echo "<div class='alert alert-danger'>Error: Unable to load HR information. Please contact system administrator.</div>";
+    exit;
+}
 ?>
 <main id="main" class="main">
     <section class="section">
@@ -45,7 +59,7 @@ echo "<!-- " . htmlspecialchars($jobTitles) . " -->";
                                     <label class="form-label">Job Title</label>
                                     <select class="form-control" id="jdtitle" name="jdtitle" required>
                                         <option value="">Select Job Title</option>
-                                        <?php echo $hod->getJobTitles(); ?>
+                                        <?php echo $hr->getJobTitles(); ?>
                                     </select>
                                 </div>
                             </div>
@@ -54,14 +68,11 @@ echo "<!-- " . htmlspecialchars($jobTitles) . " -->";
                             </div>
                             <div class="row mb-3">
                                 <div class="col-sm-12 text-center">
-                                    <button type="button" class="btn btn-secondary" id="addStation">
+                                    <button type="button" class="btn btn-secondary" id="addStationBtn">
                                         + Add Station
                                     </button>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-primary" onclick="savedraftHRstaffrequest()">
-                                Save as Draft
-                            </button>
                         </form>
 
                         <div class="col-lg-12" id="loadstaffreqperstation">
@@ -69,14 +80,13 @@ echo "<!-- " . htmlspecialchars($jobTitles) . " -->";
                         <div class="row">
                             <div class="col-sm-10">
                                 <button type="button" class="btn btn-primary"
-                                    onclick="savedraftHRstaffrequest()"
+                                    id="saveDraftBtn"
                                     style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
                                     onmouseover="this.style.backgroundColor='#000000';"
                                     onmouseout="this.style.backgroundColor='#fc7f14';">Save as Draft
                                 </button>
                                 <button type="button" class="btn btn-primary"
                                     id="submitRequestBtn"
-                                    onclick="submitRequest('<?php echo $jdrequestid; ?>')"
                                     style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
                                     onmouseover="this.style.backgroundColor='#000000';"
                                     onmouseout="this.style.backgroundColor='#fc7f14';">Submit Request
@@ -90,6 +100,7 @@ echo "<!-- " . htmlspecialchars($jobTitles) . " -->";
     </section>
 </main>
 <?php include("../includes/footer.html"); ?>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="hr.js"></script>
 </body>
 

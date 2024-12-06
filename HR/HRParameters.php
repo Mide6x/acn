@@ -159,6 +159,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo "<div class='alert alert-danger'>Error loading request details: " . $e->getMessage() . "</div>";
                 }
                 break;
+
+            case 'create_hr_request':
+                try {
+                    $requestData = [
+                        'jdrequestid' => $_POST['jdrequestid'],
+                        'jdtitle' => $_POST['jdtitle'],
+                        'total_positions' => $_POST['total_positions'],
+                        'createdby' => 'john.d@acn.aero', // HR email
+                        'stations' => json_decode($_POST['stations'], true)
+                    ];
+
+                    $result = $hr->createHRRequest($requestData);
+                    echo json_encode(['success' => $result]);
+                } catch (Exception $e) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => $e->getMessage()
+                    ]);
+                }
+                break;
+
+            case 'get_station_options':
+                try {
+                    $index = $_POST['index'];
+                    $stations = $hr->getStations();
+                    $staffTypes = $hr->getStaffTypes();
+
+                    $html = '<div class="station-request">
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <label class="form-label">Station</label>
+                                    <select class="form-control" name="stations[' . $index . '][station]" 
+                                            style="border-radius: 8px" required>
+                                        <option value="">Select Station</option>
+                                        ' . $stations . '
+                                    </select>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label">Employment Type</label>
+                                    <select class="form-control" name="stations[' . $index . '][employmenttype]" 
+                                            style="border-radius: 8px" required>
+                                        <option value="">Select Type</option>
+                                        ' . $staffTypes . '
+                                    </select>
+                                </div>
+                                <div class="col-sm-3">
+                                    <label class="form-label">Staff Per Station</label>
+                                    <input type="number" class="form-control staffperstation" 
+                                           name="stations[' . $index . '][staffperstation]"
+                                           style="border-radius: 8px" required min="1">
+                                </div>
+                                <div class="col-sm-1">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="button" class="btn btn-danger btn-sm remove-station">×</button>
+                                </div>
+                            </div>
+                        </div>';
+
+                    echo $html;
+                } catch (Exception $e) {
+                    echo 'Error: ' . $e->getMessage();
+                }
+                break;
+
+            case 'save_draft_request':
+                try {
+                    $requestData = [
+                        'jdrequestid' => $_POST['jdrequestid'],
+                        'jdtitle' => $_POST['jdtitle'],
+                        'total_positions' => $_POST['total_positions'],
+                        'createdby' => $_SESSION['email'] ?? 'john.d@acn.aero',
+                        'stations' => json_decode($_POST['stations'], true),
+                        'status' => 'draft'
+                    ];
+
+                    $result = $hr->createHRRequest($requestData);
+                    echo $result ? 'success' : 'error';
+                } catch (Exception $e) {
+                    echo "Error: " . $e->getMessage();
+                }
+                break;
         }
     } catch (Exception $e) {
         echo "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
