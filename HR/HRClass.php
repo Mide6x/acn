@@ -116,7 +116,7 @@ class HR
     public function getPendingRequests()
     {
         try {
-            // Get all requests where HOD has approved, regardless of department
+            // Get all requests with HR pending, regardless of HOD approval status
             $query = "SELECT DISTINCT sr.*, 
                             hod.status as hod_status,
                             hod.dandt as hod_date,
@@ -132,14 +132,13 @@ class HR
                                 ), 0
                             ) as approved_positions_count
                      FROM staffrequest sr
-                     JOIN approvaltbl hod ON sr.jdrequestid = hod.jdrequestid 
+                     LEFT JOIN approvaltbl hod ON sr.jdrequestid = hod.jdrequestid 
                         AND hod.approvallevel = 'HOD'
                      JOIN approvaltbl hr ON sr.jdrequestid = hr.jdrequestid 
                         AND hr.approvallevel = 'HR'
                      LEFT JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode
                      LEFT JOIN departments dept ON du.deptcode = dept.departmentcode
-                     WHERE hod.status = 'approved'
-                     AND (hr.status IN ('pending', 'draft'))
+                     WHERE hr.status IN ('pending', 'draft')
                      ORDER BY sr.dandt DESC";
 
             $stmt = $this->db->prepare($query);
@@ -211,38 +210,90 @@ class HR
     public function getRequestDetails($requestId)
     {
         try {
-            $query = "SELECT sr.*, 
-                            hod.status as hod_status,
-                            hod.dandt as hod_date,
-                            hod.comments as hod_comments,
-                            hr.status as hr_status,
-                            hr.dandt as hr_date,
-                            hr.comments as hr_comments,
-                            dept.departmentname,
-                            jt.jddescription,
-                            jt.eduqualification,
-                            jt.proqualification,
-                            jt.workrelation,
-                            jt.jdposition,
-                            jt.jdcondition,
-                            jt.agebracket,
-                            jt.personspec,
-                            jt.fuctiontech,
-                            jt.managerial,
-                            jt.behavioural
-                     FROM staffrequest sr
-                     JOIN approvaltbl hod ON sr.jdrequestid = hod.jdrequestid 
-                        AND hod.approvallevel = 'HOD'
-                     JOIN approvaltbl hr ON sr.jdrequestid = hr.jdrequestid 
-                        AND hr.approvallevel = 'HR'
-                     LEFT JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode
-                     LEFT JOIN departments dept ON du.deptcode = dept.departmentcode
-                     LEFT JOIN jobtitletbl jt ON sr.jdtitle = jt.jdtitle
-                     WHERE sr.jdrequestid = :requestId";
+            // Get main request details
+            $query = "SELECT 
+                sr.jdrequestid,
+                sr.jdtitle,
+                sr.deptunitcode,
+                sr.status as request_status,
+                sr.dandt as request_date,
+                sr.createdby,
+                dept.departmentname,
+                du.deptunitname,
+                GROUP_CONCAT(DISTINCT 
+                    CONCAT(
+                        srps.station, ':', 
+                        srps.employmenttype, ':', 
+                        srps.staffperstation
+                    )
+                ) as station_details,
+                (
+                    SELECT GROUP_CONCAT(
+                        CONCAT(
+                            approvallevel, ':', 
+                            status, ':', 
+                            COALESCE(comments, '')
+                        ) SEPARATOR '|'
+                    )
+                    FROM approvaltbl 
+                    WHERE jdrequestid = sr.jdrequestid
+                    ORDER BY FIELD(approvallevel, 'TeamLead', 'DeptUnitLead', 'HOD', 'HR', 'HeadOfHR', 'CFO', 'CEO')
+                ) as approval_details
+            FROM staffrequest sr
+            LEFT JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode
+            LEFT JOIN departments dept ON du.deptcode = dept.departmentcode
+            LEFT JOIN staffrequestperstation srps ON sr.jdrequestid = srps.jdrequestid
+            WHERE sr.jdrequestid = ?
+            GROUP BY sr.jdrequestid";
 
             $stmt = $this->db->prepare($query);
-            $stmt->execute(['requestId' => $requestId]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->execute([$requestId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$result) {
+                throw new Exception("Request not found");
+            }
+
+            // Format the response
+            $response = [
+                'requestDetails' => [
+                    'requestId' => $result['jdrequestid'],
+                    'jobTitle' => $result['jdtitle'],
+                    'department' => $result['departmentname'],
+                    'departmentUnit' => $result['deptunitname'],
+                    'status' => $result['request_status'],
+                    'requestDate' => $result['request_date'],
+                    'createdBy' => $result['createdby']
+                ],
+                'stations' => [],
+                'approvals' => []
+            ];
+
+            // Parse station details
+            if ($result['station_details']) {
+                foreach (explode(',', $result['station_details']) as $station) {
+                    list($code, $type, $count) = explode(':', $station);
+                    $response['stations'][] = [
+                        'station' => $code,
+                        'employmentType' => $type,
+                        'count' => $count
+                    ];
+                }
+            }
+
+            // Parse approval details
+            if ($result['approval_details']) {
+                foreach (explode('|', $result['approval_details']) as $approval) {
+                    list($level, $status, $comments) = explode(':', $approval);
+                    $response['approvals'][] = [
+                        'level' => $level,
+                        'status' => $status,
+                        'comments' => $comments
+                    ];
+                }
+            }
+
+            return $response;
         } catch (Exception $e) {
             error_log("Error in getRequestDetails: " . $e->getMessage());
             throw $e;
@@ -410,6 +461,64 @@ class HR
             return $output;
         } catch (Exception $e) {
             error_log("Error in getStaffTypes: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    public function getPendingRequestsHRonly()
+    {
+        try {
+            $query = "SELECT 
+                    sr.jdrequestid,
+                    sr.jdtitle,
+                    sr.deptunitcode,
+                    sr.status,
+                    sr.dandt as request_date,
+                    dept.departmentname as deptname,
+                    COUNT(CASE WHEN srps.status = 'approved' THEN 1 END) as approved_positions_count
+                FROM staffrequest sr
+                LEFT JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode
+                LEFT JOIN departments dept ON du.deptcode = dept.departmentcode
+                LEFT JOIN staffrequestperstation srps ON sr.jdrequestid = srps.jdrequestid
+                WHERE (sr.deptunitcode = 'HRD' OR sr.departmentcode = 'HRD')
+                GROUP BY sr.jdrequestid, sr.jdtitle, sr.deptunitcode, sr.status, 
+                         sr.dandt, dept.departmentname
+                ORDER BY sr.dandt DESC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getPendingRequestsHRonly: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function submitHRRequest($requestId)
+    {
+        try {
+            $query = "UPDATE staffrequest 
+                     SET status = 'pending', 
+                         submitdate = NOW() 
+                     WHERE jdrequestid = ? 
+                     AND status = 'draft'";
+
+            $stmt = $this->db->prepare($query);
+            $result = $stmt->execute([$requestId]);
+
+            if ($result) {
+                // Also update all station requests
+                $stationQuery = "UPDATE staffrequestperstation 
+                               SET status = 'pending' 
+                               WHERE jdrequestid = ? 
+                               AND status = 'draft'";
+
+                $stationStmt = $this->db->prepare($stationQuery);
+                $stationStmt->execute([$requestId]);
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            error_log("Error in submitHRRequest: " . $e->getMessage());
             throw $e;
         }
     }

@@ -75,18 +75,19 @@ $pendingRequests = $hr->getPendingRequests();
                             </div>
                             <div class="tab-pane fade" id="hr-only" role="tabpanel" aria-labelledby="hr-only-tab">
                                 <div class="table-responsive">
-                                    <table class="table table-bordered">
+                                    <table id="hr-only-requests" class="table table-striped">
                                         <thead>
                                             <tr>
                                                 <th>Request ID</th>
                                                 <th>Department</th>
                                                 <th>Job Title</th>
-                                                <th>Approved Positions</th>
+                                                <th>Status</th>
+                                                <th>Request Date</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="hrOnlyRequestsTable">
-
+                                        <tbody>
+                                            <!-- Data will be loaded here -->
                                         </tbody>
                                     </table>
                                 </div>
@@ -104,28 +105,63 @@ $pendingRequests = $hr->getPendingRequests();
 <script src="hr.js"></script>
 <?php include("../includes/footer.html"); ?>
 
-<div class="modal fade" id="requestDetailsModal" tabindex="-1" aria-labelledby="requestDetailsModalLabel" aria-hidden="true">
+<div class="modal fade" id="requestDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="requestDetailsModalLabel">Staff Request Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title">Staff Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- Content will be loaded dynamically -->
+                <!-- Approval Timeline -->
+                <div class="approval-timeline mb-4">
+                    <div class="timeline-wrapper">
+                        <div class="timeline-item">
+                            <div class="timeline-dot completed" data-bs-toggle="tooltip" title="Request Created"></div>
+                            <div class="timeline-label">Created</div>
+                        </div>
+                        <div class="timeline-line"></div>
+                        <div class="timeline-item">
+                            <div class="timeline-dot" id="hodDot" data-bs-toggle="tooltip" title="HOD Review"></div>
+                            <div class="timeline-label">HOD</div>
+                        </div>
+                        <div class="timeline-line"></div>
+                        <div class="timeline-item">
+                            <div class="timeline-dot" id="hrDot" data-bs-toggle="tooltip" title="HR Review"></div>
+                            <div class="timeline-label">HR</div>
+                        </div>
+                        <div class="timeline-line"></div>
+                        <div class="timeline-item">
+                            <div class="timeline-dot" id="hohrDot" data-bs-toggle="tooltip" title="Head of HR Review"></div>
+                            <div class="timeline-label">Head of HR</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Request Details Content -->
+                <div id="requestDetailsContent"></div>
+
+                <!-- Comments Section for Decline -->
+                <div id="declineCommentsSection" style="display: none;" class="mt-3">
+                    <div class="form-group">
+                        <label for="declineComments" class="form-label">Reason for Declining:</label>
+                        <textarea class="form-control" id="declineComments" rows="3" required></textarea>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-success" id="approveRequestBtn">
-                    <i class="bi bi-check-circle"></i> Approve Request
-                </button>
-                <button type="button" class="btn btn-danger" id="declineRequestBtn">
-                    <i class="bi bi-x-circle"></i> Decline Request
-                </button>
+                <div id="actionButtons">
+                    <button type="button" class="btn btn-success" id="approveRequestBtn">
+                        <i class="bi bi-check-circle"></i> Approve Request
+                    </button>
+                    <button type="button" class="btn btn-danger" id="declineRequestBtn">
+                        <i class="bi bi-x-circle"></i> Decline Request
+                    </button>
+                </div>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
-</div>
 </div>
 
 <script>
