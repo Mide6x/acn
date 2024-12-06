@@ -73,21 +73,21 @@ $pendingRequests = $hr->getPendingRequests();
                                     </table>
                                 </div>
                             </div>
+                            <!-- HR Requests Tab -->
                             <div class="tab-pane fade" id="hr-only" role="tabpanel" aria-labelledby="hr-only-tab">
-                                <div class="table-responsive">
-                                    <table id="hr-only-requests" class="table table-striped">
+                                <div class="table-responsive mt-3">
+                                    <table class="table table-bordered">
                                         <thead>
-                                            <tr>
+                                            <tr style="background-color: #fc7f14; color: #fff;">
                                                 <th>Request ID</th>
-                                                <th>Department</th>
                                                 <th>Job Title</th>
+                                                <th>Total Positions</th>
                                                 <th>Status</th>
-                                                <th>Request Date</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                            <!-- Data will be loaded here -->
+                                        <tbody id="hrRequestsTable">
+                                            <!-- HR requests will be loaded here -->
                                         </tbody>
                                     </table>
                                 </div>
@@ -113,30 +113,6 @@ $pendingRequests = $hr->getPendingRequests();
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- Approval Timeline -->
-                <div class="approval-timeline mb-4">
-                    <div class="timeline-wrapper">
-                        <div class="timeline-item">
-                            <div class="timeline-dot completed" data-bs-toggle="tooltip" title="Request Created"></div>
-                            <div class="timeline-label">Created</div>
-                        </div>
-                        <div class="timeline-line"></div>
-                        <div class="timeline-item">
-                            <div class="timeline-dot" id="hodDot" data-bs-toggle="tooltip" title="HOD Review"></div>
-                            <div class="timeline-label">HOD</div>
-                        </div>
-                        <div class="timeline-line"></div>
-                        <div class="timeline-item">
-                            <div class="timeline-dot" id="hrDot" data-bs-toggle="tooltip" title="HR Review"></div>
-                            <div class="timeline-label">HR</div>
-                        </div>
-                        <div class="timeline-line"></div>
-                        <div class="timeline-item">
-                            <div class="timeline-dot" id="hohrDot" data-bs-toggle="tooltip" title="Head of HR Review"></div>
-                            <div class="timeline-label">Head of HR</div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Request Details Content -->
                 <div id="requestDetailsContent"></div>

@@ -72,6 +72,19 @@ function updateTimelineDot(dotId, status) {
 
 // Event handlers
 $(document).ready(function() {
+    // Load HR requests by default
+    loadHRRequests();
+    
+    // Add tab change event listeners
+    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+        const target = $(e.target).attr("data-bs-target");
+        if (target === '#hr-requests') {
+            loadHRRequests();
+        } else if (target === '#other-requests') {
+            loadOtherRequests();
+        }
+    });
+    
     $('#approveRequestBtn').click(function() {
         const requestId = $(this).data('requestid');
         if (confirm('Are you sure you want to approve this request?')) {
@@ -149,6 +162,39 @@ function declineRequest(requestId, comments) {
         error: function(xhr, status, error) {
             console.error('Error:', error);
             alert('Error declining request. Please try again.');
+        }
+    });
+}
+
+function loadHRRequests() {
+    $.ajax({
+        url: 'HRParameters.php',
+        type: 'POST',
+        data: { action: 'load_hr_requests' },
+        success: function(response) {
+            $('#hrRequestsTable').html(response);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading HR requests:', error);
+            $('#hrRequestsTable').html(
+                '<tr><td colspan="5" class="text-center text-danger">Error loading requests: ' + error + '</td></tr>'
+            );
+        }
+    });
+}
+
+function loadOtherRequests() {
+    $.ajax({
+        url: 'HRParameters.php',
+        type: 'POST',
+        data: { action: 'load_other_requests' },
+        success: function(response) {
+            $('#otherRequestsTable').html(response);
+        },
+        error: function(xhr, status, error) {
+            $('#otherRequestsTable').html(
+                '<tr><td colspan="6" class="text-center text-danger">Error loading requests: ' + error + '</td></tr>'
+            );
         }
     });
 }

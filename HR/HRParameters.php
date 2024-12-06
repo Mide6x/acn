@@ -69,6 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $details = $hr->getRequestDetails($_POST['requestId']);
 
+                // Fetch job details from the jobtitletbl based on the jdtitle
+                $jobDetails = $hr->getJobDetailsByTitle($details['requestDetails']['jobTitle']);
+
                 // Generate HTML for the modal
                 $html = '<div class="request-details">';
 
@@ -88,6 +91,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                 </div>';
+
+                // Job Details and Requirements
+                $html .= '<div class="row mb-4">
+    <div class="col-md-6">
+        <h6 class="fw-bold">Job Details</h6>
+        <p><strong>Job Title:</strong> ' . htmlspecialchars($jobDetails['jdtitle'] ?? 'N/A') . '</p>
+        <p><strong>Description:</strong> ' . nl2br(htmlspecialchars($jobDetails['jddescription'] ?? 'N/A')) . '</p>
+        <p><strong>Educational Qualification:</strong> ' . nl2br(htmlspecialchars($jobDetails['eduqualification'] ?? 'N/A')) . '</p>
+        <p><strong>Professional Qualification:</strong> ' . nl2br(htmlspecialchars($jobDetails['proqualification'] ?? 'N/A')) . '</p>
+        <p><strong>Work Relations:</strong> ' . nl2br(htmlspecialchars($jobDetails['workrelation'] ?? 'N/A')) . '</p>
+        <p><strong>Position Level:</strong> ' . htmlspecialchars($jobDetails['jdposition'] ?? 'N/A') . '</p>
+    </div>
+    <div class="col-md-6">
+        <h6 class="fw-bold">Additional Requirements</h6>
+        <p><strong>Age Bracket:</strong> ' . htmlspecialchars($jobDetails['agebracket'] ?? 'N/A') . '</p>
+        <p><strong>Person Specification:</strong> ' . nl2br(htmlspecialchars($jobDetails['personspec'] ?? 'N/A')) . '</p>
+        <p><strong>Technical Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['fuctiontech'] ?? 'N/A')) . '</p>
+        <p><strong>Managerial Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['managerial'] ?? 'N/A')) . '</p>
+        <p><strong>Behavioral Requirements:</strong> ' . nl2br(htmlspecialchars($jobDetails['behavioural'] ?? 'N/A')) . '</p>
+    </div>
+</div>';
 
                 // Station Details
                 $html .= '<div class="station-details mb-4">
@@ -325,6 +349,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_POST['comments']
                 );
                 echo $result ? 'success' : 'error';
+                break;
+
+            case 'load_hr_requests':
+                try {
+                    error_log("Loading HR requests...");
+                    $requests = $hr->getHRRequests();
+
+                    error_log("Requests received: " . print_r($requests, true));
+
+                    $output = '';
+
+                    if (!empty($requests)) {
+                        foreach ($requests as $request) {
+                            $output .= "<tr>";
+                            $output .= "<td>" . htmlspecialchars($request['jdrequestid']) . "</td>";
+                            $output .= "<td>" . htmlspecialchars($request['jdtitle']) . "</td>";
+                            $output .= "<td>" . htmlspecialchars($request['total_positions']) . "</td>";
+                            $output .= "<td>" . htmlspecialchars($request['status']) . "</td>";
+                            $output .= "<td>
+                                <button onclick=\"viewRequestDetails('" . htmlspecialchars($request['jdrequestid']) . "')\" 
+                                        class='btn btn-sm btn-info'>
+                                    <i class='bi bi-eye'></i> View
+                                </button>
+                            </td>";
+                            $output .= "</tr>";
+                        }
+                    } else {
+                        $output = "<tr><td colspan='5' class='text-center'>No HR requests found</td></tr>";
+                    }
+
+                    error_log("Generated output: " . $output);
+                    echo $output;
+                } catch (Exception $e) {
+                    error_log("Error in load_hr_requests: " . $e->getMessage());
+                    echo "<tr><td colspan='5' class='text-center text-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</td></tr>";
+                }
+                break;
+
+            case 'load_other_requests':
+                $requests = $hr->getOtherDepartmentRequests();
+                $output = '';
+
+                foreach ($requests as $request) {
+                    $output .= "<tr>";
+                    $output .= "<td>{$request['jdrequestid']}</td>";
+                    $output .= "<td>{$request['departmentname']}</td>";
+                    $output .= "<td>{$request['jdtitle']}</td>";
+                    $output .= "<td>{$request['total_positions']}</td>";
+                    $output .= "<td>{$request['status']}</td>";
+                    $output .= "<td>
+                        <button onclick=\"viewRequestDetails('{$request['jdrequestid']}')\" 
+                                class='btn btn-sm btn-info'>
+                            <i class='bi bi-eye'></i> View
+                        </button>
+                    </td>";
+                    $output .= "</tr>";
+                }
+
+                echo $output ?: "<tr><td colspan='6' class='text-center'>No department requests found</td></tr>";
                 break;
         }
     } catch (Exception $e) {

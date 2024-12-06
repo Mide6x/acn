@@ -300,6 +300,25 @@ class HR
         }
     }
 
+    public function getJobDetailsByTitle($jdtitle)
+    {
+        try {
+            $query = "SELECT * FROM jobtitletbl WHERE jdtitle = :jdtitle";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['jdtitle' => $jdtitle]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$result) {
+                throw new Exception("Job title not found");
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            error_log("Error in getJobDetailsByTitle: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
     public function updateRequestStatus($requestId, $status, $comments = null)
     {
         try {
@@ -519,6 +538,69 @@ class HR
             return $result;
         } catch (Exception $e) {
             error_log("Error in submitHRRequest: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getHRRequests()
+    {
+        try {
+            // First, let's log the current user's staffid
+            error_log("Current staffid: " . $_SESSION['staffid']);
+
+            $query = "SELECT 
+                sr.jdrequestid,
+                sr.jdtitle,
+                sr.status,
+                sr.deptunitcode,
+                sr.dandt,
+                sr.createdby,
+                COUNT(srps.id) as total_positions
+            FROM staffrequest sr
+            LEFT JOIN staffrequestperstation srps ON sr.jdrequestid = srps.jdrequestid
+            WHERE sr.deptunitcode = 'HRD'
+            GROUP BY sr.jdrequestid
+            ORDER BY sr.dandt DESC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+
+            // Log the query results
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("HR Requests found: " . count($results));
+            error_log("Query results: " . print_r($results, true));
+
+            return $results;
+        } catch (Exception $e) {
+            error_log("Error in getHRRequests: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            throw $e;
+        }
+    }
+
+    public function getOtherDepartmentRequests()
+    {
+        try {
+            $query = "SELECT 
+                sr.jdrequestid,
+                sr.jdtitle,
+                sr.status,
+                sr.deptunitcode,
+                d.departmentname,
+                COUNT(srps.id) as total_positions
+            FROM staffrequest sr
+            LEFT JOIN staffrequestperstation srps ON sr.jdrequestid = srps.jdrequestid
+            LEFT JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode
+            LEFT JOIN departments d ON du.deptcode = d.departmentcode
+            WHERE sr.deptunitcode != 'HRD'
+            GROUP BY sr.jdrequestid
+            ORDER BY sr.dandt DESC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getOtherDepartmentRequests: " . $e->getMessage());
             throw $e;
         }
     }
