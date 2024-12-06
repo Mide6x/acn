@@ -152,9 +152,15 @@ $pendingRequests = $hr->getPendingRequests();
             </div>
             <div class="modal-footer">
                 <div id="hrOnlyButtons">
-                    <!-- Buttons will be dynamically added here -->
+                    <!-- Ensure dynamic buttons are inserted here -->
+                    <button type="button" class="btn btn-primary" id="editRequestBtn" style="display: none;">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                    <button type="button" class="btn btn-success" id="submitRequestBtn" style="display: none;">
+                        <i class="bi bi-check-circle"></i> Submit
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

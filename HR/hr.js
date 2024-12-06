@@ -17,8 +17,14 @@ function viewRequestDetails(requestId, type) {
             
             if (type === 'hr-only') {
                 const status = $('#requestStatus').val();
+                const buttonsContainer = $('#hrOnlyButtons');
+                
+                // Clear existing buttons except Close
+                buttonsContainer.find('button:not(.btn-secondary)').remove();
+                
                 if (status === 'draft') {
-                    $('#hrOnlyButtons').html(`
+                    // Add Edit and Submit buttons for draft status
+                    buttonsContainer.prepend(`
                         <button type="button" class="btn btn-primary" onclick="editRequest('${requestId}')">
                             <i class="bi bi-pencil"></i> Edit
                         </button>
@@ -27,7 +33,11 @@ function viewRequestDetails(requestId, type) {
                         </button>
                     `);
                 }
+                // For all other statuses, only the Close button will be shown
             }
+        },
+        error: function(xhr, status, error) {
+            $(contentId).html('<div class="alert alert-danger">Error loading request details: ' + error + '</div>');
         }
     });
 }
@@ -245,3 +255,51 @@ function submitRequest(requestId) {
         });
     }
 }
+
+// Add this at the appropriate place in your hr.js file
+let stationIndex = 0;  // Keep track of station count
+
+$(document).ready(function() {
+    // Add Station button click handler
+    $('#addStationBtn').on('click', function() {
+        stationIndex++;  // Increment counter for unique field names
+        
+        $.ajax({
+            url: 'HRParameters.php',
+            type: 'POST',
+            data: {
+                action: 'get_station_options',
+                index: stationIndex
+            },
+            success: function(response) {
+                $('#stationRequests').append(response);
+                
+                // Add remove button handler for the new station
+                $('.remove-station').last().on('click', function() {
+                    $(this).closest('.station-request').remove();
+                    updateTotalPositions();
+                });
+                
+                // Add change handler for the new staffperstation input
+                $('.staffperstation').last().on('change', function() {
+                    updateTotalPositions();
+                });
+            },
+            error: function(xhr, status, error) {
+                alert('Error adding station: ' + error);
+            }
+        });
+    });
+    
+    // Helper function to update total positions
+    function updateTotalPositions() {
+        let total = 0;
+        $('.staffperstation').each(function() {
+            total += parseInt($(this).val()) || 0;
+        });
+        $('#total_positions').val(total);
+    }
+    
+    // Initial station
+    $('#addStationBtn').trigger('click');
+});
