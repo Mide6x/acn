@@ -11,10 +11,10 @@ define('CURRENT_USER', [
     'deptunitcode' => 'SLS',
     'subdeptunitcode' => 'CSLS',
     'isAdmin' => false
-]);*/
+]);
 
 // Dept Unit Lead Details
-/*
+
 define('CURRENT_USER', [
     'staffid' => 'SLS001',
     'email' => 'samuel.a@acn.aero',
@@ -43,8 +43,8 @@ define('CURRENT_USER', [
     'deptunitcode' => '',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);
-*/
+]);*/
+
 
 //HR Details
 define('CURRENT_USER', [
@@ -57,6 +57,17 @@ define('CURRENT_USER', [
     'isAdmin' => false
 ]);
 
+/*
+// Head of HR Details
+define('CURRENT_USER', [
+    'staffid' => 'HR001',
+    'email' => 'sarah.w@acn.aero', 
+    'position' => 'HeadOfHR',
+    'departmentcode' => 'HRD',
+    'deptunitcode' => 'HRD',
+    'subdeptunitcode' => '',
+    'isAdmin' => false
+]);*/
 
 // Function to get current user info
 function getCurrentUser($key = null)

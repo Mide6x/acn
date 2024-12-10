@@ -18,6 +18,9 @@ $PAGE_URLS = [
         'view' => BASE_URL . '/HR/HRview.php',
         'dashboard' => BASE_URL . '/HR/HRdash.php'
     ],
+    'HEAD_OF_HR' => [
+        'view' => BASE_URL . '/HeadOfHR/HHRView.php'
+    ],
     'SETTINGS' => [
         'departments' => BASE_URL . '/departments.php',
         'stations' => BASE_URL . '/station.php',

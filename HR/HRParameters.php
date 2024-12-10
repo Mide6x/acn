@@ -460,8 +460,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo '</tbody></table></div>';
                 }
                 break;
+
+            case 'submit_hr_request':
+                if (!isset($_POST['requestId']) || empty($_POST['requestId'])) {
+                    throw new Exception("Request ID is required");
+                }
+                // Handle the submission
+                $result = $hr->submitHRRequest($_POST['requestId']);
+                echo $result ? 'success' : 'error';
+                break;
         }
     } catch (Exception $e) {
-        echo "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
+        echo "Error: " . $e->getMessage();
     }
 }

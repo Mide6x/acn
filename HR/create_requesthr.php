@@ -85,12 +85,14 @@ try {
                                     onmouseover="this.style.backgroundColor='#000000';"
                                     onmouseout="this.style.backgroundColor='#fc7f14';">Save as Draft
                                 </button>
-                                <button type="button" class="btn btn-primary"
-                                    id="submitRequestBtn"
-                                    style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
+                                <button type="button" class="btn btn-primary" id="submitRequestBtn" 
+                                    onclick="submitRequest(document.getElementById('jdrequestid').textContent)"
+                                    style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px; display: block; margin: 0 auto; margin-top: 20px"
                                     onmouseover="this.style.backgroundColor='#000000';"
-                                    onmouseout="this.style.backgroundColor='#fc7f14';">Submit Request
+                                    onmouseout="this.style.backgroundColor='#fc7f14';">
+                                    Submit Request
                                 </button>
+                                <input type="hidden" id="requestId" value="<?php echo htmlspecialchars($jdrequestid); ?>">
                             </div>
                         </div>
                     </div>

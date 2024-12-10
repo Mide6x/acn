@@ -138,7 +138,7 @@ class HR
                         AND hr.approvallevel = 'HR'
                      LEFT JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode
                      LEFT JOIN departments dept ON du.deptcode = dept.departmentcode
-                     WHERE hr.status IN ('pending', 'draft')
+                     WHERE hr.status IN ('pending')
                      ORDER BY sr.dandt DESC";
 
             $stmt = $this->db->prepare($query);
@@ -512,33 +512,34 @@ class HR
         }
     }
 
-    public function submitHRRequest($requestId)
-    {
+    public function submitHRRequest($requestId) {
         try {
             $query = "UPDATE staffrequest 
-                     SET status = 'pending', 
-                         submitdate = NOW() 
-                     WHERE jdrequestid = ? 
-                     AND status = 'draft'";
+                      SET status = 'pending', 
+                          submitdate = NOW() 
+                      WHERE jdrequestid = ? 
+                      AND status = 'draft'";
 
             $stmt = $this->db->prepare($query);
             $result = $stmt->execute([$requestId]);
 
             if ($result) {
-                // Also update all station requests
+                // Update all station requests
                 $stationQuery = "UPDATE staffrequestperstation 
-                               SET status = 'pending' 
-                               WHERE jdrequestid = ? 
-                               AND status = 'draft'";
+                                 SET status = 'pending' 
+                                 WHERE jdrequestid = ? 
+                                 AND status = 'draft'";
 
                 $stationStmt = $this->db->prepare($stationQuery);
                 $stationStmt->execute([$requestId]);
+            } else {
+                error_log("Failed to update staffrequest for requestId: $requestId");
             }
 
             return $result;
         } catch (Exception $e) {
             error_log("Error in submitHRRequest: " . $e->getMessage());
-            throw $e;
+            return false;
         }
     }
 

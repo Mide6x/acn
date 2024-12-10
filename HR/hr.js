@@ -114,12 +114,9 @@ $(document).ready(function() {
         window.location.href = 'edit_requesthr.php?id=' + requestId;
     });
     
-    // Submit button handler
+    // Submit button handler - Use a single event handler
     $(document).on('click', '#submitRequestBtn', function() {
-        const requestId = $(this).data('requestid');
-        if (confirm('Are you sure you want to submit this request? You won\'t be able to edit it after submission.')) {
-            submitHRRequest(requestId);
-        }
+        submitRequest();
     });
 });
 
@@ -205,28 +202,37 @@ function loadOtherRequests() {
     });
 }
 
-// Add new function to handle HR request submission
-function submitHRRequest(requestId) {
-    $.ajax({
-        url: 'HRParameters.php',
-        type: 'POST',
-        data: {
-            action: 'submit_hr_request',
-            requestId: requestId
-        },
-        success: function(response) {
-            if (response === 'success') {
-                alert('Request submitted successfully');
-                $('#requestDetailsModal').modal('hide');
-                location.reload(); // Refresh the page to update the table
-            } else {
-                alert('Error submitting request: ' + response);
+// Single submission function
+function submitRequest() {
+    const requestId = $('#requestId').val(); // Retrieve the requestId from the hidden input
+
+    if (!requestId) {
+        alert('Request ID is missing.');
+        return;
+    }
+
+    if (confirm('Are you sure you want to submit this request? You won\'t be able to edit it after submission.')) {
+        $.ajax({
+            url: 'HRParameters.php',
+            type: 'POST',
+            data: {
+                action: 'submit_hr_request',
+                requestId: requestId
+            },
+            success: function(response) {
+                if (response === 'success') {
+                    alert('Request submitted successfully');
+                    window.location.href = 'HRview.php'; // Redirect to the view page after successful submission
+                } else {
+                    alert('Error submitting request: ' + response);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                alert('Error submitting request. Please try again.');
             }
-        },
-        error: function(xhr, status, error) {
-            alert('Error submitting request: ' + error);
-        }
-    });
+        });
+    }
 }
 
 // Functions for HR Only requests
@@ -234,7 +240,14 @@ function editRequest(requestId) {
     window.location.href = 'edit_requesthr.php?id=' + requestId;
 }
 
-function submitRequest(requestId) {
+function submitRequest() {
+    const requestId = $('#requestId').val(); // Retrieve the requestId from the hidden input
+
+    if (!requestId) {
+        alert('Request ID is missing.');
+        return;
+    }
+
     if (confirm('Are you sure you want to submit this request? You won\'t be able to edit it after submission.')) {
         $.ajax({
             url: 'HRParameters.php',
@@ -251,6 +264,10 @@ function submitRequest(requestId) {
                 } else {
                     alert('Error submitting request: ' + response);
                 }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                alert('Error submitting request. Please try again.');
             }
         });
     }

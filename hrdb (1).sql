@@ -3,14 +3,13 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 02, 2024 at 02:42 PM
+-- Generation Time: Dec 10, 2024 at 09:00 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
-
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -22,6 +21,7 @@ SET time_zone = "+00:00";
 --
 
 -- --------------------------------------------------------
+
 
 --
 -- Table structure for table `approvaltbl`
@@ -39,6 +39,8 @@ CREATE TABLE `approvaltbl` (
   `dandt` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Now you can proceed with your import or table creation
+
 --
 -- Dumping data for table `approvaltbl`
 --
@@ -50,18 +52,63 @@ INSERT INTO `approvaltbl` (`id`, `jdrequestid`, `jdtitle`, `approverstaffid`, `a
 (606, 'REQ20240001', 'Corporate Sales Consultant', 'HR001', 'HeadOfHR', 'draft', NULL, NULL, '2024-12-02 08:32:47'),
 (607, 'REQ20240001', 'Corporate Sales Consultant', 'CFO001', 'CFO', 'draft', NULL, NULL, '2024-12-02 08:32:47'),
 (608, 'REQ20240001', 'Corporate Sales Consultant', 'CEO001', 'CEO', 'draft', NULL, NULL, '2024-12-02 08:32:47'),
-(609, 'REQ20241475', 'Corporate Sales Specialist', 'SLS001', 'DeptUnitLead', 'pending', NULL, 'mike.j@acn.aero', '2024-12-02 08:33:34'),
+(609, 'REQ20241475', 'Corporate Sales Specialist', 'SLS001', 'DeptUnitLead', 'declined', NULL, 'mike.j@acn.aero', '2024-12-03 10:32:28'),
 (610, 'REQ20241475', 'Corporate Sales Specialist', 'COM001', 'HOD', 'draft', NULL, 'mike.j@acn.aero', '2024-12-02 08:33:34'),
 (611, 'REQ20241475', 'Corporate Sales Specialist', 'HR002', 'HR', 'draft', NULL, 'mike.j@acn.aero', '2024-12-02 08:33:34'),
 (612, 'REQ20241475', 'Corporate Sales Specialist', 'HR001', 'HeadOfHR', 'draft', NULL, 'mike.j@acn.aero', '2024-12-02 08:33:34'),
 (613, 'REQ20241475', 'Corporate Sales Specialist', 'CFO001', 'CFO', 'draft', NULL, 'mike.j@acn.aero', '2024-12-02 08:33:34'),
 (614, 'REQ20241475', 'Corporate Sales Specialist', 'CEO001', 'CEO', 'draft', NULL, 'mike.j@acn.aero', '2024-12-02 08:33:34'),
 (633, 'REQ20241476', 'Commercial Director', 'SLS001', 'DeptUnitLead', 'approved', NULL, NULL, '2024-12-02 08:51:20'),
-(634, 'REQ20241476', 'Commercial Director', 'COM001', 'HOD', 'pending', NULL, NULL, '2024-12-02 08:51:20'),
+(634, 'REQ20241476', 'Commercial Director', 'COM001', 'HOD', 'declined', 'Out of budget', NULL, '2024-12-03 08:19:03'),
 (635, 'REQ20241476', 'Commercial Director', 'HR002', 'HR', 'draft', NULL, NULL, '2024-12-02 08:51:20'),
 (636, 'REQ20241476', 'Commercial Director', 'HR001', 'HeadOfHR', 'draft', NULL, NULL, '2024-12-02 08:51:20'),
 (637, 'REQ20241476', 'Commercial Director', 'CFO001', 'CFO', 'draft', NULL, NULL, '2024-12-02 08:51:20'),
-(638, 'REQ20241476', 'Commercial Director', 'CEO001', 'CEO', 'draft', NULL, NULL, '2024-12-02 08:51:20');
+(638, 'REQ20241476', 'Commercial Director', 'CEO001', 'CEO', 'draft', NULL, NULL, '2024-12-02 08:51:20'),
+(639, 'REQ20241477', 'Corporate Sales Executive', 'SLS001', 'DeptUnitLead', 'approved', NULL, 'SLS001', '2024-12-02 15:12:17'),
+(640, 'REQ20241477', 'Corporate Sales Executive', 'COM001', 'HOD', 'approved', '', 'SLS001', '2024-12-03 08:17:58'),
+(641, 'REQ20241477', 'Corporate Sales Executive', 'HR002', 'HR', 'approved', NULL, 'SLS001', '2024-12-05 11:33:57'),
+(642, 'REQ20241477', 'Corporate Sales Executive', 'HR001', 'HeadOfHR', 'pending', NULL, 'SLS001', '2024-12-05 11:33:57'),
+(643, 'REQ20241477', 'Corporate Sales Executive', 'CFO001', 'CFO', 'draft', NULL, 'SLS001', '2024-12-02 15:12:17'),
+(644, 'REQ20241477', 'Corporate Sales Executive', 'CEO001', 'CEO', 'draft', NULL, 'SLS001', '2024-12-02 15:12:17'),
+(657, 'REQ20241478', 'Digital Marketing Lead', 'MKT001', 'DeptUnitLead', 'approved', NULL, 'MKT001', '2024-12-03 07:54:41'),
+(658, 'REQ20241478', 'Digital Marketing Lead', NULL, 'HOD', 'declined', 'No money', 'MKT001', '2024-12-04 10:31:14'),
+(659, 'REQ20241478', 'Digital Marketing Lead', 'HR002', 'HR', 'draft', NULL, 'MKT001', '2024-12-03 07:54:41'),
+(660, 'REQ20241478', 'Digital Marketing Lead', 'HR001', 'HeadOfHR', 'draft', NULL, 'MKT001', '2024-12-03 07:54:41'),
+(661, 'REQ20241478', 'Digital Marketing Lead', 'CFO001', 'CFO', 'draft', NULL, 'MKT001', '2024-12-03 07:54:41'),
+(662, 'REQ20241478', 'Digital Marketing Lead', 'CEO001', 'CEO', 'draft', NULL, 'MKT001', '2024-12-03 07:54:41'),
+(663, 'REQ20241479', 'Corporate Sales Consultant', 'SLS001', 'DeptUnitLead', 'approved', NULL, 'SLS001', '2024-12-03 09:32:15'),
+(664, 'REQ20241479', 'Corporate Sales Consultant', 'COM001', 'HOD', 'approved', '', 'SLS001', '2024-12-04 09:44:10'),
+(665, 'REQ20241479', 'Corporate Sales Consultant', 'HR002', 'HR', 'approved', NULL, 'SLS001', '2024-12-05 11:53:44'),
+(666, 'REQ20241479', 'Corporate Sales Consultant', 'HR001', 'HeadOfHR', 'pending', NULL, 'SLS001', '2024-12-05 11:53:44'),
+(667, 'REQ20241479', 'Corporate Sales Consultant', 'CFO001', 'CFO', 'draft', NULL, 'SLS001', '2024-12-03 09:32:15'),
+(668, 'REQ20241479', 'Corporate Sales Consultant', 'CEO001', 'CEO', 'draft', NULL, 'SLS001', '2024-12-03 09:32:15'),
+(669, 'REQ20241480', 'Retail Sales Supervisor', 'SLS001', 'DeptUnitLead', 'approved', NULL, 'SLS001', '2024-12-03 10:54:09'),
+(670, 'REQ20241480', 'Retail Sales Supervisor', 'COM001', 'HOD', 'approved', '', 'SLS001', '2024-12-03 12:04:11'),
+(671, 'REQ20241480', 'Retail Sales Supervisor', 'HR002', 'HR', 'declined', 'test, no money', 'SLS001', '2024-12-05 11:59:14'),
+(672, 'REQ20241480', 'Retail Sales Supervisor', 'HR001', 'HeadOfHR', 'draft', NULL, 'SLS001', '2024-12-03 10:54:09'),
+(673, 'REQ20241480', 'Retail Sales Supervisor', 'CFO001', 'CFO', 'draft', NULL, 'SLS001', '2024-12-03 10:54:09'),
+(674, 'REQ20241480', 'Retail Sales Supervisor', 'CEO001', 'CEO', 'draft', NULL, 'SLS001', '2024-12-03 10:54:09'),
+(675, 'REQ20241481', 'Digital Marketing Specialist', 'HR002', 'HR', 'pending', NULL, 'COM001', '2024-12-03 14:44:54'),
+(676, 'REQ20241481', 'Digital Marketing Specialist', 'HR001', 'HeadOfHR', 'draft', NULL, 'COM001', '2024-12-03 14:44:54'),
+(677, 'REQ20241481', 'Digital Marketing Specialist', 'CFO001', 'CFO', 'draft', NULL, 'COM001', '2024-12-03 14:44:54'),
+(678, 'REQ20241481', 'Digital Marketing Specialist', 'CEO001', 'CEO', 'draft', NULL, 'COM001', '2024-12-03 14:44:54'),
+(679, 'REQ20241482', 'Brand Manager', 'HR002', 'HR', 'pending', NULL, 'COM001', '2024-12-04 08:10:05'),
+(680, 'REQ20241482', 'Brand Manager', 'HR001', 'HeadOfHR', 'draft', NULL, 'COM001', '2024-12-04 08:10:05'),
+(681, 'REQ20241482', 'Brand Manager', 'CFO001', 'CFO', 'draft', NULL, 'COM001', '2024-12-04 08:10:05'),
+(682, 'REQ20241482', 'Brand Manager', 'CEO001', 'CEO', 'draft', NULL, 'COM001', '2024-12-04 08:10:05'),
+(683, 'REQ20241483', 'Commercial Director', 'HR002', 'HR', 'pending', NULL, 'COM001', '2024-12-04 09:47:31'),
+(684, 'REQ20241483', 'Commercial Director', 'HR001', 'HeadOfHR', 'draft', NULL, 'COM001', '2024-12-04 09:47:31'),
+(685, 'REQ20241483', 'Commercial Director', 'CFO001', 'CFO', 'draft', NULL, 'COM001', '2024-12-04 09:47:31'),
+(686, 'REQ20241483', 'Commercial Director', 'CEO001', 'CEO', 'draft', NULL, 'COM001', '2024-12-04 09:47:31'),
+(687, 'REQ20241484', 'Retail Sales Supervisor', 'HR002', 'HR', 'pending', NULL, 'COM001', '2024-12-04 14:39:22'),
+(688, 'REQ20241484', 'Retail Sales Supervisor', 'HR001', 'HeadOfHR', 'draft', NULL, 'COM001', '2024-12-04 14:39:22'),
+(689, 'REQ20241484', 'Retail Sales Supervisor', 'CFO001', 'CFO', 'draft', NULL, 'COM001', '2024-12-04 14:39:22'),
+(690, 'REQ20241484', 'Retail Sales Supervisor', 'CEO001', 'CEO', 'draft', NULL, 'COM001', '2024-12-04 14:39:22'),
+(691, 'REQ20241487', 'Retail Sales Executive', 'HR002', 'HR', 'approved', NULL, 'COM001', '2024-12-06 13:22:56'),
+(692, 'REQ20241487', 'Retail Sales Executive', 'HR001', 'HeadOfHR', 'pending', NULL, 'COM001', '2024-12-06 13:22:56'),
+(693, 'REQ20241487', 'Retail Sales Executive', 'CFO001', 'CFO', 'draft', NULL, 'COM001', '2024-12-06 12:42:28'),
+(694, 'REQ20241487', 'Retail Sales Executive', 'CEO001', 'CEO', 'draft', NULL, 'COM001', '2024-12-06 12:42:28');
+
 
 -- --------------------------------------------------------
 
@@ -192,8 +239,8 @@ INSERT INTO `employeetbl` (`id`, `deptunitcode`, `subdeptunitcode`, `staffname`,
 (4, 'ITS', NULL, 'Alice Brown', 'ITS001', 'DeptUnitLead', 'Active', 'adewole.o@acn.aero', '2024-11-22 10:32:40', 'IT Support Manager'),
 (5, 'SLS', 'CSLS', 'Mike Johnson', 'CSLS001', 'TeamLead', 'Active', 'adewole.o@acn.aero', '2024-11-22 10:32:40', 'Sales Team Lead'),
 (6, 'MKT', 'DMKT', 'Sarah Davis', 'DMKT001', 'TeamLead', 'Active', 'adewole.o@acn.aero', '2024-11-22 10:32:40', 'Digital Marketing Lead'),
-(11, 'HRD', NULL, 'Sarah Wilson', 'HR001', 'HOD', 'Active', 'adewole.o@acn.aero', '2024-11-22 11:42:54', 'Head of HR'),
-(12, 'HRD', NULL, 'James Brown', 'HR002', 'DeptUnitLead', 'Active', 'adewole.o@acn.aero', '2024-11-22 11:42:54', 'HR Manager'),
+(11, 'HRD', NULL, 'Sarah Wilson', 'HR001', 'HeadOfHR', 'Active', 'adewole.o@acn.aero', '2024-11-22 11:42:54', 'Head of HR'),
+(12, 'HRD', NULL, 'James Brown', 'HR002', 'HR', 'Active', 'adewole.o@acn.aero', '2024-11-22 11:42:54', 'HR Manager'),
 (13, 'EXE', NULL, 'Michael Chen', 'CFO001', 'CFO', 'Active', 'adewole.o@acn.aero', '2024-11-22 11:42:54', 'Chief Financial Officer'),
 (14, 'EXE', NULL, 'Elizabeth Taylor', 'CEO001', 'CEO', 'Active', 'adewole.o@acn.aero', '2024-11-22 11:42:54', 'Chief Executive Officer'),
 (15, 'SLS', NULL, 'Samuel Anderson', 'SLS001', 'DeptUnitLead', 'Active', 'adewole.o@acn.aero', '2024-11-22 13:58:14', 'Sales Manager'),
@@ -334,17 +381,29 @@ CREATE TABLE `staffrequest` (
   `dandt` timestamp NOT NULL DEFAULT current_timestamp(),
   `createdby` varchar(100) DEFAULT NULL,
   `subdeptunitcode` varchar(255) DEFAULT NULL,
-  `staffid` varchar(50) DEFAULT NULL
+  `staffid` varchar(50) DEFAULT NULL,
+  `departmentcode` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `staffrequest`
 --
 
-INSERT INTO `staffrequest` (`id`, `jdrequestid`, `jdtitle`, `novacpost`, `deptunitcode`, `status`, `dandt`, `createdby`, `subdeptunitcode`, `staffid`) VALUES
-(106, 'REQ20240001', 'Corporate Sales Consultant', 2, 'SLS', 'pending', '2024-12-02 08:32:47', NULL, '', 'SLS001'),
-(107, 'REQ20241475', 'Corporate Sales Specialist', 3, 'SLS', 'draft', '2024-12-02 08:33:34', 'mike.j@acn.aero', 'CSLS', 'CSLS001'),
-(111, 'REQ20241476', 'Commercial Director', 2, 'SLS', 'draft', '2024-12-02 08:51:20', NULL, '', 'SLS001');
+INSERT INTO `staffrequest` (`id`, `jdrequestid`, `jdtitle`, `novacpost`, `deptunitcode`, `status`, `dandt`, `createdby`, `subdeptunitcode`, `staffid`, `departmentcode`) VALUES
+(106, 'REQ20240001', 'Corporate Sales Consultant', 2, 'SLS', 'pending', '2024-12-02 08:32:47', NULL, '', 'SLS001', NULL),
+(107, 'REQ20241475', 'Corporate Sales Specialist', 3, 'SLS', 'DeptUnit Lead Declined', '2024-12-02 08:33:34', 'mike.j@acn.aero', 'CSLS', 'CSLS001', NULL),
+(111, 'REQ20241476', 'Commercial Director', 2, 'SLS', 'declined', '2024-12-02 08:51:20', NULL, '', 'SLS001', NULL),
+(112, 'REQ20241477', 'Corporate Sales Executive', 1, 'SLS', 'approved', '2024-12-02 15:12:17', 'SLS001', '', 'SLS001', NULL),
+(115, 'REQ20241478', 'Digital Marketing Lead', 1, 'MKT', 'draft', '2024-12-03 07:54:41', 'MKT001', '', 'MKT001', NULL),
+(116, 'REQ20241479', 'Corporate Sales Consultant', 3, 'SLS', 'draft', '2024-12-03 09:32:15', 'SLS001', '', 'SLS001', NULL),
+(117, 'REQ20241480', 'Retail Sales Supervisor', 3, 'SLS', 'approved', '2024-12-03 10:54:09', 'SLS001', '', 'SLS001', NULL),
+(122, 'REQ20241481', 'Digital Marketing Specialist', 2, NULL, 'pending', '2024-12-03 14:44:54', 'COM001', NULL, 'COM001', 'COM'),
+(123, 'REQ20241482', 'Brand Manager', 1, NULL, 'pending', '2024-12-04 08:10:05', 'COM001', NULL, 'COM001', 'COM'),
+(124, 'REQ20241483', 'Commercial Director', 1, NULL, 'pending', '2024-12-04 09:47:31', 'COM001', NULL, 'COM001', 'COM'),
+(125, 'REQ20241484', 'Retail Sales Supervisor', 1, NULL, 'pending', '2024-12-04 14:39:22', 'COM001', NULL, 'COM001', 'COM'),
+(129, 'REQ20241485', 'HR Manager', 35, 'HRD', 'draft', '2024-12-06 12:02:31', 'john.d@acn.aero', '', 'HR001', 'HRD'),
+(130, 'REQ20241486', 'Head of HR', 7, 'HRD', 'draft', '2024-12-06 12:11:34', 'john.d@acn.aero', '', 'HR001', 'HRD'),
+(131, 'REQ20241487', 'Retail Sales Executive', 1, NULL, 'pending', '2024-12-06 12:42:28', 'COM001', NULL, 'COM001', 'COM');
 
 --
 -- Triggers `staffrequest`
@@ -470,8 +529,21 @@ CREATE TABLE `staffrequestperstation` (
 
 INSERT INTO `staffrequestperstation` (`id`, `jdrequestid`, `station`, `employmenttype`, `staffperstation`, `status`, `reason`, `dandt`, `createdby`) VALUES
 (28, 'REQ20240001', 'ABV', 'Contract', 2, 'pending', NULL, '2024-12-02 08:32:47', 'SLS001'),
-(29, 'REQ20241475', 'KAN', 'Permanent', 3, 'pending', NULL, '2024-12-02 08:33:34', 'mike.j@acn.aero'),
-(31, 'REQ20241476', 'ABV', 'Contract', 2, 'pending', NULL, '2024-12-02 08:51:20', 'SLS001');
+(29, 'REQ20241475', 'KAN', 'Permanent', 3, 'DeptUnit Lead Declined', 'No budget', '2024-12-02 08:33:34', 'mike.j@acn.aero'),
+(31, 'REQ20241476', 'ABV', 'Contract', 2, 'pending', NULL, '2024-12-02 08:51:20', 'SLS001'),
+(32, 'REQ20241477', 'LOS', 'Contract', 1, 'draft', NULL, '2024-12-02 15:12:17', 'SLS001'),
+(35, 'REQ20241478', 'LOS', 'Contract', 1, 'pending', NULL, '2024-12-03 07:54:41', 'MKT001'),
+(36, 'REQ20241479', 'ABV', 'Contract', 3, 'draft', NULL, '2024-12-03 09:32:15', 'SLS001'),
+(37, 'REQ20241480', 'LOS', 'Permanent', 3, 'rejected', 'test, no money', '2024-12-05 11:59:14', 'SLS001'),
+(44, 'REQ20241481', 'KAN', 'Temporary', 2, 'pending', NULL, '2024-12-03 14:44:54', 'COM001'),
+(45, 'REQ20241481', 'ABV', 'Permanent', 3, 'pending', NULL, '2024-12-03 14:44:54', 'COM001'),
+(46, 'REQ20241482', 'KAN', 'Contract', 2, 'pending', NULL, '2024-12-04 08:10:05', 'COM001'),
+(47, 'REQ20241483', 'KAN', 'Temporary', 3, 'pending', NULL, '2024-12-04 09:47:31', 'COM001'),
+(48, 'REQ20241484', 'UK', 'Permanent', 3, 'pending', NULL, '2024-12-04 14:39:22', 'COM001'),
+(51, 'REQ20241485', 'KAN', 'Permanent', 35, 'draft', NULL, '2024-12-06 12:02:31', 'john.d@acn.aero'),
+(52, 'REQ20241486', 'LOS', 'Temporary', 2, 'draft', NULL, '2024-12-06 12:11:34', 'john.d@acn.aero'),
+(53, 'REQ20241486', 'KAN', 'Permanent', 5, 'draft', NULL, '2024-12-06 12:11:34', 'john.d@acn.aero'),
+(54, 'REQ20241487', 'KAN', 'Permanent', 2, 'pending', NULL, '2024-12-06 12:42:28', 'COM001');
 
 -- --------------------------------------------------------
 
@@ -645,7 +717,8 @@ ALTER TABLE `staffrequest`
   ADD UNIQUE KEY `jdrequestid` (`jdrequestid`),
   ADD KEY `deptunitcode` (`deptunitcode`),
   ADD KEY `jdtitle` (`jdtitle`),
-  ADD KEY `subdeptunitcode` (`subdeptunitcode`);
+  ADD KEY `subdeptunitcode` (`subdeptunitcode`),
+  ADD KEY `fk_departmentcode` (`departmentcode`);
 
 --
 -- Indexes for table `staffrequestperstation`
@@ -686,7 +759,7 @@ ALTER TABLE `subdeptunittbl`
 -- AUTO_INCREMENT for table `approvaltbl`
 --
 ALTER TABLE `approvaltbl`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=639;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=695;
 
 --
 -- AUTO_INCREMENT for table `businessunittbl`
@@ -734,13 +807,13 @@ ALTER TABLE `reportingline`
 -- AUTO_INCREMENT for table `staffrequest`
 --
 ALTER TABLE `staffrequest`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=112;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=132;
 
 --
 -- AUTO_INCREMENT for table `staffrequestperstation`
 --
 ALTER TABLE `staffrequestperstation`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT for table `stafftype`
@@ -808,6 +881,7 @@ ALTER TABLE `reportingline`
 -- Constraints for table `staffrequest`
 --
 ALTER TABLE `staffrequest`
+  ADD CONSTRAINT `fk_departmentcode` FOREIGN KEY (`departmentcode`) REFERENCES `departments` (`departmentcode`),
   ADD CONSTRAINT `staffrequest_ibfk_1` FOREIGN KEY (`deptunitcode`) REFERENCES `departmentunit` (`deptunitcode`),
   ADD CONSTRAINT `staffrequest_ibfk_2` FOREIGN KEY (`jdtitle`) REFERENCES `jobtitletbl` (`jdtitle`);
 
