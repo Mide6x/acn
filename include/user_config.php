@@ -69,6 +69,28 @@ define('CURRENT_USER', [
     'isAdmin' => false
 ]);
 
+// CFO Details
+define('CURRENT_USER', [
+    'staffid' => 'CFO001',
+    'email' => 'michael.c@acn.aero',
+    'position' => 'CFO', 
+    'departmentcode' => 'EXE',
+    'deptunitcode' => 'EXE',
+    'subdeptunitcode' => '',
+    'isAdmin' => false
+]);
+// CEO Details
+define('CURRENT_USER', [
+    'staffid' => 'CEO001',
+    'email' => 'ado.s@acn.aero',
+    'position' => 'CEO',
+    'departmentcode' => 'EXE', 
+    'deptunitcode' => 'EXE',
+    'subdeptunitcode' => '',
+    'isAdmin' => false
+]);
+
+
 // Function to get current user info
 function getCurrentUser($key = null)
 {

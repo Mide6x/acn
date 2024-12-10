@@ -38,14 +38,16 @@
 ### Department Unit Lead
 1. Add Station button not functional in DeptUnitLead view
 2. Edit draft request functionality not working
-3. Submit button currently only saves to draft - submission only possible via edit request modal
+3. Submit button saves to draft - can only submit through edit request modal
 
-### Head of Department (HOD) 
-1. Submit button not functional in main view
-2. Request submission only possible through request details modal
+### Head of Department (HOD)
+1. Submit button not functional in main view - can only submit through request details modal
+2. Edit draft functionality not working
 
 ### HR
 1. Submit button not functional in main view
+2. Save as draft button not functional
+3. Edit request functionality not working
 
 ## User Roles
 
@@ -54,5 +56,7 @@ The system supports the following user roles:
 - Head of Department
 - HR Staff
 - Head of HR
+- CFO
+- CEO
 
 To switch between roles for testing, modify the active user configuration in: /Applications/XAMPP/xamppfiles/htdocs/acnnew/include/user_config.php
