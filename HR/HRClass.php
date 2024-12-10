@@ -537,34 +537,78 @@ class HR
         }
     }
 
-    public function submitHRRequest($requestId) {
+    public function submitHRRequest($requestId, $jdtitle) {
         try {
-            $query = "UPDATE staffrequest 
-                      SET status = 'pending', 
-                          submitdate = NOW() 
-                      WHERE jdrequestid = ? 
-                      AND status = 'draft'";
+            error_log("Starting submitHRRequest for ID: " . $requestId);
+            $this->db->beginTransaction();
 
-            $stmt = $this->db->prepare($query);
-            $result = $stmt->execute([$requestId]);
+            // First, insert the request into staffrequest table
+            $insertRequestQuery = "INSERT INTO staffrequest (
+                jdrequestid, 
+                jdtitle,
+                departmentcode,
+                deptunitcode,
+                status,
+                createdby,
+                dandt
+            ) VALUES (
+                :requestId,
+                :jdtitle,
+                'HRD',
+                'HRD',
+                'pending',
+                :createdby,
+                NOW()
+            )";
 
-            if ($result) {
-                // Update all station requests
-                $stationQuery = "UPDATE staffrequestperstation 
-                                 SET status = 'pending' 
-                                 WHERE jdrequestid = ? 
-                                 AND status = 'draft'";
+            $insertStmt = $this->db->prepare($insertRequestQuery);
+            $insertResult = $insertStmt->execute([
+                'requestId' => $requestId,
+                'jdtitle' => $jdtitle,
+                'createdby' => $_SESSION['staffid'] ?? 'HR001'
+            ]);
 
-                $stationStmt = $this->db->prepare($stationQuery);
-                $stationStmt->execute([$requestId]);
-            } else {
-                error_log("Failed to update staffrequest for requestId: $requestId");
+            if (!$insertResult) {
+                throw new Exception("Failed to create staff request");
             }
 
-            return $result;
+            // Insert approval records
+            $approvals = [
+                ['HR001', 'HR', 'approved'],
+                ['HR002', 'HeadOfHR', 'pending'],
+                ['CFO001', 'CFO', 'draft'],
+                ['CEO001', 'CEO', 'draft']
+            ];
+
+            foreach ($approvals as $approval) {
+                $insertQuery = "INSERT INTO approvaltbl 
+                               (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby) 
+                               VALUES 
+                               (:requestId, :jdtitle, :approverId, :level, :status, :createdby)";
+
+                $insertStmt = $this->db->prepare($insertQuery);
+                $result = $insertStmt->execute([
+                    'requestId' => $requestId,
+                    'jdtitle' => $jdtitle,
+                    'approverId' => $approval[0],
+                    'level' => $approval[1],
+                    'status' => $approval[2],
+                    'createdby' => $_SESSION['staffid'] ?? 'HR001'
+                ]);
+
+                if (!$result) {
+                    throw new Exception("Failed to insert approval record for level: " . $approval[1]);
+                }
+            }
+
+            $this->db->commit();
+            error_log("Successfully submitted HR request: " . $requestId);
+            return true;
+
         } catch (Exception $e) {
+            $this->db->rollBack();
             error_log("Error in submitHRRequest: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
 

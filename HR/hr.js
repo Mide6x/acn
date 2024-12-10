@@ -132,7 +132,9 @@ $(document).ready(function() {
     
     // Submit button handler - Use a single event handler
     $(document).on('click', '#submitRequestBtn', function() {
-        submitRequest();
+        const requestId = $('#requestId').val(); // Get value from hidden input
+        console.log('Submitting request ID:', requestId); // Debug log
+        submitRequest(requestId);
     });
 });
 
@@ -219,32 +221,57 @@ function loadOtherRequests() {
 }
 
 // Single submission function
-function submitRequest() {
-    const requestId = $('#requestId').val(); // Retrieve the requestId from the hidden input
-
+function submitRequest(requestId) {
     if (!requestId) {
-        alert('Request ID is missing.');
+        console.error('No request ID found');
+        alert('Invalid request ID');
         return;
     }
 
-    if (confirm('Are you sure you want to submit this request? You won\'t be able to edit it after submission.')) {
+    // Get job title from the select element
+    const jdtitle = $('#jdtitle').val();
+    console.log('Job Title:', jdtitle); // Debug log
+    console.log('Request ID:', requestId); // Debug log
+
+    if (!jdtitle) {
+        alert('Please select a Job Title');
+        return;
+    }
+
+    if (confirm('Are you sure you want to submit this request?')) {
+        // Create form data
+        const formData = new FormData();
+        formData.append('action', 'submit_hr_request');
+        formData.append('requestId', requestId);
+        formData.append('jdtitle', jdtitle);
+
+        // Log the data being sent
+        console.log('Sending data:', {
+            action: 'submit_hr_request',
+            requestId: requestId,
+            jdtitle: jdtitle
+        });
+
         $.ajax({
             url: 'HRParameters.php',
             type: 'POST',
             data: {
                 action: 'submit_hr_request',
-                requestId: requestId
+                requestId: requestId,
+                jdtitle: jdtitle  // Make sure jdtitle is included here
             },
             success: function(response) {
+                console.log('Server response:', response);
                 if (response === 'success') {
                     alert('Request submitted successfully');
-                    window.location.href = 'HRview.php'; // Redirect to the view page after successful submission
+                    window.location.href = 'HRview.php';
                 } else {
                     alert('Error submitting request: ' + response);
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error:', error);
+                console.error('Ajax error:', error);
+                console.error('Response:', xhr.responseText); // Add this for debugging
                 alert('Error submitting request. Please try again.');
             }
         });
@@ -335,4 +362,17 @@ $(document).ready(function() {
     
     // Initial station
     $('#addStationBtn').trigger('click');
+    
+    // Add change event handler for job title select
+    $('#jdtitle').on('change', function() {
+        const selectedTitle = $(this).val();
+        console.log('Selected job title:', selectedTitle);
+    });
+
+    // Add submit handler to the form
+    $('#staffRequestForm').on('submit', function(e) {
+        e.preventDefault();
+        const requestId = $('#requestId').val();
+        submitRequest(requestId);
+    });
 });

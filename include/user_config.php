@@ -44,7 +44,7 @@ define('CURRENT_USER', [
     'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
-*/
+
 
 //HR Details
 define('CURRENT_USER', [
@@ -55,9 +55,9 @@ define('CURRENT_USER', [
     'deptunitcode' => 'HRD',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);
+]);*/
 
-/*
+
 // Head of HR Details
 define('CURRENT_USER', [
     'staffid' => 'HR001',
@@ -67,7 +67,7 @@ define('CURRENT_USER', [
     'deptunitcode' => 'HRD',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);*/
+]);
 
 // Function to get current user info
 function getCurrentUser($key = null)

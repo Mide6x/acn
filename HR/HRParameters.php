@@ -468,12 +468,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             case 'submit_hr_request':
-                if (!isset($_POST['requestId']) || empty($_POST['requestId'])) {
-                    throw new Exception("Request ID is required");
+                try {
+                    // Debug logging
+                    error_log("Received POST data: " . print_r($_POST, true));
+
+                    if (!isset($_POST['requestId']) || empty($_POST['requestId'])) {
+                        error_log("Missing request ID in submit_hr_request");
+                        throw new Exception("Request ID is required");
+                    }
+
+                    if (!isset($_POST['jdtitle']) || empty($_POST['jdtitle'])) {
+                        error_log("Missing job title in submit_hr_request");
+                        throw new Exception("Job title is required");
+                    }
+
+                    error_log("Attempting to submit HR request with ID: " . $_POST['requestId'] . " and title: " . $_POST['jdtitle']);
+                    $result = $hr->submitHRRequest(
+                        $_POST['requestId'],
+                        $_POST['jdtitle']
+                    );
+                    echo $result ? 'success' : 'error';
+                } catch (Exception $e) {
+                    error_log("Error in submit_hr_request: " . $e->getMessage());
+                    echo "Error: " . $e->getMessage();
                 }
-                // Handle the submission
-                $result = $hr->submitHRRequest($_POST['requestId']);
-                echo $result ? 'success' : 'error';
                 break;
         }
     } catch (Exception $e) {
