@@ -21,6 +21,12 @@ $PAGE_URLS = [
     'HEAD_OF_HR' => [
         'view' => BASE_URL . '/HeadOfHR/HHRView.php'
     ],
+    'CFO' => [
+        'view' => BASE_URL . '/CFO/CFOView.php'
+    ],
+    'CEO' => [
+        'view' => BASE_URL . '/CEO/CEOView.php'
+    ],
     'SETTINGS' => [
         'departments' => BASE_URL . '/departments.php',
         'stations' => BASE_URL . '/station.php',

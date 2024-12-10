@@ -26,11 +26,9 @@ function viewDetails(requestId) {
             requestId: requestId
         },
         success: function(response) {
-            const details = JSON.parse(response);
-            displayRequestDetails(details);
+            $('#requestDetailsContent').html(response);
             $('#requestDetailsModal').modal('show');
             
-            // Set up button handlers
             $('#approveBtn').off('click').on('click', function() {
                 approveRequest(requestId);
             });
@@ -56,7 +54,7 @@ function approveRequest(requestId) {
                 requestId: requestId
             },
             success: function(response) {
-                if (response === 'success') {
+                if (response.trim() === 'success') {  // Added trim()
                     alert('Request approved successfully');
                     $('#requestDetailsModal').modal('hide');
                     loadPendingRequests();
@@ -90,7 +88,7 @@ function declineRequest(requestId) {
             comments: comments
         },
         success: function(response) {
-            if (response === 'success') {
+            if (response.trim() === 'success') {  // Added trim()
                 alert('Request declined successfully');
                 $('#requestDetailsModal').modal('hide');
                 loadPendingRequests();
@@ -103,98 +101,4 @@ function declineRequest(requestId) {
             alert('Error declining request. Please try again.');
         }
     });
-}
-
-function displayRequestDetails(details) {
-    // Create stations HTML
-    let stationsHtml = '<div class="table-responsive"><table class="table table-bordered">';
-    stationsHtml += '<thead><tr><th>Station</th><th>Staff Count</th><th>Employment Type</th><th>Status</th></tr></thead><tbody>';
-    
-    if (details.stations && details.stations.length > 0) {
-        details.stations.forEach(station => {
-            stationsHtml += `
-                <tr>
-                    <td>${station.station}</td>
-                    <td>${station.staffperstation}</td>
-                    <td>${station.employmenttype}</td>
-                    <td>${station.status}</td>
-                </tr>`;
-        });
-    } else {
-        stationsHtml += '<tr><td colspan="4">No station details available</td></tr>';
-    }
-    stationsHtml += '</tbody></table></div>';
-
-    const html = `
-        <div class="container">
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="card-title">Basic Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Request ID:</strong> ${details.jdrequestid || 'N/A'}
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Title:</strong> ${details.jdtitle || 'N/A'}
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Department:</strong> ${details.department || 'N/A'}
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Status:</strong> ${details.status || 'N/A'}
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <strong>Number of Vacancies:</strong> ${details.novacpost || 'N/A'}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="card-title">Job Details</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <strong>Job Description:</strong>
-                            <p>${details.jddescription || 'No description available'}</p>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Educational Qualification:</strong>
-                            <p>${details.eduqualification || 'Not specified'}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Professional Qualification:</strong>
-                            <p>${details.proqualification || 'Not specified'}</p>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <strong>Work Relationships:</strong>
-                            <p>${details.workrelation || 'Not specified'}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Station Details</h5>
-                </div>
-                <div class="card-body">
-                    ${stationsHtml}
-                </div>
-            </div>
-        </div>`;
-    
-    $('#requestDetailsContent').html(html);
 }
