@@ -67,7 +67,7 @@ define('CURRENT_USER', [
     'deptunitcode' => 'HRD',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);*/
+]);
 
 // CFO Details
 define('CURRENT_USER', [
@@ -78,8 +78,8 @@ define('CURRENT_USER', [
     'deptunitcode' => 'EXE',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);
-/*
+]);*/
+
 // CEO Details
 define('CURRENT_USER', [
     'staffid' => 'CEO001',
@@ -89,7 +89,7 @@ define('CURRENT_USER', [
     'deptunitcode' => 'EXE',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);*/
+]);
 
 
 // Function to get current user info

@@ -6,6 +6,21 @@ include("../includes/header.html");
 include("../includes/sidebar.html");
 
 $ceo = new CEO($con);
+
+// Get current hour
+$hour = date('H');
+$greeting = '';
+if ($hour < 12) {
+    $greeting = 'Good Morning';
+} else if ($hour < 17) {
+    $greeting = 'Good Afternoon'; 
+} else {
+    $greeting = 'Good Evening';
+}
+
+// Get CEO name from email
+$ceoName = explode('@', CURRENT_USER['email'])[0];
+$ceoName = ucwords(str_replace('.', ' ', $ceoName));
 ?>
 
 <main id="main" class="main">
@@ -14,7 +29,10 @@ $ceo = new CEO($con);
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-body">
-                        <h6 class="card-title" style="font-weight: 800; font-size: small;">CEO DASHBOARD</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="card-title" style="font-weight: 800; font-size: small;">CEO DASHBOARD</h6>
+                            <h6 class="text-muted"><?php echo $greeting . ', ' . $ceoName; ?></h6>
+                        </div>
                         
                         <div class="table-responsive">
                             <table class="table table-striped">
