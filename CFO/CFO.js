@@ -29,7 +29,6 @@ function viewDetails(requestId) {
             $('#requestDetailsContent').html(response);
             $('#requestDetailsModal').modal('show');
             
-            // Set up button handlers
             $('#approveBtn').off('click').on('click', function() {
                 approveRequest(requestId);
             });
@@ -55,7 +54,7 @@ function approveRequest(requestId) {
                 requestId: requestId
             },
             success: function(response) {
-                if (response === 'success') {
+                if (response.trim() === 'success') {  // Added trim()
                     alert('Request approved successfully');
                     $('#requestDetailsModal').modal('hide');
                     loadPendingRequests();
@@ -89,7 +88,7 @@ function declineRequest(requestId) {
             comments: comments
         },
         success: function(response) {
-            if (response === 'success') {
+            if (response.trim() === 'success') {  // Added trim()
                 alert('Request declined successfully');
                 $('#requestDetailsModal').modal('hide');
                 loadPendingRequests();

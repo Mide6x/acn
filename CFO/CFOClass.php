@@ -27,6 +27,7 @@ class CFO {
             $stmt->execute();
             $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
+            // Format the response as HTML directly
             $html = '';
             foreach ($requests as $request) {
                 $html .= '<tr>';
@@ -92,41 +93,42 @@ class CFO {
     public function getRequestDetails($requestId) {
         try {
             $query = "SELECT 
-                        at.id, at.jdrequestid, at.jdtitle, at.status as approval_status,
-                        sr.novacpost, sr.departmentcode, sr.subdeptunitcode,
-                        d.departmentname as department,
-                        jt.jddescription, jt.eduqualification, jt.proqualification, jt.workrelation
-                     FROM approvaltbl at
-                     LEFT JOIN staffrequest sr ON at.jdrequestid = sr.jdrequestid
-                     LEFT JOIN departments d ON sr.departmentcode = d.departmentcode
-                     LEFT JOIN jobtitletbl jt ON at.jdtitle = jt.jdtitle
-                     WHERE at.jdrequestid = :requestId 
-                     AND at.approvallevel = 'CFO'";
-            
+                sr.*,
+                jt.jddescription,
+                jt.eduqualification,
+                jt.proqualification,
+                jt.workrelation,
+                jt.jdcondition,
+                sr.createdby as requestor
+            FROM staffrequest sr
+            LEFT JOIN jobtitletbl jt ON sr.jdtitle = jt.jdtitle
+            WHERE sr.jdrequestid = :requestId";
+    
             $stmt = $this->db->prepare($query);
             $stmt->execute(['requestId' => $requestId]);
-            $details = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($details) {
-                // Get station details
-                $stationQuery = "SELECT 
-                                    srps.station,
-                                    srps.staffperstation,
-                                    srps.employmenttype,
-                                    srps.status,
-                                    st.stationname
-                                FROM staffrequestperstation srps
-                                LEFT JOIN stationtbl st ON srps.station = st.stationcode
-                                WHERE srps.jdrequestid = :requestId";
-                
-                $stationStmt = $this->db->prepare($stationQuery);
-                $stationStmt->execute(['requestId' => $requestId]);
-                $details['stations'] = $stationStmt->fetchAll(PDO::FETCH_ASSOC);
-            }
-
-            return $details;
+            return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("Error in getRequestDetails: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function getStationDetails($requestId) {
+        try {
+            $query = "SELECT 
+                srps.station,
+                srps.staffperstation,
+                srps.employmenttype,
+                st.stationname
+            FROM staffrequestperstation srps
+            LEFT JOIN stationtbl st ON srps.station = st.stationcode
+            WHERE srps.jdrequestid = :requestId";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['requestId' => $requestId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getStationDetails: " . $e->getMessage());
             throw $e;
         }
     }

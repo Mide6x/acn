@@ -92,7 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'approve_request':
                 if (!isset($_POST['requestId'])) {
-                    throw new Exception("Request ID is required");
+                    echo 'error: Request ID is required';
+                    break;
                 }
                 $result = $cfo->updateRequestStatus($_POST['requestId'], 'approved');
                 echo $result ? 'success' : 'error';
@@ -100,7 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'decline_request':
                 if (!isset($_POST['requestId']) || !isset($_POST['comments'])) {
-                    throw new Exception("Request ID and comments are required");
+                    echo 'error: Request ID and comments are required';
+                    break;
                 }
                 $result = $cfo->updateRequestStatus($_POST['requestId'], 'declined', $_POST['comments']);
                 echo $result ? 'success' : 'error';
