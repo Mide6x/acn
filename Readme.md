@@ -55,4 +55,4 @@ The system supports the following user roles:
 - HR Staff
 - Head of HR
 
-To switch between roles for testing, modify the active user configuration in:
+To switch between roles for testing, modify the active user configuration in: /Applications/XAMPP/xamppfiles/htdocs/acnnew/include/user_config.php

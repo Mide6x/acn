@@ -324,15 +324,15 @@ class HR
         try {
             $this->db->beginTransaction();
 
-            // Update HR status in approvaltbl
-            $hrQuery = "UPDATE approvaltbl 
-                        SET status = :status,
-                            comments = :comments,
-                            dandt = NOW()
-                        WHERE jdrequestid = :requestId 
-                        AND approvallevel = 'HR'";
+            // Update HR approval status
+            $hrUpdateQuery = "UPDATE approvaltbl 
+                             SET status = :status,
+                                 comments = :comments,
+                                 dandt = NOW()
+                             WHERE jdrequestid = :requestId 
+                             AND approvallevel = 'HR'";
 
-            $hrStmt = $this->db->prepare($hrQuery);
+            $hrStmt = $this->db->prepare($hrUpdateQuery);
             $hrStmt->execute([
                 'status' => $status,
                 'comments' => $comments,
@@ -340,10 +340,10 @@ class HR
             ]);
 
             if ($status === 'approved') {
-                // Check if Head of HR record exists
+                // Check if HeadOfHR record exists
                 $checkQuery = "SELECT COUNT(*) FROM approvaltbl 
                               WHERE jdrequestid = :requestId 
-                              AND approvallevel = 'HeadofHR'";
+                              AND approvallevel = 'HeadOfHR'";
 
                 $checkStmt = $this->db->prepare($checkQuery);
                 $checkStmt->execute(['requestId' => $requestId]);
@@ -352,43 +352,44 @@ class HR
                 if (!$exists) {
                     // Insert new Head of HR record
                     $hohrQuery = "INSERT INTO approvaltbl 
-                                 (jdrequestid, approvallevel, status, dandt) 
+                                 (jdrequestid, approvallevel, status, 
+                                  approverstaffid, createdby, dandt) 
                                  VALUES 
-                                 (:requestId, 'HeadofHR', 'pending', NOW())";
+                                 (:requestId, 'HeadOfHR', 'pending', 
+                                  'HR001', :createdby, NOW())";
 
                     $hohrStmt = $this->db->prepare($hohrQuery);
-                    $hohrStmt->execute(['requestId' => $requestId]);
+                    $hohrStmt->execute([
+                        'requestId' => $requestId,
+                        'createdby' => $_SESSION['email'] ?? 'system'
+                    ]);
                 } else {
                     // Update existing Head of HR record to pending
                     $updateHohrQuery = "UPDATE approvaltbl 
                                       SET status = 'pending',
                                           dandt = NOW()
                                       WHERE jdrequestid = :requestId 
-                                      AND approvallevel = 'HeadofHR'";
-
+                                      AND approvallevel = 'HeadOfHR'";
+                    
                     $updateHohrStmt = $this->db->prepare($updateHohrQuery);
                     $updateHohrStmt->execute(['requestId' => $requestId]);
                 }
-            } elseif ($status === 'declined') {
-                // Update all stations for this request in staffrequestperstation
-                $stationQuery = "UPDATE staffrequestperstation 
-                               SET status = 'rejected',
-                                   reason = :reason,
-                                   dandt = NOW()
-                               WHERE jdrequestid = :requestId";
-
-                $stationStmt = $this->db->prepare($stationQuery);
-                $stationStmt->execute([
-                    'reason' => $comments,
-                    'requestId' => $requestId
-                ]);
             }
 
-            // Commit transaction
+            // Update main request status
+            $mainStatusQuery = "UPDATE staffrequest 
+                               SET status = :status 
+                               WHERE jdrequestid = :requestId";
+            
+            $mainStmt = $this->db->prepare($mainStatusQuery);
+            $mainStmt->execute([
+                'status' => $status,
+                'requestId' => $requestId
+            ]);
+
             $this->db->commit();
             return true;
         } catch (Exception $e) {
-            // Rollback transaction on error
             $this->db->rollBack();
             error_log("Error in updateRequestStatus: " . $e->getMessage());
             throw $e;

@@ -15,26 +15,21 @@ function viewRequestDetails(requestId, type) {
         success: function(response) {
             $(contentId).html(response);
             
-            if (type === 'hr-only') {
-                const status = $('#requestStatus').val();
-                const buttonsContainer = $('#hrOnlyButtons');
-                
-                // Clear existing buttons except Close
-                buttonsContainer.find('button:not(.btn-secondary)').remove();
-                
-                if (status === 'draft') {
-                    // Add Edit and Submit buttons for draft status
-                    buttonsContainer.prepend(`
-                        <button type="button" class="btn btn-primary" onclick="editRequest('${requestId}')">
-                            <i class="bi bi-pencil"></i> Edit
-                        </button>
-                        <button type="button" class="btn btn-success" onclick="submitRequest('${requestId}')">
-                            <i class="bi bi-check-circle"></i> Submit
-                        </button>
-                    `);
-                }
-                // For all other statuses, only the Close button will be shown
+            // Get the status from the hidden input
+            const status = $('#requestStatus').val();
+            const buttonsContainer = type === 'all-pending' ? '#allPendingButtons' : '#hrOnlyButtons';
+            
+            // Show/hide buttons based on status
+            if (status === 'approved' || status === 'declined') {
+                // Only show close button for approved/declined requests
+                $(buttonsContainer).find('button:not(.btn-secondary)').hide();
+            } else {
+                // Show approve/decline buttons for pending requests
+                $(buttonsContainer).find('button').show();
             }
+            
+            // Update approve/decline button data
+            $('#approveBtn, #declineBtn').data('requestid', requestId);
         },
         error: function(xhr, status, error) {
             $(contentId).html('<div class="alert alert-danger">Error loading request details: ' + error + '</div>');
