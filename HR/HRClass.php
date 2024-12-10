@@ -374,6 +374,30 @@ class HR
                     $updateHohrStmt = $this->db->prepare($updateHohrQuery);
                     $updateHohrStmt->execute(['requestId' => $requestId]);
                 }
+            } else if ($status === 'declined') {
+                // Update all higher level approvals to 'draft'
+                $updateHigherLevelsQuery = "UPDATE approvaltbl 
+                                          SET status = 'draft',
+                                              dandt = NOW()
+                                          WHERE jdrequestid = :requestId 
+                                          AND approvallevel IN ('HeadOfHR', 'CFO', 'CEO')";
+                
+                $updateHigherStmt = $this->db->prepare($updateHigherLevelsQuery);
+                $updateHigherStmt->execute(['requestId' => $requestId]);
+
+                // Update staffrequestperstation table with decline reason
+                $updateStaffRequestQuery = "UPDATE staffrequestperstation 
+                                          SET status = :status,
+                                              reason = :comments,
+                                              dandt = NOW()
+                                          WHERE jdrequestid = :requestId";
+                
+                $updateStaffStmt = $this->db->prepare($updateStaffRequestQuery);
+                $updateStaffStmt->execute([
+                    'status' => $status,
+                    'comments' => $comments,
+                    'requestId' => $requestId
+                ]);
             }
 
             // Update main request status

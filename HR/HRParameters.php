@@ -51,13 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'decline_request':
                 try {
+                    if (!isset($_POST['requestId']) || !isset($_POST['comments'])) {
+                        throw new Exception("Request ID and comments are required");
+                    }
+
                     $result = $hr->updateRequestStatus(
                         $_POST['requestId'],
                         'declined',
                         $_POST['comments']
                     );
+
                     echo $result ? 'success' : 'error';
                 } catch (Exception $e) {
+                    error_log("Error in decline_request: " . $e->getMessage());
                     echo "Error: " . $e->getMessage();
                 }
                 break;

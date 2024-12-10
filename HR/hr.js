@@ -84,7 +84,7 @@ $(document).ready(function() {
         $('#declineCommentsSection').show();
         $('#allPendingButtons').hide();
         
-        // Add submit decline button
+        // Add submit decline button if it doesn't exist
         if (!$('#submitDeclineBtn').length) {
             const submitBtn = $('<button type="button" class="btn btn-danger" id="submitDeclineBtn">Submit Decline</button>');
             $('#declineCommentsSection').after(submitBtn);
@@ -100,7 +100,28 @@ $(document).ready(function() {
             return;
         }
         
-        declineRequest(requestId, comments);
+        $.ajax({
+            url: 'HRParameters.php',
+            type: 'POST',
+            data: {
+                action: 'decline_request',
+                requestId: requestId,
+                comments: comments
+            },
+            success: function(response) {
+                if (response === 'success') {
+                    alert('Request declined successfully');
+                    $('#requestDetailsModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert('Error declining request: ' + response);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                alert('Error declining request. Please try again.');
+            }
+        });
     });
     
     // Edit button handler

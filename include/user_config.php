@@ -43,8 +43,8 @@ define('CURRENT_USER', [
     'deptunitcode' => '',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);*/
-
+]);
+*/
 
 //HR Details
 define('CURRENT_USER', [
