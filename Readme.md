@@ -49,7 +49,7 @@
 
 ## User Roles
 
-The system supports the following user roles:
+The system supports the following user roles: 
 - Department Unit Lead
 - Head of Department
 - HR Staff
