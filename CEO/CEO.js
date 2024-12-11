@@ -54,7 +54,7 @@ function approveRequest(requestId) {
                 requestId: requestId
             },
             success: function(response) {
-                if (response.trim() === 'success') {  // Added trim()
+                if (response.trim() === 'success') {
                     alert('Request approved successfully');
                     $('#requestDetailsModal').modal('hide');
                     loadPendingRequests();
@@ -88,7 +88,7 @@ function declineRequest(requestId) {
             comments: comments
         },
         success: function(response) {
-            if (response.trim() === 'success') {  // Added trim()
+            if (response.trim() === 'success') {
                 alert('Request declined successfully');
                 $('#requestDetailsModal').modal('hide');
                 loadPendingRequests();

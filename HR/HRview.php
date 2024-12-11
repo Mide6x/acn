@@ -9,6 +9,21 @@ include("../includes/sidebar.html");
 
 $hr = new HR($con);
 $pendingRequests = $hr->getPendingRequests();
+
+// Get current hour
+$hour = date('H');
+$greeting = '';
+if ($hour < 12) {
+    $greeting = 'Good Morning';
+} else if ($hour < 17) {
+    $greeting = 'Good Afternoon'; 
+} else {
+    $greeting = 'Good Evening';
+}
+
+// Get HR name from email
+$hrName = explode('@', CURRENT_USER['email'])[0];
+$hrName = ucwords(str_replace('.', ' ', $hrName));
 ?>
 
 <main id="main" class="main">
@@ -25,10 +40,11 @@ $pendingRequests = $hr->getPendingRequests();
             </div>
             <div class="col-lg-12">
                 <div class="card">
-
-
                     <div class="card-body">
-                        <h6 class="card-title" style="font-weight: 800; font-size: small;">HR DASHBOARD</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="card-title" style="font-weight: 800; font-size: small;">HR DASHBOARD</h6>
+                            <h6 class="text-muted"><?php echo $greeting . ', ' . $hrName; ?></h6>
+                        </div>
                         <ul class="nav nav-tabs" id="requestTabs" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active" id="all-pending-tab" data-bs-toggle="tab" data-bs-target="#all-pending" type="button" role="tab" aria-controls="all-pending" aria-selected="true">All Pending Staff Requests</button>

@@ -43,7 +43,7 @@ define('CURRENT_USER', [
     'deptunitcode' => '',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);
+]);*/
 
 
 //HR Details
@@ -57,7 +57,7 @@ define('CURRENT_USER', [
     'isAdmin' => false
 ]);
 
-
+/*
 // Head of HR Details
 define('CURRENT_USER', [
     'staffid' => 'HR001',
@@ -78,7 +78,7 @@ define('CURRENT_USER', [
     'deptunitcode' => 'EXE',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);*/
+]);
 
 // CEO Details
 define('CURRENT_USER', [
@@ -90,6 +90,7 @@ define('CURRENT_USER', [
     'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
+*/
 
 
 // Function to get current user info

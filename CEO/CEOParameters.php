@@ -14,13 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'get_request_details':
                 try {
                     $requestId = $_POST['requestId'];
-
-                    // Get request details
                     $requestDetails = $ceo->getRequestDetails($requestId);
-
-                    // Get station details
-                    $stations = $ceo->getStationDetails($requestId);
-
+                    
                     // Generate HTML output
                     $output = "
                     <input type='hidden' id='requestStatus' value='{$requestDetails['status']}'>
@@ -74,9 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </thead>
                                 <tbody>";
 
-                    foreach ($stations as $station) {
+                    foreach ($requestDetails['stations'] as $station) {
                         $output .= "<tr>
-                            <td>{$station['station']}</td>
+                            <td>{$station['stationname']}</td>
                             <td>{$station['employmenttype']}</td>
                             <td>{$station['staffperstation']}</td>
                         </tr>";
@@ -86,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     echo $output;
                 } catch (Exception $e) {
-                    echo '<tr><td colspan="5" class="text-center text-danger">Error: ' . $e->getMessage() . '</td></tr>';
+                    echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
                 }
                 break;
 

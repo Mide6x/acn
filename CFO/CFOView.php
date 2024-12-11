@@ -6,6 +6,21 @@ include("../includes/header.html");
 include("../includes/sidebar.html");
 
 $cfo = new CFO($con);
+
+// Get current hour
+$hour = date('H');
+$greeting = '';
+if ($hour < 12) {
+    $greeting = 'Good Morning';
+} else if ($hour < 17) {
+    $greeting = 'Good Afternoon'; 
+} else {
+    $greeting = 'Good Evening';
+}
+
+// Get CFO name from email
+$cfoName = explode('@', CURRENT_USER['email'])[0];
+$cfoName = ucwords(str_replace('.', ' ', $cfoName));
 ?>
 
 <main id="main" class="main">
@@ -14,7 +29,10 @@ $cfo = new CFO($con);
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-body">
-                        <h6 class="card-title" style="font-weight: 800; font-size: small;">CFO DASHBOARD</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="card-title" style="font-weight: 800; font-size: small;">CFO DASHBOARD</h6>
+                            <h6 class="text-muted"><?php echo $greeting . ', ' . $cfoName; ?></h6>
+                        </div>
                         
                         <div class="table-responsive">
                             <table class="table table-striped">
