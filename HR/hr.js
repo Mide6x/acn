@@ -71,6 +71,19 @@ $(document).ready(function() {
             loadOtherRequests();
         }
     });
+
+    // Load CEO approved requests when the tab is shown
+    $('#ceo-approved-tab').on('shown.bs.tab', function() {
+        $.post('HRParameters.php', { action: 'get_ceo_approved_requests' }, function(data) {
+            $('#ceoApprovedRequestsTable').html(data);
+        });
+    });
+
+    // Function to create a job listing
+    window.createJobListing = function(requestId) {
+        alert('Create job listing for request ID: ' + requestId);
+        // Implement the logic to create a job listing
+    };
     
     $('#approveBtn').click(function() {
         const requestId = $(this).data('requestid');

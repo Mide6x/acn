@@ -493,6 +493,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo "Error: " . $e->getMessage();
                 }
                 break;
+
+            case 'get_ceo_approved_requests':
+                try {
+                    $requests = $hr->getCEOApprovedRequests();
+                    $output = '';
+
+                    foreach ($requests as $request) {
+                        $output .= "<tr>";
+                        $output .= "<td>{$request['jdrequestid']}</td>";
+                        $output .= "<td>{$request['jdtitle']}</td>";
+                        $output .= "<td>{$request['departmentname']}</td>";
+                        $output .= "<td>
+                            <button onclick=\"createJobListing('{$request['jdrequestid']}')\" 
+                                    class='btn btn-sm btn-success'>
+                                <i class='bi bi-plus-circle'></i> Create Job Listing
+                            </button>
+                        </td>";
+                        $output .= "</tr>";
+                    }
+
+                    echo $output ?: "<tr><td colspan='4' class='text-center'>No CEO approved requests found</td></tr>";
+                } catch (Exception $e) {
+                    echo "<tr><td colspan='4' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
+                }
+                break;
         }
     } catch (Exception $e) {
         echo "Error: " . $e->getMessage();

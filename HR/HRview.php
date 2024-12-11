@@ -52,6 +52,9 @@ $hrName = ucwords(str_replace('.', ' ', $hrName));
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="hr-only-tab" data-bs-toggle="tab" data-bs-target="#hr-only" type="button" role="tab" aria-controls="hr-only" aria-selected="false">HR Only Requests</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="ceo-approved-tab" data-bs-toggle="tab" data-bs-target="#ceo-approved" type="button" role="tab" aria-controls="ceo-approved" aria-selected="false">CEO Approved</button>
+                            </li>
                             <!-- Add other tabs if needed -->
                         </ul>
                         <div class="tab-content" id="requestTabsContent">
@@ -106,6 +109,24 @@ $hrName = ucwords(str_replace('.', ' ', $hrName));
                                         </thead>
                                         <tbody id="hrRequestsTable">
                                             <!-- HR requests will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- CEO Approved Requests Tab -->
+                            <div class="tab-pane fade" id="ceo-approved" role="tabpanel" aria-labelledby="ceo-approved-tab">
+                                <div class="table-responsive mt-3">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Request ID</th>
+                                                <th>Job Title</th>
+                                                <th>Department</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ceoApprovedRequestsTable">
+                                            <!-- CEO approved requests will be loaded here -->
                                         </tbody>
                                     </table>
                                 </div>

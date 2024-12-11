@@ -821,4 +821,21 @@ class HR
             return [0, 0, 0, 0];
         }
     }
+
+    public function getCEOApprovedRequests() {
+        try {
+            $query = "SELECT sr.jdrequestid, a.jdtitle, dept.departmentname
+                      FROM staffrequest sr
+                      JOIN approvaltbl a ON sr.jdrequestid = a.jdrequestid 
+                      JOIN departments dept ON sr.departmentcode = dept.departmentcode
+                      WHERE a.approvallevel = 'CEO' 
+                      AND a.status IN ('approved')";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error in getCEOApprovedRequests: " . $e->getMessage());
+            throw $e;
+        }
+    }
 }
