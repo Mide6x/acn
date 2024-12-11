@@ -4,66 +4,83 @@
 <!-- ======= Sidebar ======= -->
 <aside id="sidebar" class="sidebar">
    <ul class="sidebar-nav" id="sidebar-nav">
+     <!-- Staff Request Views -->
+     <li class="nav-heading">Staff Request Views</li>
      <li class="nav-item">
        <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['TEAM_LEAD']['view']; ?>">
          <i class="bi bi-file-earmark-plus"></i>
-         <span>Team Lead View</span>
+         <span style="color: black;">Team Lead View</span>
        </a>
      </li>
-     <li class="nav-item"></li>
+     <li class="nav-item">
       <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['DEPT_UNIT_LEAD']['view']; ?>">
         <i class="bi bi-file-earmark-plus"></i>
-        <span>Dept Unit Lead View</span>
+        <span style="color: black;">Dept Unit Lead View</span>
       </a>
      </li>
      <li class="nav-item">
       <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['HOD']['view']; ?>">
         <i class="bi bi-file-earmark-plus"></i>
-        <span>HOD View </span>
+        <span style="color: black;">HOD View </span>
       </a>
     </li>
-     <li class="nav-item">
+
+    <!-- HR Section -->
+    <li class="nav-heading">HR Section</li>
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['HR']['dashboard']; ?>">
+        <i class="bi bi-speedometer2"></i>
+        <span style="color: black;">HR Dashboard</span>
+      </a>
+    </li>
+    <li class="nav-item">
       <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['HR']['view']; ?>">
         <i class="bi bi-list-check"></i>
-        <span>HR View </span>
+        <span style="color: black;">HR View </span>
       </a>
     </li>
-     <li class="nav-item">
+    <li class="nav-item">
       <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['HEAD_OF_HR']['view']; ?>">
         <i class="bi bi-person-check"></i>
-        <span>Head of HR View</span>
+        <span style="color: black;">Head of HR View</span>
       </a>
     </li>
-     <li class="nav-item">
+
+    <!-- Executive Views -->
+    <li class="nav-heading">Executive Views</li>
+    <li class="nav-item">
       <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['CFO']['view']; ?>">
         <i class="bi bi-cash-coin"></i>
-        <span>CFO View</span>
+        <span style="color: black;">CFO View</span>
       </a>
     </li>
-     <li class="nav-item">
+    <li class="nav-item">
       <a class="nav-link collapsed" href="<?php echo $PAGE_URLS['CEO']['view']; ?>">
         <i class="bi bi-person-square"></i>
-        <span>CEO View</span>
+        <span style="color: black;">CEO View</span>
       </a>
     </li>
-     <li class="nav-item">
+
+    <!-- Settings -->
+    <li class="nav-heading">Settings</li>
+    <li class="nav-item">
        <a class="nav-link collapsed" data-bs-target="#hr-settings-nav" data-bs-toggle="collapse" href="#">
-         <i class="bi bi-gear"></i><span>HR Settings</span><i class="bi bi-chevron-down ms-auto"></i>
+         <i class="bi bi-gear"></i><span style="color: black;">HR Settings</span><i class="bi bi-chevron-down ms-auto"></i>
        </a>
        <ul id="hr-settings-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
          <li>
            <a href="<?php echo $PAGE_URLS['SETTINGS']['departments']; ?>">
-             <i class="bi bi-circle"></i><span>Departments</span>
+             <i class="bi bi-circle"></i><span style="color: black;">Departments</span>
            </a>
          </li>
          <li>
            <a href="<?php echo $PAGE_URLS['SETTINGS']['stations']; ?>">
-             <i class="bi bi-circle"></i><span>Stations</span>
+             <i class="bi bi-circle"></i><span style="color: black;">Stations</span>
            </a>
          </li>
          <li>
            <a href="<?php echo $PAGE_URLS['SETTINGS']['job_titles']; ?>">
-             <i class="bi bi-circle"></i><span>Job Titles</span>
+             <i class="bi bi-circle"></i><span style="color: black;">Job Titles</span>
            </a>
          </li>
        </ul>
