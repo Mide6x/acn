@@ -5,6 +5,9 @@ function viewRequestDetails(requestId, type) {
     $(contentId).html('<div class="text-center"><i class="bi bi-hourglass-split"></i> Loading...</div>');
     $(modalId).modal('show');
     
+    // Add this line to store the requestId
+    $('#submitRequestBtn').data('requestid', requestId);
+    
     $.ajax({
         url: 'HRParameters.php',
         type: 'POST',
@@ -21,15 +24,10 @@ function viewRequestDetails(requestId, type) {
             
             // Show/hide buttons based on status
             if (status === 'approved' || status === 'declined') {
-                // Only show close button for approved/declined requests
                 $(buttonsContainer).find('button:not(.btn-secondary)').hide();
             } else {
-                // Show approve/decline buttons for pending requests
                 $(buttonsContainer).find('button').show();
             }
-            
-            // Update approve/decline button data
-            $('#approveBtn, #declineBtn').data('requestid', requestId);
         },
         error: function(xhr, status, error) {
             $(contentId).html('<div class="alert alert-danger">Error loading request details: ' + error + '</div>');
@@ -145,9 +143,7 @@ $(document).ready(function() {
     
     // Submit button handler - Use a single event handler
     $(document).on('click', '#submitRequestBtn', function() {
-        const requestId = $('#requestId').val(); // Get value from hidden input
-        console.log('Submitting request ID:', requestId); // Debug log
-        submitRequest(requestId);
+        submitRequest();
     });
 });
 
@@ -233,148 +229,168 @@ function loadOtherRequests() {
     });
 }
 
-// Single submission function
-function submitRequest(requestId) {
-    if (!requestId) {
-        console.error('No request ID found');
-        alert('Invalid request ID');
+function submitRequest() {
+    // Prevent double submission
+    const submitBtn = $('#submitRequestBtn');
+    if (submitBtn.prop('disabled')) {
         return;
     }
 
-    // Get job title from the select element
+    // Get form data
+    const requestId = $('#requestId').val();
     const jdtitle = $('#jdtitle').val();
-    console.log('Job Title:', jdtitle); // Debug log
-    console.log('Request ID:', requestId); // Debug log
+
+    // Validate required fields
+    if (!requestId) {
+        alert('Request ID is missing');
+        return;
+    }
 
     if (!jdtitle) {
-        alert('Please select a Job Title');
+        alert('Please select a job title');
         return;
     }
 
-    if (confirm('Are you sure you want to submit this request?')) {
-        // Create form data
-        const formData = new FormData();
-        formData.append('action', 'submit_hr_request');
-        formData.append('requestId', requestId);
-        formData.append('jdtitle', jdtitle);
+    // Get station data
+    const stations = [];
+    $('.station-request').each(function() {
+        const stationSelect = $(this).find('select[name="station"]');
+        const employmentSelect = $(this).find('select[name="employmenttype"]');
+        const staffInput = $(this).find('input[name="staffperstation"]');
 
-        // Log the data being sent
-        console.log('Sending data:', {
+        if (stationSelect.val() && employmentSelect.val() && staffInput.val()) {
+            stations.push({
+                station: stationSelect.val(),
+                employmenttype: employmentSelect.val(),
+                staffperstation: staffInput.val()
+            });
+        }
+    });
+
+    // Validate stations
+    if (stations.length === 0) {
+        alert('Please add at least one station with complete information');
+        return;
+    }
+
+    // Show confirmation dialog
+    if (!confirm('Are you sure you want to submit this request?')) {
+        return;
+    }
+
+    // Disable submit button to prevent double submission
+    submitBtn.prop('disabled', true);
+
+    // Make the AJAX request
+    $.ajax({
+        url: 'HRParameters.php',
+        type: 'POST',
+        data: {
             action: 'submit_hr_request',
             requestId: requestId,
-            jdtitle: jdtitle
-        });
-
-        $.ajax({
-            url: 'HRParameters.php',
-            type: 'POST',
-            data: {
-                action: 'submit_hr_request',
-                requestId: requestId,
-                jdtitle: jdtitle  // Make sure jdtitle is included here
-            },
-            success: function(response) {
-                console.log('Server response:', response);
-                if (response === 'success') {
-                    alert('Request submitted successfully');
-                    window.location.href = 'HRview.php';
-                } else {
-                    alert('Error submitting request: ' + response);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Ajax error:', error);
-                console.error('Response:', xhr.responseText); // Add this for debugging
-                alert('Error submitting request. Please try again.');
+            jdtitle: jdtitle,
+            stations: stations  // Send as array directly
+        },
+        success: function(response) {
+            submitBtn.prop('disabled', false);
+            if (response === 'success') {
+                alert('Request submitted successfully');
+                window.location.href = 'HRview.php';
+            } else {
+                alert('Error submitting request: ' + response);
             }
-        });
-    }
-}
-
-// Functions for HR Only requests
-function editRequest(requestId) {
-    window.location.href = 'edit_requesthr.php?id=' + requestId;
-}
-
-function submitRequest() {
-    const requestId = $('#requestId').val(); // Retrieve the requestId from the hidden input
-
-    if (!requestId) {
-        alert('Request ID is missing.');
-        return;
-    }
-
-    if (confirm('Are you sure you want to submit this request? You won\'t be able to edit it after submission.')) {
-        $.ajax({
-            url: 'HRParameters.php',
-            type: 'POST',
-            data: {
-                action: 'submit_hr_request',
-                requestId: requestId
-            },
-            success: function(response) {
-                if (response === 'success') {
-                    alert('Request submitted successfully');
-                    $('#hrOnlyModal').modal('hide');
-                    loadHRRequests();
-                } else {
-                    alert('Error submitting request: ' + response);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error:', error);
-                alert('Error submitting request. Please try again.');
-            }
-        });
-    }
+        },
+        error: function(xhr, status, error) {
+            submitBtn.prop('disabled', false);
+            console.error('Ajax error:', error);
+            console.error('Response:', xhr.responseText);
+            alert('Error submitting request. Please try again.');
+        }
+    });
 }
 
 // Add this at the appropriate place in your hr.js file
 let stationIndex = 0;  // Keep track of station count
 
 $(document).ready(function() {
-    // Add Station button click handler
-    $('#addStationBtn').on('click', function() {
-        stationIndex++;  // Increment counter for unique field names
-        
-        $.ajax({
-            url: 'HRParameters.php',
-            type: 'POST',
-            data: {
-                action: 'get_station_options',
-                index: stationIndex
-            },
-            success: function(response) {
-                $('#stationRequests').append(response);
+    // Load stations and staff types
+    $.ajax({
+        url: 'HRParameters.php',
+        type: 'POST',
+        data: { 
+            action: 'get_stations_and_types'
+        },
+        success: function(response) {
+            try {
+                const data = JSON.parse(response);
+                if (!data || !data.stations || !data.staffTypes) {
+                    throw new Error('Invalid response format');
+                }
                 
-                // Add remove button handler for the new station
-                $('.remove-station').last().on('click', function() {
-                    $(this).closest('.station-request').remove();
+                const stationOptions = data.stations;
+                const staffTypeOptions = data.staffTypes;
+                
+                // Add Station button click handler
+                $('#addStationBtn').on('click', function() {
+                    const stationHtml = `
+                        <div class="station-request">
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <label class="form-label">Station</label>
+                                    <select class="form-control" name="station" style="border-radius: 8px" required>
+                                        <option value="">Select Station</option>
+                                        ${stationOptions}
+                                    </select>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label">Employment Type</label>
+                                    <select class="form-control" name="employmenttype" style="border-radius: 8px" required>
+                                        <option value="">Select Type</option>
+                                        ${staffTypeOptions}
+                                    </select>
+                                </div>
+                                <div class="col-sm-3">
+                                    <label class="form-label">Staff Per Station</label>
+                                    <input type="number" class="form-control staffperstation" name="staffperstation"
+                                        style="border-radius: 8px" required min="1">
+                                </div>
+                                <div class="col-sm-1">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="button" class="btn btn-danger remove-station">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    $('#stationRequests').append(stationHtml);
+                    
+                    // Add remove button handler
+                    $('.remove-station').last().on('click', function() {
+                        $(this).closest('.station-request').remove();
+                        updateTotalPositions(); // Update total after removing
+                    });
+                    
+                    // Update total positions after adding new station
                     updateTotalPositions();
                 });
                 
-                // Add change handler for the new staffperstation input
-                $('.staffperstation').last().on('change', function() {
-                    updateTotalPositions();
-                });
-            },
-            error: function(xhr, status, error) {
-                alert('Error adding station: ' + error);
+                // Initial station
+                $('#addStationBtn').trigger('click');
+                
+            } catch (e) {
+                console.error('Error parsing response:', e);
+                console.error('Raw response:', response);
+                alert('Error loading station options. Please refresh the page.');
             }
-        });
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading stations and types:', error);
+            console.error('Response:', xhr.responseText);
+            alert('Error loading station options. Please refresh the page.');
+        }
     });
-    
-    // Helper function to update total positions
-    function updateTotalPositions() {
-        let total = 0;
-        $('.staffperstation').each(function() {
-            total += parseInt($(this).val()) || 0;
-        });
-        $('#total_positions').val(total);
-    }
-    
-    // Initial station
-    $('#addStationBtn').trigger('click');
     
     // Add change event handler for job title select
     $('#jdtitle').on('change', function() {
@@ -385,7 +401,65 @@ $(document).ready(function() {
     // Add submit handler to the form
     $('#staffRequestForm').on('submit', function(e) {
         e.preventDefault();
-        const requestId = $('#requestId').val();
-        submitRequest(requestId);
+        submitRequest();
+    });
+
+    // Add change event handler for staffperstation inputs
+    $(document).on('change', '.staffperstation', function() {
+        updateTotalPositions();
     });
 });
+
+// Function to update total positions
+function updateTotalPositions() {
+    let total = 0;
+    $('.staffperstation').each(function() {
+        const value = parseInt($(this).val()) || 0;
+        total += value;
+    });
+    // Update total positions display if it exists
+    if ($('#total_positions').length) {
+        $('#total_positions').val(total);
+    }
+}
+
+// Add save draft functionality
+function savedraftHRstaffrequest() {
+    // Get form data
+    const jdtitle = $('#jdtitle').val();
+    const jdrequestid = $('#jdrequestid').text().trim();
+    
+    // Get station data
+    const stations = [];
+    $('.station-request').each(function() {
+        const station = {
+            station: $(this).find('select[name="station"]').val(),
+            employmenttype: $(this).find('select[name="employmenttype"]').val(),
+            staffperstation: $(this).find('input[name="staffperstation"]').val()
+        };
+        stations.push(station);
+    });
+
+    $.ajax({
+        url: 'HRParameters.php',
+        type: 'POST',
+        data: {
+            action: 'save_draft_hr_request',
+            jdrequestid: jdrequestid,
+            jdtitle: jdtitle,
+            stations: stations
+        },
+        success: function(response) {
+            if (response === 'success') {
+                alert('Draft saved successfully');
+            } else {
+                alert('Error saving draft: ' + response);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Ajax error:', error);
+            console.error('Response:', xhr.responseText);
+            alert('Error saving draft. Please try again.');
+        }
+    });
+}

@@ -537,11 +537,17 @@ class HR
         }
     }
 
-    public function submitHRRequest($requestId, $jdtitle) {
+    public function submitHRRequest($requestId, $jdtitle, $stations) {
         try {
             error_log("Starting submitHRRequest for ID: " . $requestId);
             $this->db->beginTransaction();
-
+    
+            // Calculate total novacpost from stations
+            $novacpost = 0;
+            foreach ($stations as $station) {
+                $novacpost += intval($station['staffperstation']);
+            }
+    
             // First, insert the request into staffrequest table
             $insertRequestQuery = "INSERT INTO staffrequest (
                 jdrequestid, 
@@ -550,7 +556,8 @@ class HR
                 deptunitcode,
                 status,
                 createdby,
-                dandt
+                dandt,
+                novacpost
             ) VALUES (
                 :requestId,
                 :jdtitle,
@@ -558,20 +565,50 @@ class HR
                 'HRD',
                 'pending',
                 :createdby,
-                NOW()
+                NOW(),
+                :novacpost
             )";
-
+    
             $insertStmt = $this->db->prepare($insertRequestQuery);
             $insertResult = $insertStmt->execute([
                 'requestId' => $requestId,
                 'jdtitle' => $jdtitle,
-                'createdby' => $_SESSION['staffid'] ?? 'HR001'
+                'createdby' => $_SESSION['staffid'] ?? 'HR001',
+                'novacpost' => $novacpost
             ]);
-
+    
             if (!$insertResult) {
                 throw new Exception("Failed to create staff request");
             }
-
+    
+            // Insert station records
+            foreach ($stations as $station) {
+                $stationQuery = "INSERT INTO staffrequestperstation (
+                    jdrequestid,
+                    station,
+                    employmenttype,
+                    staffperstation,
+                    status,
+                    createdby
+                ) VALUES (
+                    :requestId,
+                    :station,
+                    :employmenttype,
+                    :staffperstation,
+                    'pending',
+                    :createdby
+                )";
+    
+                $stationStmt = $this->db->prepare($stationQuery);
+                $stationStmt->execute([
+                    'requestId' => $requestId,
+                    'station' => $station['station'],
+                    'employmenttype' => $station['employmenttype'],
+                    'staffperstation' => $station['staffperstation'],
+                    'createdby' => $_SESSION['staffid'] ?? 'HR001'
+                ]);
+            }
+    
             // Insert approval records
             $approvals = [
                 ['HR001', 'HR', 'approved'],
@@ -579,13 +616,13 @@ class HR
                 ['CFO001', 'CFO', 'draft'],
                 ['CEO001', 'CEO', 'draft']
             ];
-
+    
             foreach ($approvals as $approval) {
                 $insertQuery = "INSERT INTO approvaltbl 
                                (jdrequestid, jdtitle, approverstaffid, approvallevel, status, createdby) 
                                VALUES 
                                (:requestId, :jdtitle, :approverId, :level, :status, :createdby)";
-
+    
                 $insertStmt = $this->db->prepare($insertQuery);
                 $result = $insertStmt->execute([
                     'requestId' => $requestId,
@@ -595,16 +632,16 @@ class HR
                     'status' => $approval[2],
                     'createdby' => $_SESSION['staffid'] ?? 'HR001'
                 ]);
-
+    
                 if (!$result) {
                     throw new Exception("Failed to insert approval record for level: " . $approval[1]);
                 }
             }
-
+    
             $this->db->commit();
             error_log("Successfully submitted HR request: " . $requestId);
             return true;
-
+    
         } catch (Exception $e) {
             $this->db->rollBack();
             error_log("Error in submitHRRequest: " . $e->getMessage());

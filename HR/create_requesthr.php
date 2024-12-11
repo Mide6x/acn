@@ -27,6 +27,12 @@ try {
     $departmentcode = $hrInfo['deptcode'];
 
     $jobTitles = $hr->getJobTitles();
+    $stations = $hr->getStations();
+    $staffTypes = $hr->getStaffTypes();
+
+    echo "<!-- Debug: Job Titles -->";
+    echo "<!-- " . htmlspecialchars($jobTitles) . " -->";
+
 } catch (Exception $e) {
     error_log("Error in create_requesthr.php: " . $e->getMessage());
     echo "<div class='alert alert-danger'>Error: Unable to load HR information. Please contact system administrator.</div>";
@@ -59,11 +65,10 @@ try {
                                     <label class="form-label">Job Title</label>
                                     <select class="form-control" id="jdtitle" name="jdtitle" required>
                                         <option value="">Select Job Title</option>
-                                        <?php echo $hr->getJobTitles(); ?>
+                                        <?php echo $jobTitles; ?>
                                     </select>
                                 </div>
                             </div>
-                            <input type="hidden" id="requestId" name="requestId" value="<?php echo htmlspecialchars($jdrequestid); ?>">
                             <div id="stationRequests">
                                 <!-- Station requests will be dynamically added here -->
                             </div>
@@ -74,6 +79,7 @@ try {
                                     </button>
                                 </div>
                             </div>
+                            <input type="hidden" id="requestId" name="requestId" value="<?php echo htmlspecialchars($jdrequestid); ?>">
                         </form>
 
                         <div class="col-lg-12" id="loadstaffreqperstation">
@@ -81,17 +87,17 @@ try {
                         <div class="row">
                             <div class="col-sm-10">
                                 <button type="button" class="btn btn-primary"
-                                    id="saveDraftBtn"
+                                    onclick="savedraftHRstaffrequest()"
                                     style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
                                     onmouseover="this.style.backgroundColor='#000000';"
                                     onmouseout="this.style.backgroundColor='#fc7f14';">Save as Draft
                                 </button>
-                                <button type="button" class="btn btn-primary" 
+                                <button type="button" class="btn btn-primary"
                                     id="submitRequestBtn"
-                                    style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px; display: block; margin: 0 auto; margin-top: 20px"
+                                    onclick="submitRequest('<?php echo $jdrequestid; ?>')"
+                                    style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px;display: block;margin: 0 auto; margin-top:20px"
                                     onmouseover="this.style.backgroundColor='#000000';"
-                                    onmouseout="this.style.backgroundColor='#fc7f14';">
-                                    Submit Request
+                                    onmouseout="this.style.backgroundColor='#fc7f14';">Submit Request
                                 </button>
                             </div>
                         </div>
@@ -102,7 +108,6 @@ try {
     </section>
 </main>
 <?php include("../includes/footer.html"); ?>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="hr.js"></script>
 </body>
 

@@ -187,7 +187,9 @@ $hrName = ucwords(str_replace('.', ' ', $hrName));
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="hrOnlyContent"></div>
+                <div id="hrOnlyContent">
+                <input type="hidden" id="requestId" name="requestId" value="">
+                </div>
             </div>
             <div class="modal-footer">
                 <div id="hrOnlyButtons">

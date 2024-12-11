@@ -399,6 +399,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $details = $hr->getRequestDetails($_POST['requestId']);
+                
+                // Add request ID to response
+                echo '<input type="hidden" id="requestId" value="' . htmlspecialchars($_POST['requestId']) . '">';
+                
                 $jobDetails = $hr->getJobDetailsByTitle($details['requestDetails']['jobTitle']);
 
                 // Output the status first for JavaScript to handle button display
@@ -467,32 +471,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 break;
 
-            case 'submit_hr_request':
-                try {
-                    // Debug logging
-                    error_log("Received POST data: " . print_r($_POST, true));
-
-                    if (!isset($_POST['requestId']) || empty($_POST['requestId'])) {
-                        error_log("Missing request ID in submit_hr_request");
-                        throw new Exception("Request ID is required");
+                case 'submit_hr_request':
+                    try {
+                        if (!isset($_POST['requestId']) || empty($_POST['requestId'])) {
+                            echo "Error: Request ID is required";
+                            exit;
+                        }
+                
+                        if (!isset($_POST['jdtitle']) || empty($_POST['jdtitle'])) {
+                            echo "Error: Job title is required";
+                            exit;
+                        }
+                
+                        if (!isset($_POST['stations']) || !is_array($_POST['stations']) || empty($_POST['stations'])) {
+                            echo "Error: Station information is required";
+                            exit;
+                        }
+                
+                        $result = $hr->submitHRRequest(
+                            $_POST['requestId'],
+                            $_POST['jdtitle'],
+                            $_POST['stations']  // Pass stations array directly
+                        );
+                
+                        echo $result ? 'success' : 'error';
+                        
+                    } catch (Exception $e) {
+                        error_log("Error in submit_hr_request: " . $e->getMessage());
+                        echo "Error: " . $e->getMessage();
                     }
-
-                    if (!isset($_POST['jdtitle']) || empty($_POST['jdtitle'])) {
-                        error_log("Missing job title in submit_hr_request");
-                        throw new Exception("Job title is required");
-                    }
-
-                    error_log("Attempting to submit HR request with ID: " . $_POST['requestId'] . " and title: " . $_POST['jdtitle']);
-                    $result = $hr->submitHRRequest(
-                        $_POST['requestId'],
-                        $_POST['jdtitle']
-                    );
-                    echo $result ? 'success' : 'error';
-                } catch (Exception $e) {
-                    error_log("Error in submit_hr_request: " . $e->getMessage());
-                    echo "Error: " . $e->getMessage();
-                }
-                break;
+                    break;
 
             case 'get_ceo_approved_requests':
                 try {
@@ -516,6 +524,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo $output ?: "<tr><td colspan='4' class='text-center'>No CEO approved requests found</td></tr>";
                 } catch (Exception $e) {
                     echo "<tr><td colspan='4' class='text-center text-danger'>Error: {$e->getMessage()}</td></tr>";
+                }
+                break;
+
+            case 'get_stations_and_types':
+                try {
+                    $stations = $hr->getStations();
+                    $staffTypes = $hr->getStaffTypes();
+                    
+                    echo json_encode([
+                        'stations' => $stations,
+                        'staffTypes' => $staffTypes
+                    ]);
+                } catch (Exception $e) {
+                    echo json_encode([
+                        'error' => 'Error: ' . $e->getMessage()
+                    ]);
                 }
                 break;
         }
