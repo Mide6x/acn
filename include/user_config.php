@@ -12,7 +12,7 @@ define('CURRENT_USER', [
     'deptunitcode' => 'SLS',
     'subdeptunitcode' => 'CSLS',
     'isAdmin' => false
-]);
+]);*/
 
 // Dept Unit Lead Details
 
@@ -25,7 +25,7 @@ define('CURRENT_USER', [
     'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
-
+/*
 define('CURRENT_USER', [
     'staffid' => 'MKT001',
     'email' => '',
@@ -47,7 +47,7 @@ define('CURRENT_USER', [
     'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
-*/
+
 
 //HR Details
 define('CURRENT_USER', [
