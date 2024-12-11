@@ -71,7 +71,7 @@ class CEO {
             if ($status === 'approved') {
                 // Update the main request status in staffrequest table
                 $requestQuery = "UPDATE staffrequest 
-                               SET status = 'approved',
+                               SET status = 'CEO Approved',
                                    dandt = NOW() 
                                WHERE jdrequestid = :requestId";
                 

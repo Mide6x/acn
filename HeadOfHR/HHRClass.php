@@ -79,6 +79,14 @@ class HHR {
                 
                 $cfoStmt = $this->db->prepare($cfoQuery);
                 $cfoStmt->execute(['requestId' => $requestId]);
+
+                // Update main request status to Head of HR Approved
+                $updateMain = "UPDATE staffrequest 
+                              SET status = 'Head of HR Approved' 
+                              WHERE jdrequestid = :requestId";
+                
+                $mainStmt = $this->db->prepare($updateMain);
+                $mainStmt->execute(['requestId' => $requestId]);
             }
 
             $this->db->commit();

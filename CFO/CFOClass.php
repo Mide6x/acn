@@ -79,6 +79,14 @@ class CFO {
                 
                 $ceoStmt = $this->db->prepare($ceoQuery);
                 $ceoStmt->execute(['requestId' => $requestId]);
+
+                // Update main request status to CFO Approved
+                $updateMain = "UPDATE staffrequest 
+                              SET status = 'CFO Approved' 
+                              WHERE jdrequestid = :requestId";
+                
+                $mainStmt = $this->db->prepare($updateMain);
+                $mainStmt->execute(['requestId' => $requestId]);
             }
 
             $this->db->commit();

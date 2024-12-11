@@ -46,8 +46,8 @@ define('CURRENT_USER', [
     'deptunitcode' => '',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);*/
-
+]);
+*/
 
 //HR Details
 define('CURRENT_USER', [
@@ -59,8 +59,8 @@ define('CURRENT_USER', [
     'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
-
 /*
+
 // Head of HR Details
 define('CURRENT_USER', [
     'staffid' => 'HR001',
