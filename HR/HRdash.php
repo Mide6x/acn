@@ -142,10 +142,12 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(timelineCtx, {
         type: 'line',
         data: {
-            labels: <?php echo json_encode($hr->getRequestTimelineLabels()); ?>,
+            labels: [<?php echo implode(',', array_map(function($label) { 
+                return "'$label'"; 
+            }, $hr->getRequestTimelineLabels())); ?>],
             datasets: [{
                 label: 'Requests',
-                data: <?php echo json_encode($hr->getRequestTimelineData()); ?>,
+                data: [<?php echo implode(',', $hr->getRequestTimelineData()); ?>],
                 borderColor: '#fc7f14',
                 tension: 0.4,
                 fill: true,
@@ -165,9 +167,11 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(deptCtx, {
         type: 'doughnut',
         data: {
-            labels: <?php echo json_encode($hr->getDepartmentLabels()); ?>,
+            labels: [<?php echo implode(',', array_map(function($label) { 
+                return "'$label'"; 
+            }, $hr->getDepartmentLabels())); ?>],
             datasets: [{
-                data: <?php echo json_encode($hr->getDepartmentData()); ?>,
+                data: [<?php echo implode(',', $hr->getDepartmentData()); ?>],
                 backgroundColor: [
                     '#fc7f14', '#ff9642', '#ffb980', '#ffddbf',
                     '#1a1a1a', '#4d4d4d', '#808080', '#b3b3b3'
@@ -190,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: ['Draft', 'Pending', 'Approved', 'Declined'],
             datasets: [{
                 label: 'Number of Requests',
-                data: <?php echo json_encode($hr->getStatusData()); ?>,
+                data: [<?php echo implode(',', $hr->getStatusData()); ?>],
                 backgroundColor: [
                     '#808080',
                     '#ff9642',

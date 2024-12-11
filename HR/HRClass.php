@@ -7,6 +7,7 @@ class HR
     {
         $this->db = $con;
     }
+
     public function generateRequestId()
     {
         try {
@@ -70,6 +71,7 @@ class HR
             throw $e;
         }
     }
+
     public function getHRInfo($staffid)
     {
         try {
@@ -113,6 +115,7 @@ class HR
             throw $e;
         }
     }
+
     public function getPendingRequests()
     {
         try {
@@ -324,92 +327,35 @@ class HR
         try {
             $this->db->beginTransaction();
 
-            // Update HR approval status
-            $hrUpdateQuery = "UPDATE approvaltbl 
-                             SET status = :status,
-                                 comments = :comments,
-                                 dandt = NOW()
-                             WHERE jdrequestid = :requestId 
-                             AND approvallevel = 'HR'";
-
-            $hrStmt = $this->db->prepare($hrUpdateQuery);
-            $hrStmt->execute([
-                'status' => $status,
-                'comments' => $comments,
-                'requestId' => $requestId
-            ]);
-
             if ($status === 'approved') {
-                // Check if HeadOfHR record exists
-                $checkQuery = "SELECT COUNT(*) FROM approvaltbl 
+                // Update HR approval status
+                $updateHR = "UPDATE approvaltbl 
+                            SET status = 'approved',
+                                dandt = CURRENT_TIMESTAMP
+                            WHERE jdrequestid = :requestId 
+                            AND approvallevel = 'HR'";
+                
+                $hrStmt = $this->db->prepare($updateHR);
+                $hrStmt->execute(['requestId' => $requestId]);
+
+                // Update HeadOfHR to pending
+                $updateHOHR = "UPDATE approvaltbl 
+                              SET status = 'pending',
+                                  dandt = CURRENT_TIMESTAMP
                               WHERE jdrequestid = :requestId 
                               AND approvallevel = 'HeadOfHR'";
-
-                $checkStmt = $this->db->prepare($checkQuery);
-                $checkStmt->execute(['requestId' => $requestId]);
-                $exists = $checkStmt->fetchColumn();
-
-                if (!$exists) {
-                    // Insert new Head of HR record
-                    $hohrQuery = "INSERT INTO approvaltbl 
-                                 (jdrequestid, approvallevel, status, 
-                                  approverstaffid, createdby, dandt) 
-                                 VALUES 
-                                 (:requestId, 'HeadOfHR', 'pending', 
-                                  'HR001', :createdby, NOW())";
-
-                    $hohrStmt = $this->db->prepare($hohrQuery);
-                    $hohrStmt->execute([
-                        'requestId' => $requestId,
-                        'createdby' => $_SESSION['email'] ?? 'system'
-                    ]);
-                } else {
-                    // Update existing Head of HR record to pending
-                    $updateHohrQuery = "UPDATE approvaltbl 
-                                      SET status = 'pending',
-                                          dandt = NOW()
-                                      WHERE jdrequestid = :requestId 
-                                      AND approvallevel = 'HeadOfHR'";
-                    
-                    $updateHohrStmt = $this->db->prepare($updateHohrQuery);
-                    $updateHohrStmt->execute(['requestId' => $requestId]);
-                }
-            } else if ($status === 'declined') {
-                // Update all higher level approvals to 'draft'
-                $updateHigherLevelsQuery = "UPDATE approvaltbl 
-                                          SET status = 'draft',
-                                              dandt = NOW()
-                                          WHERE jdrequestid = :requestId 
-                                          AND approvallevel IN ('HeadOfHR', 'CFO', 'CEO')";
                 
-                $updateHigherStmt = $this->db->prepare($updateHigherLevelsQuery);
-                $updateHigherStmt->execute(['requestId' => $requestId]);
+                $hohrStmt = $this->db->prepare($updateHOHR);
+                $hohrStmt->execute(['requestId' => $requestId]);
 
-                // Update staffrequestperstation table with decline reason
-                $updateStaffRequestQuery = "UPDATE staffrequestperstation 
-                                          SET status = :status,
-                                              reason = :comments,
-                                              dandt = NOW()
-                                          WHERE jdrequestid = :requestId";
+                // Update main request status
+                $updateMain = "UPDATE staffrequest 
+                              SET status = 'HR Approved' 
+                              WHERE jdrequestid = :requestId";
                 
-                $updateStaffStmt = $this->db->prepare($updateStaffRequestQuery);
-                $updateStaffStmt->execute([
-                    'status' => $status,
-                    'comments' => $comments,
-                    'requestId' => $requestId
-                ]);
+                $mainStmt = $this->db->prepare($updateMain);
+                $mainStmt->execute(['requestId' => $requestId]);
             }
-
-            // Update main request status
-            $mainStatusQuery = "UPDATE staffrequest 
-                               SET status = :status 
-                               WHERE jdrequestid = :requestId";
-            
-            $mainStmt = $this->db->prepare($mainStatusQuery);
-            $mainStmt->execute([
-                'status' => $status,
-                'requestId' => $requestId
-            ]);
 
             $this->db->commit();
             return true;
@@ -508,6 +454,7 @@ class HR
             throw $e;
         }
     }
+
     public function getPendingRequestsHRonly()
     {
         try {

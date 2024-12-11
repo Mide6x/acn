@@ -5,6 +5,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/acnnew/DUL/deptunit.php';
 include("../includes/header.html");
 include("../includes/sidebar.html");
 
+$_SESSION['departmentcode'] = CURRENT_USER['departmentcode'];
+
 $deptunit = new DeptUnit($con);
 $staffid = $_SESSION['staffid'];
 $deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
@@ -34,6 +36,7 @@ if (empty($jdrequestid)) {
                             <input type="hidden" id="createdby" value="<?php echo $_SESSION['staffid']; ?>">
                             <input type="hidden" id="deptunitcode" value="<?php echo $deptUnitLeadInfo['deptunitcode']; ?>">
                             <input type="hidden" id="subdeptunitcode" value="<?php echo $deptUnitLeadInfo['subdeptunitcode']; ?>">
+                            <input type="hidden" id="departmentcode" value="<?php echo $_SESSION['departmentcode']; ?>">
                             <input type="hidden" id="jdrequestid" name="jdrequestid" value="<?php echo htmlspecialchars($jdrequestid); ?>">
                             <div class="col-sm-6">
                                 <h6 class="card-title" style="font-weight: 800; font-size: small;">STAFF REQUEST DETAILS</h6>

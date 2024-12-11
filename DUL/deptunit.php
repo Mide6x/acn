@@ -122,8 +122,8 @@ class DeptUnit
 
             // Insert/Update main request
             $query = "INSERT INTO staffrequest 
-                  (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby, dandt) 
-                  VALUES (?, ?, ?, ?, 'draft', ?, NOW())
+                  (jdrequestid, jdtitle, novacpost, deptunitcode, subdeptunitcode, departmentcode, status, createdby, staffid, dandt) 
+                  VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, NOW())
                   ON DUPLICATE KEY UPDATE 
                   jdtitle = VALUES(jdtitle),
                   novacpost = VALUES(novacpost),
@@ -135,7 +135,10 @@ class DeptUnit
                 $data['jdtitle'],
                 $totalStaff,
                 $data['deptunitcode'],
-                $data['createdby']
+                $data['subdeptunitcode'],
+                $data['departmentcode'],
+                $data['createdby'],
+                $data['staffid']
             ]);
 
             // Delete existing station requests

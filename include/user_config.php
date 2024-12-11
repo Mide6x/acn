@@ -8,6 +8,7 @@ define('CURRENT_USER', [
     'staffid' => 'CSLS001',
     'email' => 'mike.j@acn.aero',
     'position' => 'TeamLead',
+    'departmentcode' => 'COM',
     'deptunitcode' => 'SLS',
     'subdeptunitcode' => 'CSLS',
     'isAdmin' => false
@@ -19,6 +20,7 @@ define('CURRENT_USER', [
     'staffid' => 'SLS001',
     'email' => 'samuel.a@acn.aero',
     'position' => 'DeptUnitLead',
+    'departmentcode' => 'COM',
     'deptunitcode' => 'SLS',
     'subdeptunitcode' => '',
     'isAdmin' => false
@@ -28,6 +30,7 @@ define('CURRENT_USER', [
     'staffid' => 'MKT001',
     'email' => '',
     'position' => 'DeptUnitLead',
+    'departmentcode' => 'COM',
     'deptunitcode' => 'MKT',
     'subdeptunitcode' => '',
     'isAdmin' => false

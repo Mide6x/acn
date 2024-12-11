@@ -2,6 +2,8 @@
 require_once '../include/config.php';
 require_once 'deptunit.php';
 
+$_SESSION['departmentcode'] = CURRENT_USER['departmentcode'];
+
 $deptunit = new DeptUnit($con);
 
 // Handle GET requests
@@ -104,8 +106,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'novacpost' => $_POST['novacpost'],
                     'deptunitcode' => $_POST['deptunitcode'],
                     'subdeptunitcode' => $_POST['subdeptunitcode'],
+                    'departmentcode' => $_POST['departmentcode'],
                     'createdby' => $_POST['createdby'],
                     'status' => 'draft',
+                    'staffid' => $_SESSION['staffid'],
                     'stations' => []
                 ];
 
@@ -146,8 +150,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $con->beginTransaction();
 
                 // Insert into staffrequest table
-                $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby, subdeptunitcode, staffid) 
-                         VALUES (?, ?, ?, ?, 'draft', ?, ?, ?)";
+                $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby, subdeptunitcode, staffid, departmentcode) 
+                         VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?)";
 
                 $stmt = $con->prepare($query);
                 $stmt->execute([
@@ -157,7 +161,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $formData['deptunitcode'],
                     $_SESSION['staffid'],
                     $formData['subdeptunitcode'],
-                    $_SESSION['staffid']
+                    $_SESSION['staffid'],
+                    $_SESSION['departmentcode']
                 ]);
 
                 // Insert station details

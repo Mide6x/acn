@@ -38,13 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'approve_request':
                 try {
+                    if (!isset($_POST['requestId'])) {
+                        throw new Exception("Request ID is required");
+                    }
+
                     $result = $hr->updateRequestStatus(
                         $_POST['requestId'],
-                        'approved',
-                        $_POST['comments'] ?? null
+                        'approved'
                     );
+                    
                     echo $result ? 'success' : 'error';
                 } catch (Exception $e) {
+                    error_log("Error in approve_request: " . $e->getMessage());
                     echo "Error: " . $e->getMessage();
                 }
                 break;

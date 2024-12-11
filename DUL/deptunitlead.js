@@ -452,17 +452,16 @@ function submitDeptUnitLead() {
     if (!validateForm()) return false;
 
     // Calculate total vacant posts
-    let totalVacantPosts = 0;
-    $('.staffperstation').each(function() {
-        totalVacantPosts += parseInt($(this).val()) || 0;
-    });
+    calculateTotalVacantPosts();
 
     const formData = {
         jdrequestid: $('#jdrequestid').val(),
         jdtitle: $('#jdtitle').val(),
-        novacpost: totalVacantPosts,
+        novacpost: $('#novacpost').val(),
         deptunitcode: $('#deptunitcode').val(),
-        subdeptunitcode: $('#subdeptunitcode').val() || null,
+        subdeptunitcode: $('#subdeptunitcode').val(),
+        departmentcode: $('#departmentcode').val(),
+        createdby: $('#createdby').val(),
         stations: []
     };
 
@@ -525,6 +524,8 @@ function calculateTotalVacantPosts() {
         novacpost: $('#novacpost').val(), // This will now have the calculated total
         deptunitcode: $('#deptunitcode').val(),
         subdeptunitcode: $('#subdeptunitcode').val(),
+        departmentcode: $('#departmentcode').val(),
+        createdby: $('#createdby').val(),
         stations: []
     };
     }

@@ -5,8 +5,8 @@ function viewRequestDetails(requestId, type) {
     $(contentId).html('<div class="text-center"><i class="bi bi-hourglass-split"></i> Loading...</div>');
     $(modalId).modal('show');
     
-    // Add this line to store the requestId
-    $('#submitRequestBtn').data('requestid', requestId);
+    // Store the requestId on the approve button
+    $('#approveBtn').data('requestid', requestId);
     
     $.ajax({
         url: 'HRParameters.php',
@@ -22,11 +22,6 @@ function viewRequestDetails(requestId, type) {
             const status = $('#requestStatus').val();
             const createdBy = $('#requestCreatedBy').val();
             const buttonsContainer = type === 'all-pending' ? '#allPendingButtons' : '#hrOnlyButtons';
-            
-            // Hide edit and submit buttons for HR-submitted requests
-            if (createdBy && createdBy.toLowerCase().includes('hr')) {
-                $(buttonsContainer).find('#editRequestBtn, #submitRequestBtn').hide();
-            }
             
             // Show/hide buttons based on status
             if (status === 'approved' || status === 'declined') {
@@ -152,6 +147,16 @@ $(document).ready(function() {
 });
 
 function approveRequest(requestId) {
+    // Get the requestId from the button's data attribute if not provided
+    if (!requestId) {
+        requestId = $('#approveBtn').data('requestid');
+    }
+    
+    if (!requestId) {
+        alert('Error: Request ID not found');
+        return;
+    }
+
     $.ajax({
         url: 'HRParameters.php',
         type: 'POST',
@@ -162,7 +167,7 @@ function approveRequest(requestId) {
         success: function(response) {
             if (response === 'success') {
                 alert('Request approved successfully');
-                $('#requestDetailsModal').modal('hide');
+                $('#allPendingModal').modal('hide');
                 location.reload();
             } else {
                 alert('Error approving request: ' + response);
