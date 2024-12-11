@@ -839,4 +839,312 @@ class Revenue
         ];
         return $levels[$currentLevel] ?? $currentLevel;
     }
+
+    // Add these methods to the Revenue class
+
+    public function getAllDepartments()
+    {
+        try {
+            $query = "SELECT departmentcode, departmentname, status 
+                     FROM departments 
+                     ORDER BY departmentname";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching departments: " . $e->getMessage());
+        }
+    }
+
+    public function toggleDepartmentStatus($departmentcode)
+    {
+        try {
+            $this->db->beginTransaction();
+            
+            // Get current status
+            $query = "SELECT status FROM departments WHERE departmentcode = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$departmentcode]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Toggle status
+            $newStatus = ($result['status'] === 'Active') ? 'Inactive' : 'Active';
+            
+            // Update status
+            $updateQuery = "UPDATE departments 
+                           SET status = ?, 
+                               modifiedby = ?, 
+                               modifieddandt = CURRENT_TIMESTAMP 
+                           WHERE departmentcode = ?";
+            
+            $stmt = $this->db->prepare($updateQuery);
+            $stmt->execute([$newStatus, $_SESSION['email'], $departmentcode]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error toggling department status: " . $e->getMessage());
+        }
+    }
+
+    public function createDepartment($departmentname)
+    {
+        try {
+            $this->db->beginTransaction();
+            
+            // Generate department code
+            $code = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $departmentname), 0, 3));
+            $query = "SELECT MAX(CAST(SUBSTRING(departmentcode, 4) AS UNSIGNED)) as max_seq 
+                     FROM departments 
+                     WHERE departmentcode LIKE ?";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$code . '%']);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $sequence = $result['max_seq'] ? intval($result['max_seq']) + 1 : 1;
+            $departmentcode = $code . sprintf("%02d", $sequence);
+            
+            // Insert new department
+            $insertQuery = "INSERT INTO departments (
+                departmentcode, 
+                departmentname, 
+                status, 
+                createdby, 
+                createddandt
+            ) VALUES (?, ?, 'Active', ?, CURRENT_TIMESTAMP)";
+            
+            $stmt = $this->db->prepare($insertQuery);
+            $stmt->execute([
+                $departmentcode,
+                $departmentname,
+                $_SESSION['email']
+            ]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error creating department: " . $e->getMessage());
+        }
+    }
+
+    public function getAllStations()
+    {
+        try {
+            $query = "SELECT stationcode, stationname, stationtype, operationtype, status 
+                     FROM stationtbl 
+                     ORDER BY stationname";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching stations: " . $e->getMessage());
+        }
+    }
+
+    public function toggleStationStatus($stationcode)
+    {
+        try {
+            $this->db->beginTransaction();
+            
+            // Get current status
+            $query = "SELECT status FROM stationtbl WHERE stationcode = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$stationcode]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Toggle status
+            $newStatus = ($result['status'] === 'Active') ? 'Inactive' : 'Active';
+            
+            // Update status
+            $updateQuery = "UPDATE stationtbl 
+                           SET status = ?, 
+                               modifiedby = ?, 
+                               modifieddandt = CURRENT_TIMESTAMP 
+                           WHERE stationcode = ?";
+            
+            $stmt = $this->db->prepare($updateQuery);
+            $stmt->execute([$newStatus, $_SESSION['email'], $stationcode]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error toggling station status: " . $e->getMessage());
+        }
+    }
+
+    public function createStation($stationname, $stationtype, $operationtype)
+    {
+        try {
+            $this->db->beginTransaction();
+            
+            // Generate station code
+            $code = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $stationname), 0, 3));
+            $query = "SELECT MAX(CAST(SUBSTRING(stationcode, 4) AS UNSIGNED)) as max_seq 
+                     FROM stationtbl 
+                     WHERE stationcode LIKE ?";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$code . '%']);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $sequence = $result['max_seq'] ? intval($result['max_seq']) + 1 : 1;
+            $stationcode = $code . sprintf("%02d", $sequence);
+            
+            // Insert new station
+            $insertQuery = "INSERT INTO stationtbl (
+                stationcode, 
+                stationname, 
+                stationtype,
+                operationtype,
+                status, 
+                createdby, 
+                createddandt
+            ) VALUES (?, ?, ?, ?, 'Active', ?, CURRENT_TIMESTAMP)";
+            
+            $stmt = $this->db->prepare($insertQuery);
+            $stmt->execute([
+                $stationcode,
+                $stationname,
+                $stationtype,
+                $operationtype,
+                $_SESSION['email']
+            ]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error creating station: " . $e->getMessage());
+        }
+    }
+
+    public function getAllJobTitles($page = 1, $limit = 10, $search = '')
+    {
+        try {
+            // Base query
+            $query = "SELECT j.jdtitle, j.deptunitcode, j.jddescription, j.jdstatus, d.deptunitname 
+                     FROM jobtitletbl j
+                     JOIN departmentunit d ON j.deptunitcode = d.deptunitcode";
+            
+            // Add search condition if search term is provided
+            if (!empty($search)) {
+                $query .= " WHERE j.jdtitle LIKE :search 
+                           OR d.deptunitname LIKE :search 
+                           OR j.jddescription LIKE :search";
+            }
+            
+            // Count total records for pagination
+            $countQuery = str_replace("j.jdtitle, j.deptunitcode, j.jddescription, j.jdstatus, d.deptunitname", "COUNT(*) as total", $query);
+            $stmt = $this->db->prepare($countQuery);
+            if (!empty($search)) {
+                $searchTerm = "%{$search}%";
+                $stmt->bindParam(':search', $searchTerm);
+            }
+            $stmt->execute();
+            $total = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+            
+            // Add ordering and pagination
+            $query .= " ORDER BY j.jdtitle
+                       LIMIT :offset, :limit";
+            
+            // Calculate offset
+            $offset = ($page - 1) * $limit;
+            
+            // Prepare and execute main query
+            $stmt = $this->db->prepare($query);
+            if (!empty($search)) {
+                $searchTerm = "%{$search}%";
+                $stmt->bindParam(':search', $searchTerm);
+            }
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return [
+                'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+                'total_pages' => ceil($total / $limit)
+            ];
+        } catch (Exception $e) {
+            error_log("Error in getAllJobTitles: " . $e->getMessage());
+            throw new Exception("Error fetching job titles: " . $e->getMessage());
+        }
+    }
+
+    public function toggleJobTitleStatus($jobtitle, $deptunitcode)
+    {
+        try {
+            $this->db->beginTransaction();
+            
+            // Get current status
+            $query = "SELECT jdstatus FROM jobtitletbl 
+                     WHERE jdtitle = ? AND deptunitcode = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$jobtitle, $deptunitcode]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Toggle status
+            $newStatus = ($result['jdstatus'] === 'Active') ? 'Inactive' : 'Active';
+            
+            // Update status
+            $updateQuery = "UPDATE jobtitletbl 
+                           SET jdstatus = ?, 
+                               modifiedby = ?, 
+                               modifieddandt = CURRENT_TIMESTAMP 
+                           WHERE jdtitle = ? AND deptunitcode = ?";
+            
+            $stmt = $this->db->prepare($updateQuery);
+            $stmt->execute([$newStatus, $_SESSION['email'], $jobtitle, $deptunitcode]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error toggling job title status: " . $e->getMessage());
+        }
+    }
+
+    public function createJobTitle($jobtitle, $deptunitcode, $description)
+    {
+        try {
+            $this->db->beginTransaction();
+            
+            // Check if job title already exists for this department
+            $checkQuery = "SELECT COUNT(*) FROM jobtitletbl 
+                          WHERE jdtitle = ? AND deptunitcode = ?";
+            $stmt = $this->db->prepare($checkQuery);
+            $stmt->execute([$jobtitle, $deptunitcode]);
+            
+            if ($stmt->fetchColumn() > 0) {
+                throw new Exception("This job title already exists for the selected department");
+            }
+            
+            // Insert new job title
+            $insertQuery = "INSERT INTO jobtitletbl (
+                jdtitle,
+                deptunitcode,
+                jddescription,
+                jdstatus,
+                createdby,
+                dandt
+            ) VALUES (?, ?, ?, 'Active', ?, CURRENT_TIMESTAMP)";
+            
+            $stmt = $this->db->prepare($insertQuery);
+            $stmt->execute([
+                $jobtitle,
+                $deptunitcode,
+                $description,
+                $_SESSION['email']
+            ]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error creating job title: " . $e->getMessage());
+        }
+    }
 }
