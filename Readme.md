@@ -14,16 +14,16 @@
    C:\xampp\htdocs\acnnew\
    ```
 
-3. Create a new MySQL database named `acnnew`
+3. Create a new MySQL database named `hrdb`
 
-4. Import the database schema from `database/acnnew.sql`
+4. Import the database schema from `database/hrdb (1).sql`
 
 5. Configure database connection in `include/config.php`:
    ```php
    $host = "localhost";
    $username = "root"; 
    $password = "";
-   $database = "acnnew";
+   $database = "hrdb";
    ```
 
 6. Start Apache and MySQL services in XAMPP Control Panel
