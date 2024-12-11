@@ -18,15 +18,19 @@ function viewRequestDetails(requestId, type) {
         success: function(response) {
             $(contentId).html(response);
             
-            // Get the status from the hidden input
+            // Get the status and createdBy from the hidden inputs
             const status = $('#requestStatus').val();
+            const createdBy = $('#requestCreatedBy').val();
             const buttonsContainer = type === 'all-pending' ? '#allPendingButtons' : '#hrOnlyButtons';
+            
+            // Hide edit and submit buttons for HR-submitted requests
+            if (createdBy && createdBy.toLowerCase().includes('hr')) {
+                $(buttonsContainer).find('#editRequestBtn, #submitRequestBtn').hide();
+            }
             
             // Show/hide buttons based on status
             if (status === 'approved' || status === 'declined') {
                 $(buttonsContainer).find('button:not(.btn-secondary)').hide();
-            } else {
-                $(buttonsContainer).find('button').show();
             }
         },
         error: function(xhr, status, error) {

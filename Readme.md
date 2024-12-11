@@ -45,9 +45,8 @@
 2. Edit draft functionality not working
 
 ### HR
-1. Submit button not functional in main view
-2. Save as draft button not functional
-3. Edit request functionality not working
+1. Save as draft button not functional
+2. Edit request functionality not working
 
 ## User Roles
 

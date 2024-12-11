@@ -400,8 +400,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $details = $hr->getRequestDetails($_POST['requestId']);
                 
-                // Add request ID to response
+                // Add request ID and creator to response
                 echo '<input type="hidden" id="requestId" value="' . htmlspecialchars($_POST['requestId']) . '">';
+                echo '<input type="hidden" id="requestStatus" value="' . htmlspecialchars($details['requestDetails']['status']) . '">';
+                echo '<input type="hidden" id="requestCreatedBy" value="' . htmlspecialchars($details['requestDetails']['createdBy']) . '">';
                 
                 $jobDetails = $hr->getJobDetailsByTitle($details['requestDetails']['jobTitle']);
 
