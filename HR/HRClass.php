@@ -674,4 +674,151 @@ class HR
             throw $e;
         }
     }
+
+    public function getTotalRequestsThisMonth() {
+        try {
+            $query = "SELECT COUNT(*) as count FROM staffrequest 
+                      WHERE MONTH(dandt) = MONTH(CURRENT_DATE()) 
+                      AND YEAR(dandt) = YEAR(CURRENT_DATE())";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        } catch (Exception $e) {
+            error_log("Error in getTotalRequestsThisMonth: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getPendingApprovalsCount() {
+        try {
+            $query = "SELECT COUNT(DISTINCT sr.jdrequestid) as count 
+                      FROM staffrequest sr 
+                      JOIN approvaltbl a ON sr.jdrequestid = a.jdrequestid 
+                      WHERE a.status = 'pending'";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        } catch (Exception $e) {
+            error_log("Error in getPendingApprovalsCount: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getCEOApprovedCount() {
+        try {
+            $query = "SELECT COUNT(*) as count FROM approvaltbl 
+                      WHERE approvallevel = 'CEO' AND status = 'approved'";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        } catch (Exception $e) {
+            error_log("Error in getCEOApprovedCount: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getPositionsFilledCount() {
+        try {
+            $query = "SELECT COUNT(*) as count FROM staffrequest 
+                      WHERE status = 'completed' 
+                      AND YEAR(dandt) = YEAR(CURRENT_DATE())";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        } catch (Exception $e) {
+            error_log("Error in getPositionsFilledCount: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getRequestTimelineLabels() {
+        try {
+            $query = "SELECT DATE_FORMAT(dandt, '%b %Y') as month 
+                      FROM staffrequest 
+                      WHERE dandt >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH) 
+                      GROUP BY month 
+                      ORDER BY dandt";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'month');
+        } catch (Exception $e) {
+            error_log("Error in getRequestTimelineLabels: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getRequestTimelineData() {
+        try {
+            $query = "SELECT COUNT(*) as count 
+                      FROM staffrequest 
+                      WHERE dandt >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH) 
+                      GROUP BY DATE_FORMAT(dandt, '%b %Y') 
+                      ORDER BY dandt";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'count');
+        } catch (Exception $e) {
+            error_log("Error in getRequestTimelineData: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getDepartmentLabels() {
+        try {
+            $query = "SELECT d.departmentname 
+                      FROM staffrequest sr 
+                      JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode 
+                      JOIN departments d ON du.deptcode = d.departmentcode 
+                      GROUP BY d.departmentname";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'departmentname');
+        } catch (Exception $e) {
+            error_log("Error in getDepartmentLabels: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getDepartmentData() {
+        try {
+            $query = "SELECT COUNT(*) as count 
+                      FROM staffrequest sr 
+                      JOIN departmentunit du ON sr.deptunitcode = du.deptunitcode 
+                      JOIN departments d ON du.deptcode = d.departmentcode 
+                      GROUP BY d.departmentname";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'count');
+        } catch (Exception $e) {
+            error_log("Error in getDepartmentData: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getStatusData() {
+        try {
+            $query = "SELECT status, COUNT(*) as count 
+                      FROM staffrequest 
+                      GROUP BY status";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $statusCounts = [
+                'draft' => 0,
+                'pending' => 0,
+                'approved' => 0,
+                'declined' => 0
+            ];
+            
+            foreach ($results as $row) {
+                $statusCounts[strtolower($row['status'])] = (int)$row['count'];
+            }
+            
+            return array_values($statusCounts);
+        } catch (Exception $e) {
+            error_log("Error in getStatusData: " . $e->getMessage());
+            return [0, 0, 0, 0];
+        }
+    }
 }
