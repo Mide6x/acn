@@ -28,8 +28,8 @@ $PAGE_URLS = [
         'view' => BASE_URL . '/CEO/CEOView.php'
     ],
     'SETTINGS' => [
-        'departments' => BASE_URL . 'HRSettings/departments.php',
-        'stations' => BASE_URL . 'HRSettings/station.php',
-        'job_titles' => BASE_URL . 'HRSettings/jobtitles.php'
+        'departments' => BASE_URL . '/HRSettings/departments.php',
+        'stations' => BASE_URL . '/HRSettings/station.php',
+        'job_titles' => BASE_URL . '/HRSettings/jobtitles.php'
     ]
 ];
