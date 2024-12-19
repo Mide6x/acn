@@ -303,34 +303,80 @@ class Subunit
             // Basic Request Info
             $output .= "<div class='request-info mb-4'>";
             $output .= "<h6 class='text-primary'>Request Information</h6>";
-            $output .= "<p><strong>Request ID:</strong> {$request['jdrequestid']}</p>";
-            $output .= "<p><strong>Status:</strong> " . ucfirst($request['status']) . "</p>";
-            $output .= "<p><strong>Requested By:</strong> {$request['requestor']}</p>";
-            $output .= "<p><strong>Date:</strong> " . date('Y-m-d', strtotime($request['dandt'])) . "</p>";
+            $output .= "<div class='row mb-3'>";
+            $output .= "<div class='col-sm-4'>";
+            $output .= "<p><strong>Request ID:</strong> &nbsp;&nbsp;{$request['jdrequestid']}</p>";
+            $output .= "</div>";
+            $output .= "<div class='col-sm-4'>";
+            $output .= "<p><strong>Status:</strong> &nbsp;&nbsp;" . ucfirst($request['status']) . "</p>";
+            $output .= "</div>";
+            $output .= "</div>";
+
+            $output .= "<div class='row mb-3'>";
+            $output .= "<div class='col-sm-4'>";
+            $output .= "<p><strong>Requested By:</strong> &nbsp;&nbsp;{$request['requestor']}</p>";
+            $output .= "</div>";
+            $output .= "<div class='col-sm-4'>";
+            $output .= "<p><strong>Date:</strong> &nbsp;&nbsp;" . date('Y-m-d', strtotime($request['dandt'])) . "</p>";
+            $output .= "</div>";
+            $output .= "</div>";
             $output .= "</div>";
 
             // Job Description Details
             $output .= "<div class='job-details mb-4'>";
             $output .= "<h6 class='text-primary'>Job Description</h6>";
-            $output .= "<p><strong>Description:</strong> {$request['jddescription']}</p>";
-            $output .= "<p><strong>Educational Qualification:</strong> {$request['eduqualification']}</p>";
-            $output .= "<p><strong>Professional Qualification:</strong> {$request['proqualification']}</p>";
-            $output .= "<p><strong>Work Relations:</strong> {$request['workrelation']}</p>";
-            $output .= "<p><strong>Job Conditions:</strong> {$request['jdcondition']}</p>";
-            $output .= "<p><strong>Age Bracket:</strong> {$request['agebracket']}</p>";
+            $output .= "<div class='row mb-3'>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Description:</strong> &nbsp;&nbsp;{$request['jddescription']}</p>";
+            $output .= "</div>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Educational Qualification:</strong> &nbsp;&nbsp;{$request['eduqualification']}</p>";
+            $output .= "</div>";
             $output .= "</div>";
 
+            $output .= "<div class='row mb-3'>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Professional Qualification:</strong> &nbsp;&nbsp;{$request['proqualification']}</p>";
+            $output .= "</div>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Work Relations:</strong> &nbsp;&nbsp;{$request['workrelation']}</p>";
+            $output .= "</div>";
+            $output .= "</div>";
+
+            $output .= "<div class='row mb-3'>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Job Conditions:</strong> &nbsp;&nbsp;{$request['jdcondition']}</p>";
+            $output .= "</div>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Age Bracket:</strong> &nbsp;&nbsp;{$request['agebracket']}</p>";
+            $output .= "</div>";
+            $output .= "</div>";
+            $output .= "</div>";
+         
+            
             // Additional Requirements
             $output .= "<div class='requirements mb-4'>";
             $output .= "<h6 class='text-primary'>Requirements</h6>";
-            $output .= "<p><strong>Person Specification:</strong> {$request['personspec']}</p>";
-            $output .= "<p><strong>Functional/Technical Skills:</strong> {$request['fuctiontech']}</p>";
-            $output .= "<p><strong>Managerial Requirements:</strong> {$request['managerial']}</p>";
-            $output .= "<p><strong>Behavioral Competencies:</strong> {$request['behavioural']}</p>";
+            $output .= "<div class='row mb-3'>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Person Specification:</strong> &nbsp;&nbsp;{$request['personspec']}</p>";
             $output .= "</div>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Managerial Requirements:</strong> &nbsp;&nbsp;{$request['managerial']}</p>";
+            $output .= "</div>";
+            $output .= "</div>";
+            $output .= "<div class='row mb-3'>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Functional/Technical Skills:</strong> &nbsp;&nbsp;{$request['fuctiontech']}</p>";
+            $output .= "</div>";
+            $output .= "<div class='col-sm-6'>";
+            $output .= "<p><strong>Behavioral Competencies:</strong> &nbsp;&nbsp;{$request['behavioural']}</p>";
+            $output .= "</div>";
+            $output .= "</div>";
+            
 
             // Station Details
-            if (!empty($stations)) {
+            if (!empty($stations)) { 
                 $output .= "<div class='stations-info'>";
                 $output .= "<h6 class='text-primary'>Station Requirements</h6>";
                 $output .= "<table class='table table-bordered table-striped'>";

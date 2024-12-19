@@ -76,7 +76,7 @@ $deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
 
 <!-- Request Details Modal -->
 <div class="modal fade" id="requestDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Request Details</h5>
@@ -104,3 +104,4 @@ $deptUnitLeadInfo = $deptunit->getDeptUnitLeadInfo($staffid);
 <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="deptunitlead.js"></script>
 <link rel="stylesheet" href="css/approval-timeline.css">
+<link rel="stylesheet" href="assets/css/style.css">

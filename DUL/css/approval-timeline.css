@@ -132,3 +132,7 @@
     border: 1px solid #ffc107;
 }
 
+.bg-warning {
+    height: 10px !important;
+    width: 30%;
+}

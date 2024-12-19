@@ -42,7 +42,7 @@ $teamLeadInfo = $subunit->getTeamLeadInfo($staffid);
 
 <!-- Bootstrap Modal -->
 <div class="modal" id="requestDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <!-- Content will be loaded dynamically -->
         </div>

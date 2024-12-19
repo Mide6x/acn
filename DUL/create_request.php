@@ -56,7 +56,7 @@ if (empty($jdrequestid)) {
 
                         <form id="staffRequestForm">
                             <div class="row mb-3">
-                                <div class="col-sm-6 form-group">
+                                <div class="col-sm-12 form-group">
                                     <label class="form-label">Job Title</label>
                                     <select class="form-control" id="jdtitle" name="jdtitle" style="border-radius: 8px" required>
                                         <option value="">Select Job Title</option>
@@ -96,22 +96,18 @@ if (empty($jdrequestid)) {
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-12">
-                                <button type="button" class="btn btn-secondary mt-2" id="addStation">
+                            <div class="col-sm-6">
+                                <button type="button" class="btn btn-secondary mt-2" id="addDeptUnitLeadStation">
                                     <i class="bi bi-plus"></i> Add Station
                                 </button>
+                            </div>
+                            <div class="col-sm-6 d-flex justify-content-end">
+                                <button type="button" class="btn btn-primary" onclick="saveAsDraftDeptUnitLead()">Save as Draft</button> &nbsp;
+                                <button type="button" class="btn btn-primary" onclick="submitDeptUnitLeadRequest()">Submit Request</button>
                             </div>
                         </div>
 
                         <div class="col-lg-12" id="loadstaffreqperstation">
-                        </div>
-                        <div class="row">
-                            <div class="col-sm-10">
-                                <div class="text-end mt-3">
-                                    <button type="button" class="btn btn-primary" onclick="saveAsDraftDeptUnitLead()">Save as Draft</button>
-                                    <button type="button" class="btn btn-primary" onclick="submitDeptUnitLeadRequest()">Submit Request</button>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

@@ -1301,10 +1301,11 @@
     width: 100%;
     border-collapse: collapse;
     margin: 1rem 0;
+
   }
   
   .table thead th {
-    background: rgba(252, 127, 20, 0.1);
+    background: #FFD580;
     color: var(--dark);
     padding: 1rem;
     text-align: left;
@@ -1313,8 +1314,9 @@
   
   .table td {
     padding: 1rem;
-    border-bottom: 1px solid var(--shadow);
     vertical-align: middle;
+    background-color: #fff;
+    /* border: none; */
   }
   
   /* Button Styles */
@@ -1348,14 +1350,6 @@
   .status-pending {
     background: var(--shadow);
     color: var(--primary);
-  }
-  
-  /* Form Controls */
-  .form-control:focus {
-    background-color: #fff;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 0.2rem var(--shadow);
-    outline: none;
   }
   
   /* Card Styles */
@@ -1454,12 +1448,17 @@
     background: rgba(52, 199, 89, 0.1);
     color: #34c759;
   }
+
+  * {
+    font-family: 'Roboto' !important;
+}
   
   /* Form styling */
   .form-control {
     border-radius: 8px;
-    border: 1px solid rgba(252, 127, 20, 0.2);
-    padding: 0.75rem 1rem;
+    border: 1px solid #8f8f8e;
+    padding: 5px;
+    height: 50px;
     transition: all 0.3s ease;
   }
   
@@ -1543,6 +1542,58 @@
         box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
     }
 }
+
+/* modal */
+/* .modal-body
+{
+  background-color: #f9f9f9;
+} */
+.modal-header .modal-title {
+  color: #012970;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.modal-body h6.text-primary {
+  color: #012970 !important;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(252, 127, 20, 0.1);
+}
+
+
+p {
+  display: flex; 
+  align-items: baseline; 
+  margin-bottom: 10px; 
+}
+
+.label {
+  width: 30%; 
+  font-weight: bold;
+  text-align: left; 
+}
+
+.value {
+  flex: 1; 
+}
+
+.request-info .label {
+  margin-right: 5px; /* Reduces space after the label */
+}
+
+.request-info .value {
+  display: inline; /* Keeps the value inline with the label */
+}
+
+
+
+
+
+
+
   
   
   

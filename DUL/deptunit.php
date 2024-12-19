@@ -223,7 +223,7 @@ class DeptUnit
                          <td>" . htmlspecialchars($request['novacpost']) . "</td>
                          <td>" . htmlspecialchars($request['stations'] ?? 'N/A') . "</td>
                          <td>" . htmlspecialchars($request['requestor'] ?? 'N/A') . "</td>
-                         <td><span class='badge {$statusClass}'>" . htmlspecialchars($request['status']) . "</span></td>
+                         <td><span class=' {$statusClass}'>" . htmlspecialchars($request['status']) . "</span></td>
                          <td>
                              <button class='btn btn-sm btn-primary btn-view-request' 
                                      data-requestid='" . htmlspecialchars($request['jdrequestid']) . "'>

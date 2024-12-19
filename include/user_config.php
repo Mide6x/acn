@@ -12,7 +12,8 @@ define('CURRENT_USER', [
     'deptunitcode' => 'SLS',
     'subdeptunitcode' => 'CSLS',
     'isAdmin' => false
-]);*/
+]); 
+*/
 
 // Dept Unit Lead Details
 
@@ -25,6 +26,8 @@ define('CURRENT_USER', [
     'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
+
+
 /*
 define('CURRENT_USER', [
     'staffid' => 'MKT001',
@@ -35,9 +38,10 @@ define('CURRENT_USER', [
     'subdeptunitcode' => '',
     'isAdmin' => false
 ]);
+*/
 
 // Head of Department Details
-
+/*
 define('CURRENT_USER', [
     'staffid' => 'COM001',
     'email' => 'jane.s@acn.aero',
@@ -46,10 +50,11 @@ define('CURRENT_USER', [
     'deptunitcode' => '',
     'subdeptunitcode' => '',
     'isAdmin' => false
-]);
+]); */
 
 
 //HR Details
+/*
 define('CURRENT_USER', [
     'staffid' => 'HR001',
     'email' => 'john.d@acn.aero',

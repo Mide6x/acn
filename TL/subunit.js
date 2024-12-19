@@ -55,8 +55,11 @@ function viewSubunitRequest(requestId) {
         .then(response => response.text())
         .then(html => {
             document.querySelector('#requestDetailsModal .modal-content').innerHTML = html;
-            const modal = new bootstrap.Modal(document.getElementById('requestDetailsModal'));
-            modal.show();
+            const requestDetailsModal = new bootstrap.Modal(document.getElementById('requestDetailsModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            requestDetailsModal.show();
         })
         .catch(error => {
             console.error('Error:', error);

@@ -38,18 +38,21 @@ if (!$subdeptunitcode && !$_SESSION['isAdmin']) {
                                 </span>
                             </div>
                         </div>
+                        
 
                         <form id="subunitRequestForm" method="POST">
                             <div class="row mb-3">
-                                <div class="col-sm-6">
+                                <div class="col-sm-12">
                                     <label class="form-label">Job Title</label>
                                     <select class="form-control" id="subunit-job-title" name="jdtitle" required>
-                                        <option value="">Select Job Title</option>
+                                        <option value="Select">Select Job Title</option>
                                         <?php echo $subunit->getSubunitJobTitles($subdeptunitcode); ?>
                                     </select>
                                 </div>
                             </div>
-
+                            <h6 class="card-title"  style="font-weight: 800; font-size: small; margin-top: 20px; margin-bottom: 15px;">
+                                STAFF PER STATION DETAILS
+                            </h6>
                             <div id="subunit-station-container">
                                 <div class="subunit-station-entry">
                                     <div class="row mb-3">
@@ -67,20 +70,25 @@ if (!$subdeptunitcode && !$_SESSION['isAdmin']) {
                                                 <?php echo $subunit->getStaffTypes(); ?>
                                             </select>
                                         </div>
-                                        <div class="col-sm-3">
+                                        <div class="col-sm-4">
                                             <label class="form-label">Staff Per Station</label>
                                             <input type="number" class="form-control subunit-staff-count" name="staffperstation" required>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <button type="button" id="addSubunitStation" class="btn btn-secondary mb-3">+ Add Another Station</button>
-                            <button type="button" class="btn btn-primary" onclick="submitSubunitRequest()"
-                                style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px; display: block; margin: 0 auto; margin-top: 20px"
-                                onmouseover="this.style.backgroundColor='#000000';"
-                                onmouseout="this.style.backgroundColor='#fc7f14';">Save as Draft
-                            </button>
+                            <div class="row mb-3" style="margin-top: 50px;">
+                                <div class="col-sm-12 text-right">
+                                    <button type="button" id="addSubunitStation" class="btn btn-secondary mr-3">+ Add Another Station</button>
+                                    <button type="button" class="btn btn-primary" onclick="submitSubunitRequest()"
+                                        style="background-color: #fc7f14; border: #fc7f14; padding: 10px 30px; height: 40px;"
+                                        onmouseover="this.style.backgroundColor='#000000';"
+                                        onmouseout="this.style.backgroundColor='#fc7f14';">
+                                        Save as Draft
+                                    </button>
+                                </div>
+                            </div>
+                            
                         </form>
 
                         <div class="col-lg-12" id="subunit-request-list">

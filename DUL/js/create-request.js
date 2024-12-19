@@ -86,3 +86,18 @@ function validateForm() {
 
     return isValid;
 } 
+
+ // Add station button functionality
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('addDeptUnitLeadStation')?.addEventListener('click', function() {
+        const container = document.getElementById('stationRequests');
+        const template = container.querySelector('.station-request').cloneNode(true);
+        
+        // Clear the values
+        template.querySelectorAll('select, input').forEach(element => {
+            element.value = '';
+        });
+        
+        container.appendChild(template);
+    });
+});
