@@ -151,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Insert into staffrequest table
                 $query = "INSERT INTO staffrequest (jdrequestid, jdtitle, novacpost, deptunitcode, status, createdby, subdeptunitcode, staffid, departmentcode) 
-                         VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?)";
+                         VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)";
 
                 $stmt = $con->prepare($query);
                 $stmt->execute([
@@ -421,7 +421,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'get_edit_station_rows':
             try {
                 // Get jdrequestid from POST data
-                $requestId = $_POST['requestId'];
+                $requestId = $_POST['jdrequestid'];
 
                 if (!$requestId) {
                     throw new Exception('Request ID is required');

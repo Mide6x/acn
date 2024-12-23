@@ -34,6 +34,40 @@ function viewRequestDetails(requestId, type) {
     });
 }
 
+function addStationRequestHR() {
+    const requestId = $('#jdrequestid').val();
+    const index = $('.station-row').length;
+
+    console.log('Adding station:', { requestId, index }); // Debug log
+
+    $.ajax({
+        url: 'deptunitparameter.php',
+        type: 'POST',
+        data: {
+            action: 'get_station_options',
+            index: index,
+            requestId: requestId
+        },
+        success: function(response) {
+            console.log('Received response:', response); // Debug log
+            
+            // Create a temporary div to hold the response
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = response.trim();
+            
+            // Append the new content to the container
+            $('#stationRequests').append(tempDiv.firstChild);
+            
+            // Log the container contents after append
+            console.log('Container after append:', $('#stationRequests').html());
+        },
+        error: function(xhr, status, error) {
+            console.error('Error adding station:', error);
+            alert('Error adding new station');
+        }
+    });
+}
+
 function updateTimelineDot(dotId, status) {
     const dot = $('#' + dotId);
     dot.removeClass('completed current declined');
@@ -444,10 +478,13 @@ function savedraftHRstaffrequest() {
         const station = {
             station: $(this).find('select[name="station"]').val(),
             employmenttype: $(this).find('select[name="employmenttype"]').val(),
-            staffperstation: $(this).find('input[name="staffperstation"]').val()
+            staffperstation: parseInt($(this).find('input[name="staffperstation"]').val())
         };
         stations.push(station);
     });
+
+    // Calculate total_positions
+    const total_positions = stations.reduce((sum, s) => sum + s.staffperstation, 0);
 
     $.ajax({
         url: 'HRParameters.php',
@@ -456,7 +493,8 @@ function savedraftHRstaffrequest() {
             action: 'save_draft_hr_request',
             jdrequestid: jdrequestid,
             jdtitle: jdtitle,
-            stations: stations
+            total_positions: total_positions,
+            stations: JSON.stringify(stations)
         },
         success: function(response) {
             if (response === 'success') {

@@ -17,7 +17,7 @@ function submitDeptUnitLeadRequest() {
         novacpost: totalVacantPosts,
         deptunitcode: $('#deptunitcode').val(),
         subdeptunitcode: $('#subdeptunitcode').val() || null,
-        stations: []
+        stations: [] 
     };
 
     // Collect all station requests
