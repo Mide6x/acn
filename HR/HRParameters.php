@@ -207,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 break;
 
-            case 'save_draft_request':
+            case 'save_draft_hr_request':
                 try {
                     $requestData = [
                         'jdrequestid' => $_POST['jdrequestid'],
@@ -356,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $output .= "<td>" . htmlspecialchars($request['total_positions']) . "</td>";
                             $output .= "<td>" . htmlspecialchars($request['status']) . "</td>";
                             $output .= "<td>
-                                <button onclick=\"viewRequestDetails('" . htmlspecialchars($request['jdrequestid']) . "')\" 
+                                <button onclick=\"viewRequestDetails('" . htmlspecialchars($request['jdrequestid'], ENT_QUOTES, 'UTF-8') . "', 'all-pending')\" 
                                         class='btn btn-sm btn-info'>
                                     <i class='bi bi-eye'></i> View
                                 </button>

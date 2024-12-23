@@ -332,12 +332,12 @@ if (isset($_POST['action'])) {
                 $stmt->execute(['requestId' => $requestId]);
                 $request = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                if ($request && $request['staffid'] === CURRENT_USER['staffid']) {
+                //if ($request && $request['staffid'] === CURRENT_USER['staffid']) {
                     $hod->submitHODRequest($requestId);
                     echo "Request submitted successfully. HR will be notified for review.";
-                } else {
-                    throw new Exception("Unauthorized access or invalid request.");
-                }
+                //} else {
+                  //  throw new Exception("Unauthorized access or invalid request.");
+                //}
             } catch (Exception $e) {
                 echo "Error: " . $e->getMessage();
             }

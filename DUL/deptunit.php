@@ -785,7 +785,7 @@ class DeptUnit
                             <td>
                                 <button type="button" class="btn btn-primary btn-sm" 
                                        onclick="viewRequestDetails(\'' . $row['jdrequestid'] . '\')">
-                                    View Details23
+                                    View Details
                                 </button>
                                 ' . ($row['current_status'] === 'Draft' ? '' : '') . '
                             </td>

@@ -304,7 +304,7 @@ function addStationRequestDeptUnitLead() {
     $.ajax({
         url: 'deptunitparameter.php',
         type: 'POST',
-        data: {
+        data: { 
             action: 'get_station_options',
             index: index,
             requestId: requestId
@@ -417,6 +417,7 @@ function saveAsDraftDeptUnitLead() {
         'novacpost': totalVacantPosts,
         'deptunitcode': $('#deptunitcode').val(),
         'subdeptunitcode': $('#subdeptunitcode').val() || null,
+        'departmentcode': $('#departmentcode').val(),
         'createdby': $('#createdby').val(),
         'status': 'draft'
     };
@@ -613,7 +614,12 @@ function calculateTotalVacantPosts() {
     }
     
     function editRequest(requestId) {
-        window.location.href = `edit_request.php?id=${requestId}`;
+        if (!requestId) {
+            console.error('Invalid request ID');
+            return;
+        }
+        const encodedRequestId = encodeURIComponent(requestId);
+        window.location.href = `edit_request.php?jdrequestid=${encodedRequestId}`;
     }
     document.addEventListener('DOMContentLoaded', function() {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -640,7 +646,7 @@ function calculateTotalVacantPosts() {
                 index: index
             },
             success: function(response) {
-                $('#stationContainer').append(response);
+                $('#stationRequests').append(response);
             }
         });
     });

@@ -822,4 +822,93 @@ class HR
             throw $e;
         }
     }
+
+    public function isRequestEditable($requestId){
+        $query = "SELECT status FROM staffrequest WHERE jdrequestid = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$requestId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $result && $result['status'] === 'draft';
+    }
+
+    public function getEditRequestData($requestId, $staffId)
+    {
+        try {
+            // Get request details
+            $query = "SELECT sr.*, e.staffname as requestor
+                     FROM staffrequest sr
+                     LEFT JOIN employeetbl e ON sr.staffid = e.staffid
+                     WHERE sr.jdrequestid = ?";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$requestId]);
+            $requestDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Get station details with full information
+            $stationQuery = "SELECT srps.*, s.stationname
+                            FROM staffrequestperstation srps
+                            LEFT JOIN stationtbl s ON srps.station = s.stationcode
+                            WHERE srps.jdrequestid = ?";
+
+            $stmt = $this->db->prepare($stationQuery);
+            $stmt->execute([$requestId]);
+            $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Check if request exists and belongs to current user
+            if (!$requestDetails || $requestDetails['createdby'] !== $staffId) {
+                throw new Exception("Request not found or unauthorized access.");
+            }
+
+            // Check if request is still in draft status
+            if ($requestDetails['status'] !== 'draft') {
+                throw new Exception("Only draft requests can be edited.");
+            }
+
+            return [
+                'details' => $requestDetails,
+                'stations' => $stations
+            ];
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+
+    public function getStationsWithSelected($selectedValue)
+    {
+        $options = '';
+        $query = "SELECT stationcode, stationname FROM stationtbl WHERE status = 'Active' ORDER BY stationname";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $selected = ($row['stationcode'] === $selectedValue) ? 'selected' : '';
+            $options .= "<option value='" . htmlspecialchars($row['stationcode']) . "' {$selected}>" .
+                htmlspecialchars($row['stationname']) . "</option>";
+        }
+        return $options;
+    }
+
+    public function getStaffTypesWithSelected($selectedValue)
+    {
+        $options = '';
+        $query = "SELECT DISTINCT employmenttype as value, employmenttype as label
+                  FROM staffrequestperstation 
+                  WHERE status IN ('draft', 'pending', 'approved')
+                  UNION
+                  SELECT stprefix as value, stafftype as label
+                  FROM stafftype
+                  WHERE status = 'Active'
+                  ORDER BY label";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $selected = ($row['value'] === $selectedValue) ? 'selected' : '';
+            $options .= "<option value='" . htmlspecialchars($row['value']) . "' {$selected}>" .
+                htmlspecialchars($row['label']) . "</option>";
+        }
+        return $options;
+    }
 }

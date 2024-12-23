@@ -386,7 +386,7 @@ $(document).ready(function() {
     // Edit button click handler
     $('#editRequestBtn').click(function() {
         const requestId = $(this).attr('data-requestid');
-        window.location.href = `edit_request.php?requestId=${requestId}`;
+        window.location.href = `edit_requesthod.php?jdrequestId=${requestId}`;
     });
 
     // Submit draft request button click handler
